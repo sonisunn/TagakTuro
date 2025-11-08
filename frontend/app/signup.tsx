@@ -38,9 +38,25 @@ export default function TagakTuroSignUp() {
     }
 
     setError(false);
-    alert('Registration successful!');
-    router.push('/');
+    // call backend signup
+    const user = { name, studentId, courseProgram, email, phoneNumber, password };
+    setSubmitting(true);
+    import('../src/api/auth').then(({ signup }) => {
+      signup(user)
+        .then(() => {
+          setSubmitting(false);
+          alert('Registration successful! You can now log in.');
+          router.push('/');
+        })
+        .catch((err) => {
+          setSubmitting(false);
+          console.warn('Signup error', err?.response?.data || err.message || err);
+          alert('Registration failed: ' + (err?.response?.data || err.message));
+        });
+    });
   };
+
+  const [submitting, setSubmitting] = React.useState(false);
 
   return (
     <KeyboardAvoidingView
@@ -275,10 +291,11 @@ export default function TagakTuroSignUp() {
           )}
 
           <TouchableOpacity 
-            style={[styles.submitButton, error && !agreedToTerms && styles.submitButtonDisabled]} 
+            style={[styles.submitButton, (error || submitting) && styles.submitButtonDisabled]} 
             onPress={handleSubmit}
+            disabled={submitting}
           >
-            <Text style={styles.submitButtonText}>Submit</Text>
+            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>

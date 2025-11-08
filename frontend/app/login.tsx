@@ -18,14 +18,26 @@ export default function TagakTuroLogin() {
   const [error, setError] = useState(false);
 
   const handleSubmit = () => {
-    if (email === 'a' && password === 'a') {
-      setError(false);
-      alert('Login successful!');
-      router.push('/homepage'); 
-    } else {
-      setError(true);
-    }
+    setError(false);
+    // call backend login
+    setSubmitting(true);
+    import('../src/api/auth').then(({ login }) => {
+      login(email, password)
+        .then((user) => {
+          setSubmitting(false);
+          // basic success flow - navigate to homepage
+          alert('Login successful!');
+          router.push('/homepage');
+        })
+        .catch((err) => {
+          setSubmitting(false);
+          console.warn('Login error', err?.response?.data || err.message || err);
+          setError(true);
+        });
+    });
   };
+
+  const [submitting, setSubmitting] = React.useState(false);
 
   return (
     <KeyboardAvoidingView
@@ -75,7 +87,7 @@ export default function TagakTuroLogin() {
           )}
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit</Text>
+            <Text style={styles.submitButtonText}>{submitting ? 'Signing in...' : 'Submit'}</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>

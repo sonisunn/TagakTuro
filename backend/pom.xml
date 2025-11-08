@@ -46,6 +46,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- JWT library -->
+		<dependency>
+			<groupId>com.auth0</groupId>
+			<artifactId>java-jwt</artifactId>
+			<version>4.4.0</version>
+		</dependency>
+
 		<!-- H2 in-memory DB for testing -->
 		<dependency>
 			<groupId>com.h2database</groupId>

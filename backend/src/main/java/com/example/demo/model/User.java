@@ -1,5 +1,6 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -16,6 +17,8 @@ public class User {
     private String email;
     private String phoneNumber;
     @Column(nullable = false)
+    // allow JSON write (deserialization) but prevent sending the password back in responses
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     // getters and setters
