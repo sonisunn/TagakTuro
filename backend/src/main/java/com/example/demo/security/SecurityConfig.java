@@ -25,24 +25,28 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    // Enable CORS and disable CSRF for API usage from mobile/web clients
-    // Enable CORS and disable CSRF for API usage from mobile/web clients
-    http.cors().and().csrf().disable()
-        .authorizeHttpRequests()
-        // allow preflight/options everywhere
-        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-        // explicitly allow auth endpoints and H2 console during development
-        .requestMatchers("/api/auth/**", "/h2-console/**").permitAll()
-        .anyRequest().authenticated()
-        .and()
-        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http
+            // Apply CORS configuration
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Disable CSRF protection, as we are using token-based authentication
+            .csrf(csrf -> csrf.disable())
+            // Add the JWT filter before the standard username/password filter
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            // Configure authorization rules
+            .authorizeHttpRequests(authz -> authz
+                // Allow unauthenticated access to the authentication endpoints
+                .requestMatchers("/api/auth/**").permitAll()
+                // Allow unauthenticated access to the H2 database console (for development)
+                .requestMatchers("/h2-console/**").permitAll()
+                // All other requests must be authenticated
+                .anyRequest().authenticated()
+            )
+            // Configure session management to be stateless, as we are using JWTs
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Allow framing of the H2 console
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
-    http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-    // allow frames for H2 console (only for dev)
-    http.headers().frameOptions().disable();
-
-    return http.build();
+        return http.build();
     }
 
     @Bean

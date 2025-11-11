@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function TagakTuroLogin() {
   const router = useRouter();
@@ -19,12 +20,15 @@ export default function TagakTuroLogin() {
 
   const handleSubmit = () => {
     setError(false);
-    // call backend login
     setSubmitting(true);
     import('../src/api/auth').then(({ login }) => {
       login(email, password)
-        .then((user) => {
+        .then(async (loginResponse) => {
           setSubmitting(false);
+          // Store user data
+          if (loginResponse?.user) {
+            await AsyncStorage.setItem('userData', JSON.stringify(loginResponse.user));
+          }
           // basic success flow - navigate to homepage
           alert('Login successful!');
           router.push('/homepage');

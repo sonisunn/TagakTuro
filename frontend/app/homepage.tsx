@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,26 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
 
 export default function TagakTuroHomepage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        setUserName(userData.name || 'User'); // Fallback to 'User'
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const upcomingClasses = [
     {
@@ -61,7 +75,7 @@ export default function TagakTuroHomepage() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Hi, Jayson!</Text>
+            <Text style={styles.greeting}>Hi, {userName}!</Text>
             <Text style={styles.subGreeting}>Ready to learn?</Text>
           </View>
           <View style={styles.headerIcons}>
