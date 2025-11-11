@@ -80,7 +80,7 @@ export default function TagakTuroHomepage() {
         <View style={styles.bookCard}>
           <Text style={styles.bookCardTitle}>Unlock your full potential!</Text>
           <Text style={styles.bookCardSubtitle}>Book a tutor today!</Text>
-          <TouchableOpacity style={styles.bookButton}>
+          <TouchableOpacity style={styles.bookButton} onPress={() => router.push('/book')}>
             <Text style={styles.bookButtonText}>Book now</Text>
           </TouchableOpacity>
         </View>
