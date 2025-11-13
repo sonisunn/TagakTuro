@@ -269,14 +269,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Poppins',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#2B74B4',
     marginBottom: 5,
   },
   subtitle: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     color: '#95CDF2',
   },
   infoCard: {
