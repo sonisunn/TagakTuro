@@ -65,12 +65,13 @@ export default function TagakTuroHomepage() {
             <Text style={styles.subGreeting}>Ready to learn?</Text>
           </View>
           <View style={styles.headerIcons}>
-            <View style={styles.notificationContainer}>
+            <TouchableOpacity style={styles.notificationContainer} onPress={() => router.push('/notification')}>
+              <Ionicons name="notifications" size={32} color="#95CDF2" />
               <View style={styles.notificationBadge}>
                 <Text style={styles.badgeText}>2</Text>
               </View>
-              <Ionicons name="notifications" size={32} color="#95CDF2" />
-            </View>
+            </TouchableOpacity>
+                
             <View style={styles.profilePicture}>
               <Ionicons name="person-circle" size={48} color="#2B74B4" />
             </View>
@@ -166,8 +167,9 @@ const styles = StyleSheet.create({
   },
   subGreeting: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 12,
     color: '#95CDF2',
+    fontWeight: '600',
   },
   headerIcons: {
     flexDirection: 'row',
