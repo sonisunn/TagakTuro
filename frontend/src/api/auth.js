@@ -1,27 +1,54 @@
+// src/api/auth.js
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
 
+/**
+ * Sign up a new user
+ */
 export async function signup(user) {
-  const url = `${API_BASE_URL}/auth/register`;
-  const res = await axios.post(url, user);
-  return res.data;
-}
-
-export async function login(email, password) {
-  const url = `${API_BASE_URL}/auth/login`;
-  const res = await axios.post(url, { email, password });
-  // expected response: { token: '...', user: { ... } }
-  const data = res.data;
-  if (data?.token) {
-    await AsyncStorage.setItem('authToken', data.token);
-    // set default header for axios
-    axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, user);
+    return res.data;
+  } catch (error) {
+    console.error('Error in signup:', error.response || error.message);
+    throw error;
   }
-  return data;
 }
 
+/**
+ * Log in a user
+ * Stores token in AsyncStorage and sets axios default Authorization header
+ */
+export async function login(email, password) {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+    const data = res.data;
+
+    if (data?.token) {
+      await AsyncStorage.setItem('authToken', data.token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in login:', error.response || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Load the JWT token from AsyncStorage and set axios Authorization header
+ */
 export async function loadTokenToHeader() {
-  const token = await AsyncStorage.getItem('authToken');
-  if (token) axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  } catch (error) {
+    console.error('Error loading token:', error.message);
+  }
 }

@@ -11,6 +11,7 @@ import {
   ScrollView,
   Modal,
 } from 'react-native';
+import axios from 'axios';
 import { BlurView } from 'expo-blur';
 
 export default function TagakTuroSignUp() {
@@ -38,22 +39,23 @@ export default function TagakTuroSignUp() {
     }
 
     setError(false);
-    // call backend signup
-    const user = { name, studentId, courseProgram, email, phoneNumber, password };
+    const API_BASE_URL = 'http://192.168.1.8:8080'; // Your backend base URL
+
+    const userData = { name, studentId, courseProgram, email, phoneNumber, password };
+    const publicAxios = axios.create(); // Create a new axios instance without default headers
     setSubmitting(true);
-    import('../src/api/auth').then(({ signup }) => {
-      signup(user)
-        .then(() => {
-          setSubmitting(false);
-          alert('Registration successful! You can now log in.');
-          router.push('/');
-        })
-        .catch((err) => {
-          setSubmitting(false);
-          console.warn('Signup error', err?.response?.data || err.message || err);
-          alert('Registration failed: ' + (err?.response?.data || err.message));
-        });
-    });
+
+    publicAxios.post(`${API_BASE_URL}/api/auth/signup`, userData)
+      .then(() => {
+        setSubmitting(false);
+        alert('Registration successful! You can now log in.');
+        router.push('/');
+      })
+      .catch((err) => {
+        setSubmitting(false);
+        console.warn('Signup error', err?.response?.data || err.message || err);
+        alert('Registration failed: ' + (err?.response?.data?.error || err.message));
+      });
   };
 
   const [submitting, setSubmitting] = React.useState(false);

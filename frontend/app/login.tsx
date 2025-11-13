@@ -29,6 +29,9 @@ export default function TagakTuroLogin() {
           if (loginResponse?.user) {
             await AsyncStorage.setItem('userData', JSON.stringify(loginResponse.user));
           }
+          if (loginResponse?.studentId) {
+            await AsyncStorage.setItem('studentId', loginResponse.studentId.toString());
+          }
           // basic success flow - navigate to homepage
           alert('Login successful!');
           router.push('/homepage');

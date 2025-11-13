@@ -21,6 +21,11 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role")
+    private java.util.Set<String> roles;
+
     // getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -42,4 +47,7 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public java.util.Set<String> getRoles() { return roles; }
+    public void setRoles(java.util.Set<String> roles) { this.roles = roles; }
 }

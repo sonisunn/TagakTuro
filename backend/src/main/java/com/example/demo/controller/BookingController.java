@@ -20,143 +20,87 @@ public class BookingController {
     @Autowired
     private BookingService bookingService;
 
-    // Get all bookings
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
-        try {
-            List<Booking> bookings = bookingService.getAllBookings();
-            return ResponseEntity.ok(bookings);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(bookingService.getAllBookings());
     }
 
-    // Get booking by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getBookingById(@PathVariable Long id) {
         try {
-            Booking booking = bookingService.getBookingById(id);
-            return ResponseEntity.ok(booking);
+            return ResponseEntity.ok(bookingService.getBookingById(id));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while retrieving the booking"));
         }
     }
 
-    // Get all bookings for a specific student
     @GetMapping("/student/{studentId}")
-    public ResponseEntity<?> getBookingsByStudentId(@PathVariable Long studentId) {
-        try {
-            List<Booking> bookings = bookingService.getBookingsByStudentId(studentId);
-            return ResponseEntity.ok(bookings);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while retrieving the bookings"));
-        }
+    public ResponseEntity<List<Booking>> getBookingsByStudentId(@PathVariable Long studentId) {
+        return ResponseEntity.ok(bookingService.getBookingsByStudentId(studentId));
     }
 
-    // Get bookings by status
     @GetMapping("/status/{status}")
     public ResponseEntity<List<Booking>> getBookingsByStatus(@PathVariable String status) {
         try {
             Booking.BookingStatus bookingStatus = Booking.BookingStatus.valueOf(status.toUpperCase());
-            List<Booking> bookings = bookingService.getBookingsByStatus(bookingStatus);
-            return ResponseEntity.ok(bookings);
+            return ResponseEntity.ok(bookingService.getBookingsByStatus(bookingStatus));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get bookings within a date range
     @GetMapping("/date-range")
     public ResponseEntity<List<Booking>> getBookingsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
-        try {
-            List<Booking> bookings = bookingService.getBookingsByDateRange(start, end);
-            return ResponseEntity.ok(bookings);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(bookingService.getBookingsByDateRange(start, end));
     }
 
-    // Create a new booking
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
         try {
-            Booking createdBooking = bookingService.createBooking(booking);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdBooking);
+            Booking created = bookingService.createBooking(booking);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while creating the booking"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Update an existing booking
     @PutMapping("/{id}")
     public ResponseEntity<?> updateBooking(@PathVariable Long id, @RequestBody Booking booking) {
         try {
-            Booking updatedBooking = bookingService.updateBooking(id, booking);
-            return ResponseEntity.ok(updatedBooking);
+            Booking updated = bookingService.updateBooking(id, booking);
+            return ResponseEntity.ok(updated);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while updating the booking"));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Update booking status
     @PatchMapping("/{id}/status")
-    public ResponseEntity<?> updateBookingStatus(
-            @PathVariable Long id,
-            @RequestBody Map<String, String> request) {
+    public ResponseEntity<?> updateBookingStatus(@PathVariable Long id, @RequestBody Map<String, String> request) {
+        String statusStr = request.get("status");
+        if (statusStr == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Status is required"));
+
         try {
-            String statusStr = request.get("status");
-            if (statusStr == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Status is required"));
-            }
             Booking.BookingStatus status = Booking.BookingStatus.valueOf(statusStr.toUpperCase());
-            Booking updatedBooking = bookingService.updateBookingStatus(id, status);
-            return ResponseEntity.ok(updatedBooking);
+            return ResponseEntity.ok(bookingService.updateBookingStatus(id, status));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "Invalid status: " + request.get("status")));
+                    .body(Map.of("error", "Invalid status: " + statusStr));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while updating the booking status"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Delete a booking
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBooking(@PathVariable Long id) {
         try {
             bookingService.deleteBooking(id);
             return ResponseEntity.ok(Map.of("message", "Booking deleted successfully"));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred while deleting the booking"));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 }
-

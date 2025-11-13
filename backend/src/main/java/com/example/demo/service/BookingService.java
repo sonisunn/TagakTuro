@@ -27,7 +27,7 @@ public class BookingService {
     // Get booking by ID
     public Booking getBookingById(Long id) {
         if (id == null) {
-            throw new RuntimeException("Booking ID cannot be null");
+            throw new IllegalArgumentException("Booking ID cannot be null");
         }
         return bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found with id: " + id));
@@ -36,7 +36,7 @@ public class BookingService {
     // Get all bookings for a specific student
     public List<Booking> getBookingsByStudentId(Long studentId) {
         if (studentId == null) {
-            throw new RuntimeException("Student ID cannot be null");
+            throw new IllegalArgumentException("Student ID cannot be null");
         }
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId));
@@ -57,21 +57,25 @@ public class BookingService {
     public Booking createBooking(Booking booking) {
         // Validate that student exists
         if (booking == null) {
-            throw new RuntimeException("Booking cannot be null");
+            throw new IllegalArgumentException("Booking cannot be null");
         }
         if (booking.getStudent() == null || booking.getStudent().getId() == null) {
-            throw new RuntimeException("Student is required for booking");
+            throw new IllegalArgumentException("Student is required for booking");
         }
 
         Long studentId = booking.getStudent().getId();
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId));
+                .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + studentId));
 
         booking.setStudent(student);
 
         // Validate booking date is in the future
         if (booking.getBookingDateTime() != null && booking.getBookingDateTime().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Booking date cannot be in the past");
+            throw new IllegalArgumentException("Booking date cannot be in the past");
+        }
+        
+        if (booking.getModality() == null || booking.getModality().isEmpty()) {
+            throw new IllegalArgumentException("Modality is required for booking");
         }
 
         return bookingRepository.save(booking);
@@ -88,7 +92,7 @@ public class BookingService {
         if (bookingDetails.getBookingDateTime() != null) {
             // Validate booking date is in the future
             if (bookingDetails.getBookingDateTime().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Booking date cannot be in the past");
+                throw new IllegalArgumentException("Booking date cannot be in the past");
             }
             booking.setBookingDateTime(bookingDetails.getBookingDateTime());
         }
@@ -104,6 +108,17 @@ public class BookingService {
         if (bookingDetails.getDurationMinutes() != null) {
             booking.setDurationMinutes(bookingDetails.getDurationMinutes());
         }
+        if (bookingDetails.getModality() != null) {
+            booking.setModality(bookingDetails.getModality());
+        }
+        // Update student if provided and different
+        if (bookingDetails.getStudent() != null && bookingDetails.getStudent().getId() != null &&
+            !bookingDetails.getStudent().getId().equals(booking.getStudent().getId())) {
+            Long newStudentId = bookingDetails.getStudent().getId();
+            Student newStudent = studentRepository.findById(newStudentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + newStudentId));
+            booking.setStudent(newStudent);
+        }
 
         return bookingRepository.save(booking);
     }
@@ -111,10 +126,10 @@ public class BookingService {
     // Update booking status
     public Booking updateBookingStatus(Long id, Booking.BookingStatus status) {
         if (id == null) {
-            throw new RuntimeException("Booking ID cannot be null");
+            throw new IllegalArgumentException("Booking ID cannot be null");
         }
         if (status == null) {
-            throw new RuntimeException("Booking status cannot be null");
+            throw new IllegalArgumentException("Booking status cannot be null");
         }
         Booking booking = getBookingById(id);
         booking.setStatus(status);
@@ -124,10 +139,9 @@ public class BookingService {
     // Delete a booking
     public void deleteBooking(Long id) {
         if (id == null) {
-            throw new RuntimeException("Booking ID cannot be null");
+            throw new IllegalArgumentException("Booking ID cannot be null");
         }
         Booking booking = getBookingById(id);
         bookingRepository.delete(booking);
     }
 }
-

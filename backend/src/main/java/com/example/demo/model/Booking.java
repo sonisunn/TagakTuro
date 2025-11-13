@@ -29,6 +29,7 @@ public class Booking {
     private String tutorName;
     private String notes;
     private Integer durationMinutes; // Duration in minutes
+    private String modality;
 
     // Enum for booking status
     public enum BookingStatus {
@@ -43,7 +44,7 @@ public class Booking {
         this.status = BookingStatus.PENDING;
     }
 
-    public Booking(Student student, String subject, LocalDateTime bookingDateTime, String tutorName, String notes, Integer durationMinutes) {
+    public Booking(Student student, String subject, LocalDateTime bookingDateTime, String tutorName, String notes, Integer durationMinutes, String modality) {
         this.student = student;
         this.subject = subject;
         this.bookingDateTime = bookingDateTime;
@@ -51,6 +52,7 @@ public class Booking {
         this.notes = notes;
         this.durationMinutes = durationMinutes;
         this.status = BookingStatus.PENDING;
+        this.modality = modality;
     }
 
     // Getters and Setters
@@ -116,6 +118,14 @@ public class Booking {
 
     public void setDurationMinutes(Integer durationMinutes) {
         this.durationMinutes = durationMinutes;
+    }
+
+    public String getModality() {
+        return modality;
+    }
+
+    public void setModality(String modality) {
+        this.modality = modality;
     }
 }
 
