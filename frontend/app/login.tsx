@@ -11,12 +11,14 @@ import {
   ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TagakTuroLogin() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = () => {
     setError(false);
@@ -80,15 +82,33 @@ export default function TagakTuroLogin() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="ILOVEYOU123"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholderTextColor="#95CDF2"
-            />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  error && !password && styles.inputError
+                ]}
+                placeholder="ILOVEYOU123"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#95CDF2"
+              />
+
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#2B74B4"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+
 
           {error && (
             <Text style={styles.errorText}>
@@ -234,5 +254,19 @@ const styles = StyleSheet.create({
     color: '#2B74B4',
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#2B74B4",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: "#2B74B4",
   },
 });
