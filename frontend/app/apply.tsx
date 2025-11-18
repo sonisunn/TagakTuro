@@ -14,6 +14,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { applyAsTutor } from '../src/api/tutor';
+import { AxiosError } from 'axios';
 
 export default function ApplyTutorPage() {
   const router = useRouter();
@@ -29,12 +31,12 @@ export default function ApplyTutorPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   // Step 2 - Documents
-  const [timeAvailableStart, setTimeAvailableStart] = useState('');
-  const [timeAvailableEnd, setTimeAvailableEnd] = useState('');
+  const [timeAvailableStart, setTimeAvailableStart] = useState<Date | null>(null);
+  const [timeAvailableEnd, setTimeAvailableEnd] = useState<Date | null>(null);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
-  const [reportOfGrades, setReportOfGrades] = useState(null);
-  const [certificates, setCertificates] = useState(null);
+  const [reportOfGrades, setReportOfGrades] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
+  const [certificates, setCertificates] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [experience, setExperience] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   
@@ -64,32 +66,65 @@ export default function ApplyTutorPage() {
     setStep(2);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!timeAvailableStart || !timeAvailableEnd || !reportOfGrades || !experience) {
       setError(true);
       return;
     }
-    
+
     if (!agreedToTerms) {
       alert('Please agree to the User Agreement and Privacy Policy');
       return;
     }
 
     setError(false);
-    alert('Application submitted successfully!');
-    router.push('/');
+
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('studentId', studentId);
+    formData.append('courseProgram', courseProgram);
+    formData.append('email', email);
+    formData.append('phoneNumber', phoneNumber);
+    formData.append('password', password);
+    formData.append('experience', experience);
+    formData.append('timeAvailableStart', timeAvailableStart.toTimeString().split(' ')[0]); // HH:mm:ss
+    formData.append('timeAvailableEnd', timeAvailableEnd.toTimeString().split(' ')[0]); // HH:mm:ss
+
+    if (reportOfGrades) {
+      formData.append('reportOfGrades', {
+        uri: reportOfGrades.uri,
+        name: reportOfGrades.name,
+        type: reportOfGrades.mimeType || 'application/octet-stream',
+      } as any);
+    }
+    if (certificates) {
+      formData.append('certificates', {
+        uri: certificates.uri,
+        name: certificates.name,
+        type: certificates.mimeType || 'application/octet-stream',
+      } as any);
+    }
+
+    try {
+      await applyAsTutor(formData);
+      alert('Application submitted successfully! You will be notified upon approval.');
+      router.push('/tutor-login');
+    } catch (error) {
+      const err = error as AxiosError;
+      const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
+      console.error('Error submitting application:', errorMessage);
+      alert('Application failed: ' + errorMessage);
+    }
   };
 
-  const pickDocument = async (setter) => {
+  const pickDocument = async (setter: React.Dispatch<React.SetStateAction<DocumentPicker.DocumentPickerAsset | null>>) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*',
-      });
-      if (result.type === 'success') {
-        setter(result);
+      const result = await DocumentPicker.getDocumentAsync({});
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setter(result.assets[0]);
       }
     } catch (err) {
-      console.log('Error picking document:', err);
+      console.warn('Error picking document:', err);
     }
   };
 
@@ -237,7 +272,7 @@ export default function ApplyTutorPage() {
                     onPress={() => setShowStartTimePicker(true)}
                   >
                     <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95CDF2', fontSize: 12 }}>
-                      {timeAvailableStart || '8:00 am'}
+                      {timeAvailableStart ? timeAvailableStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start Time'}
                     </Text>
                   </TouchableOpacity>
 
@@ -246,7 +281,7 @@ export default function ApplyTutorPage() {
                     onPress={() => setShowEndTimePicker(true)}
                   >
                     <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95CDF2', fontSize: 12 }}>
-                      {timeAvailableEnd || '10:00 am'}
+                      {timeAvailableEnd ? timeAvailableEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End Time'}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -258,19 +293,12 @@ export default function ApplyTutorPage() {
                       <View style={styles.modalOverlay}>
                         <View style={styles.modalContainer}>
                           <DateTimePicker
+                            value={timeAvailableStart || new Date()}
                             mode="time"
-                            value={new Date()}
-                            is24Hour={false}
                             display="spinner"
                             onChange={(event, selected) => {
-                              if (event.type === 'set' && selected) {
-                                const formatted = selected.toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                }).toLowerCase();
-                                setTimeAvailableStart(formatted);
-                              }
                               setShowStartTimePicker(false);
+                              if (event.type === 'set' && selected) setTimeAvailableStart(selected);
                             }}
                           />
                           <TouchableOpacity
@@ -284,19 +312,12 @@ export default function ApplyTutorPage() {
                     </Modal>
                   ) : (
                     <DateTimePicker
+                      value={timeAvailableStart || new Date()}
                       mode="time"
-                      value={new Date()}
-                      is24Hour={false}
                       display="default"
                       onChange={(event, selected) => {
                         setShowStartTimePicker(false);
-                        if (selected) {
-                          const formatted = selected.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }).toLowerCase();
-                          setTimeAvailableStart(formatted);
-                        }
+                        if (event.type === 'set' && selected) setTimeAvailableStart(selected);
                       }}
                     />
                   )
@@ -309,19 +330,12 @@ export default function ApplyTutorPage() {
                       <View style={styles.modalOverlay}>
                         <View style={styles.modalContainer}>
                           <DateTimePicker
+                            value={timeAvailableEnd || new Date()}
                             mode="time"
-                            value={new Date()}
-                            is24Hour={false}
                             display="spinner"
                             onChange={(event, selected) => {
-                              if (event.type === 'set' && selected) {
-                                const formatted = selected.toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                }).toLowerCase();
-                                setTimeAvailableEnd(formatted);
-                              }
                               setShowEndTimePicker(false);
+                              if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
                             }}
                           />
                           <TouchableOpacity
@@ -335,19 +349,12 @@ export default function ApplyTutorPage() {
                     </Modal>
                   ) : (
                     <DateTimePicker
+                      value={timeAvailableEnd || new Date()}
                       mode="time"
-                      value={new Date()}
-                      is24Hour={false}
                       display="default"
                       onChange={(event, selected) => {
                         setShowEndTimePicker(false);
-                        if (selected) {
-                          const formatted = selected.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          }).toLowerCase();
-                          setTimeAvailableEnd(formatted);
-                        }
+                        if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
                       }}
                     />
                   )
@@ -363,7 +370,7 @@ export default function ApplyTutorPage() {
                   onPress={() => pickDocument(setReportOfGrades)}
                 >
                   <Text style={styles.uploadButtonText}>
-                    {reportOfGrades ? reportOfGrades.name : '+ UPLOAD DOCUMENT'}
+                    {reportOfGrades ? reportOfGrades.name : 'UPLOAD DOCUMENT'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -375,7 +382,7 @@ export default function ApplyTutorPage() {
                   onPress={() => pickDocument(setCertificates)}
                 >
                   <Text style={styles.uploadButtonText}>
-                    {certificates ? certificates.name : '+ UPLOAD DOCUMENT'}
+                    {certificates ? certificates.name : 'UPLOAD DOCUMENT (OPTIONAL)'}
                   </Text>
                 </TouchableOpacity>
               </View>

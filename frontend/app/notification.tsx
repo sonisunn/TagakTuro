@@ -9,11 +9,17 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 
-export default function NotificationsPage() {
-  const router = useRouter();
-  const [readNotifications, setReadNotifications] = useState([]);
+interface Notification {
+  id: number;
+  title: string;
+  body: string;
+}
 
-  const todayNotifications = [
+export default function NotificationsPage() {
+
+  const [readNotifications, setReadNotifications] = useState<number[]>([]);
+
+  const todayNotifications: Notification[] = [
     {
       id: 1,
       title: 'We found a match!',
@@ -31,7 +37,7 @@ export default function NotificationsPage() {
     },
   ];
 
-  const pastNotifications = [
+  const pastNotifications: Notification[] = [
     {
       id: 4,
       title: 'We found a match!',
@@ -49,13 +55,13 @@ export default function NotificationsPage() {
     },
   ];
 
-  const markAsRead = (id) => {
+  const markAsRead = (id: number) => {
     if (!readNotifications.includes(id)) {
       setReadNotifications([...readNotifications, id]);
     }
   };
 
-  const renderNotification = (notification) => {
+  const renderNotification = (notification: Notification) => {
     const isRead = readNotifications.includes(notification.id);
     return (
       <TouchableOpacity 

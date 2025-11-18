@@ -1,4 +1,4 @@
-import { Stack, useRouter, Link } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   View,
@@ -213,7 +213,7 @@ export default function TagakTuroSignUp() {
                     • 6.2 Conduct and Professional Standards. Approved Tutors shall uphold the highest standards of professionalism, including punctuality, respectful communication, and preparedness for each tutoring session. Tutors are expected to foster a supportive and academically focused environment.{'\n'}
                     • 6.3 Session Delivery and Platform Use. Tutors shall conduct all tutoring sessions either within the approved physical premises of the University of Makati or through the integrated video conferencing system provided by the application. Sessions conducted outside these channels are strictly prohibited.{'\n'}
                     • 6.4 Tutors are required to indicate the location of the session and upload photos taken before, during, and after the meeting, including documentation of activities conducted with the assigned third-party monitor for face-to-face sessions.{'\n'}
-                    • 6.5 Materials and Preparation. Tutors are responsible for preparing appropriate instructional materials tailored to the students' academic needs. All materials must comply with intellectual property laws and institutional guidelines.{'\n'}
+                    • 6.5 Materials and Preparation. Tutors are responsible for preparing appropriate instructional materials tailored to the students&apos; academic needs. All materials must comply with intellectual property laws and institutional guidelines.{'\n'}
                     • 6.6 Evaluation and Certification. Tutors may be subject to periodic evaluations based on student feedback, attendance, and performance metrics. The administrators may award tutors who consistently meet or exceed expectations certificates of recognition.{'\n'}
 
                   </Text>

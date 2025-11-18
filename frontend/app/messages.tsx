@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  FlatList,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -16,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
 
 export default function MessagesPage() {
-  const router = useRouter();
+
   const [selectedChat, setSelectedChat] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState([

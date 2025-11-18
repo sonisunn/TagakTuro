@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
 
 export default function FeedbackPage() {
-  const router = useRouter();
+
 
   const feedbacks = [
     {
@@ -62,7 +62,7 @@ export default function FeedbackPage() {
               <View key={feedback.id}>
                 <View style={styles.feedbackItem}>
                   <Text style={styles.feedbackName}>{feedback.name}</Text>
-                  <Text style={styles.feedbackComment}>"{feedback.comment}"</Text>
+                  <Text style={styles.feedbackComment}>&quot;{feedback.comment}&quot;</Text>
                 </View>
                 {index < feedbacks.length - 1 && <View style={styles.divider} />}
               </View>

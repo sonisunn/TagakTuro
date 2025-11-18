@@ -52,3 +52,4 @@ export async function loadTokenToHeader() {
     console.error('Error loading token:', error.message);
   }
 }
+

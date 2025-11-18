@@ -53,6 +53,13 @@
 			<version>4.4.0</version>
 		</dependency>
 
+		<!-- Apache Commons FileUpload -->
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.5</version>
+		</dependency>
+
 		<!-- H2 in-memory DB for testing -->
 		<dependency>
 			<groupId>com.h2database</groupId>

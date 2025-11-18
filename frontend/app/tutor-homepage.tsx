@@ -6,78 +6,140 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Animated,
+  Dimensions,
 } from "react-native";
+
+const AnimatedView = Animated.createAnimatedComponent(View);
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import TutorBottomNav from "../components/TutorBottomNav";
-import { Animated, Dimensions } from "react-native";
 import { BlurView } from "expo-blur";
+import { getAllBookings, updateBookingStatus } from "../src/api/booking";
+import * as SplashScreen from "expo-splash-screen";
+import { isPast } from "date-fns";
+
+import {
+    useFonts,
+    Poppins_400Regular,
+    Poppins_600SemiBold,
+    Poppins_700Bold,
+  } from "@expo-google-fonts/poppins";
+
+interface Booking {
+  id: string;
+  tutorId: string;
+  tutorName: string;
+  studentName: string;
+  subject: string;
+  location: string;
+  date: string;
+  time: string;
+  status: "PENDING" | "CONFIRMED" | "COMPLETED" | "DECLINED" | "CANCELLED";
+}
 
 export default function TagakTuroHomepage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("upcoming");
   const [userName, setUserName] = useState("");
+  const [displayUserName, setDisplayUserName] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const [showStudents, setShowStudents] = useState(false);
+  const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
+  const [pastClasses, setPastClasses] = useState<Booking[]>([]);
+  const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const modalHeight = Dimensions.get("window").height * 0.5;
+
+  const fetchBookings = async (tutorId: string, tutorName: string) => {
+    if (!tutorId || !tutorName) return;
+    try {
+      const response = await getAllBookings();
+      const allBookings = response.data;
+
+      const filteredBookings = allBookings.filter(
+        (booking: Booking) => booking.tutorId === tutorId && booking.tutorName === tutorName
+      );
+
+      const upcoming: Booking[] = [];
+      const past: Booking[] = [];
+      const pending: Booking[] = [];
+
+      filteredBookings.forEach((booking: Booking) => {
+        const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
+        if (booking.status === "PENDING") {
+          pending.push(booking);
+        } else if (isPast(bookingDateTime)) {
+            past.push(booking);
+        } else {
+            upcoming.push(booking);
+        }
+      });
+
+      setUpcomingClasses(upcoming);
+      setPastClasses(past);
+      setPendingBookings(pending);
+      } catch (error) {
+          console.error("Failed to fetch bookings:", error);
+      }
+    };
+
+  const [fontsLoaded] = useFonts({
+    Poppins: Poppins_400Regular,
+    "Poppins-Bold": Poppins_700Bold,
+    "Poppins-SemiBold": Poppins_600SemiBold,
+  });
+
+  useEffect(() => {
+    async function prepare() {
+      await SplashScreen.preventAutoHideAsync();
+    }
+    prepare();
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       const userDataString = await AsyncStorage.getItem("userData");
       if (userDataString) {
         const userData = JSON.parse(userDataString);
-        setUserName(userData.name || "User");
+        const fullName = userData.name || "User";
+        const firstName = fullName.split(' ')[0];
+        setUserName(fullName); // Use full name for filtering
+        setDisplayUserName(firstName); // Use first name for display
+        setUserId(userData.id); // Assuming userData contains the tutor's ID
       }
     };
 
     fetchUserData();
   }, []);
 
-  const upcomingClasses = [
-    {
-      id: 1,
-      tutor: "Juan Dela Cruz",
-      subject: "Quantum Mechanics",
-      location: "Online Modality",
-      dateTime: "September 25, 2025 | 8:00 am",
-      status: "ON GOING",
-    },
-    {
-      id: 2,
-      tutor: "Jose Rizal",
-      subject: "Thermodynamics",
-      location: "UMak HPSB Library",
-      dateTime: "September 19, 2025 | 3:30 pm",
-      status: "UPCOMING",
-    },
-    {
-      id: 3,
-      tutor: "Hev Study",
-      subject: "Quantum Mechanics",
-      location: "UMak HPSB Library",
-      dateTime: "September 25, 2025 | 8:00 am",
-      status: "UPCOMING",
-    },
-  ];
+  useEffect(() => {
+    if (userId) {
+      fetchBookings(userId, userName);
+    }
+  }, [userId, userName]);
 
-  const pastClasses = [
-    {
-      id: 4,
-      tutor: "Maria Santos",
-      subject: "Calculus",
-      location: "Online Modality",
-      dateTime: "September 20, 2025 | 10:00 am",
-      status: "COMPLETED",
-    },
-  ];
+  if (!fontsLoaded) {
+    return null;
+  }
 
   const displayedClasses =
-    activeTab === "upcoming" ? upcomingClasses : pastClasses;
+    activeTab === "upcoming"
+      ? upcomingClasses
+      : activeTab === "past"
+      ? pastClasses
+      : pendingBookings;
 
-  const screenHeight = Dimensions.get("screen").height;
-  const modalHeight = screenHeight * 0.8;
-  const slideAnim = useRef(new Animated.Value(modalHeight)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-
-  const openStudentModal = () => {
+  const openStudentModal = (booking: Booking) => {
+    setSelectedBooking(booking);
     setShowStudents(true);
     Animated.parallel([
       Animated.spring(slideAnim, {
@@ -106,7 +168,34 @@ export default function TagakTuroHomepage() {
         duration: 250,
         useNativeDriver: true,
       }),
-    ]).start(() => setShowStudents(false));
+    ]).start(() => {
+      setShowStudents(false);
+      setSelectedBooking(null);
+    });
+  };
+
+  const handleAcceptBooking = async (bookingId: string) => {
+    try {
+      await updateBookingStatus(bookingId, "CONFIRMED"); // Change status to CONFIRMED
+      closeStudentModal();
+      if (userId) {
+        fetchBookings(userId, userName); // Re-fetch bookings to update the lists
+      }
+    } catch (error) {
+      console.error("Failed to accept booking:", error);
+    }
+  };
+
+  const handleDeclineBooking = async (bookingId: string) => {
+    try {
+      await updateBookingStatus(bookingId, "DECLINED");
+      closeStudentModal();
+      if (userId) {
+        fetchBookings(userId, userName); // Re-fetch bookings to update the lists
+      }
+    } catch (error) {
+      console.error("Failed to decline booking:", error);
+    }
   };
 
   return (
@@ -121,7 +210,7 @@ export default function TagakTuroHomepage() {
       >
             <View style={styles.header}>
             <View>
-                <Text style={styles.greeting}>Hi, {userName}!</Text>
+                <Text style={styles.greeting}>Hi, {displayUserName}!</Text>
                 <Text style={styles.subGreeting}>Ready to teach?</Text>
             </View>
 
@@ -142,12 +231,12 @@ export default function TagakTuroHomepage() {
             </View>
             </View>
 
-            <View style={styles.bookCard}>
+            <TouchableOpacity style={styles.bookCard} onPress={() => setActiveTab("pending")}>
             <Text style={styles.bookCardTitle}>Students are waiting!</Text>
             <Text style={styles.bookCardSubtitle}>
                 Click here to view the list of students you can teach
             </Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.classesHeader}>
             <Text style={styles.classesTitle}>Classes</Text>
@@ -171,6 +260,23 @@ export default function TagakTuroHomepage() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                style={[
+                    styles.tab,
+                    activeTab === "pending" && styles.activeTab,
+                ]}
+                onPress={() => setActiveTab("pending")}
+                >
+                <Text
+                    style={[
+                    styles.tabText,
+                    activeTab === "pending" && styles.activeTabText,
+                    ]}
+                >
+                    Pending
+                </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                 style={[styles.tab, activeTab === "past" && styles.activeTab]}
                 onPress={() => setActiveTab("past")}
                 >
@@ -186,31 +292,34 @@ export default function TagakTuroHomepage() {
             </View>
             </View>
 
-            {displayedClasses.map((classItem) => (
+            {displayedClasses.map((classItem: Booking) => (
             <View key={classItem.id} style={styles.classCard}>
                 <View style={styles.classInfo}>
-                <Text style={styles.tutorName}>{classItem.tutor}</Text>
+                <Text style={styles.tutorName}>{classItem.studentName}</Text>
                 <Text style={styles.subject}>{classItem.subject}</Text>
                 <Text style={styles.location}>{classItem.location}</Text>
-                <Text style={styles.dateTime}>{classItem.dateTime}</Text>
+                <Text style={styles.dateTime}>{`${classItem.date} | ${classItem.time}`}</Text>
 
-                <Text
+                {activeTab !== "pending" && (
+                    <Text
                     style={[
-                    styles.status,
-                    classItem.status === "ON GOING" && styles.statusOnGoing,
-                    classItem.status === "UPCOMING" && styles.statusUpcoming,
-                    classItem.status === "COMPLETED" && styles.statusCompleted,
+                        styles.status,
+                        classItem.status === "CONFIRMED" && styles.statusConfirmed,
+                        classItem.status === "COMPLETED" && styles.statusCompleted,
+                        classItem.status === "DECLINED" && styles.statusDeclined,
+                        classItem.status === "CANCELLED" && styles.statusCancelled,
                     ]}
-                >
-                    Status: {classItem.status}
-                </Text>
+                    >
+                    Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status}
+                  </Text>
+                )}
                 </View>
 
                 <TouchableOpacity
-                style={styles.viewButton}
-                onPress={openStudentModal}
+                  style={styles.viewButton}
+                  onPress={() => openStudentModal(classItem)}
                 >
-                <Text style={styles.viewButtonText}>View</Text>
+                  <Text style={styles.viewButtonText}>View</Text>
                 </TouchableOpacity>
             </View>
             ))}
@@ -218,21 +327,19 @@ export default function TagakTuroHomepage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {showStudents && (
+      {showStudents && selectedBooking && (
         <>
-          <Animated.View
+          <AnimatedView
             style={[
-              StyleSheet.absoluteFill,
+              styles.backdrop,
               {
                 opacity: backdropOpacity,
               },
             ]}
             pointerEvents="none"
-          >
-            <BlurView intensity={10} tint="light" style={StyleSheet.absoluteFill} />
-          </Animated.View>
+          />
 
-          <Animated.View
+          <AnimatedView
             style={[
               styles.studentModal,
               {
@@ -240,6 +347,7 @@ export default function TagakTuroHomepage() {
                 transform: [{ translateY: slideAnim }],
               },
             ]}
+            pointerEvents={showStudents ? "auto" : "none"}
           >
             <View style={styles.modalHeader}>
                 <TouchableOpacity onPress={() => closeStudentModal()}>
@@ -251,30 +359,28 @@ export default function TagakTuroHomepage() {
                 style={{ paddingHorizontal: 20 }}
                 showsVerticalScrollIndicator={false}
             >
-                {[1, 2, 3, 4].map((i) => (
-                <View key={i} style={styles.studentCard}>
-                    <Text style={styles.studentName}>Juan Dela Cruz</Text>
-                    <Text style={styles.studentSub}>Quantum Mechanics</Text>
-                    <Text style={styles.studentSub}>Online Modality</Text>
+                <View style={styles.studentCard}>
+                    <Text style={styles.studentName}>{selectedBooking.studentName}</Text>
+                    <Text style={styles.studentSub}>{selectedBooking.subject}</Text>
+                    <Text style={styles.studentSub}>{selectedBooking.location}</Text>
                     <Text style={styles.studentSub}>
-                    September 25, 2025 | 8:00 am
+                    {`${selectedBooking.date} | ${selectedBooking.time}`}
                     </Text>
 
                     <View style={styles.btnRow}>
-                    <TouchableOpacity style={styles.acceptBtn}>
+                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptBooking(selectedBooking.id)}>
                         <Text style={styles.acceptText}>Accept</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.declineBtn}>
+                    <TouchableOpacity style={styles.declineBtn} onPress={() => handleDeclineBooking(selectedBooking.id)}>
                         <Text style={styles.declineText}>Decline</Text>
                     </TouchableOpacity>
                     </View>
                 </View>
-                ))}
 
             <View style={{ height: 15 }} />
           </ScrollView>
-          </Animated.View>
+          </AnimatedView>
         </>
       )}
 
@@ -458,6 +564,15 @@ const styles = StyleSheet.create({
   statusCompleted: {
     color: "#0FE40F",
   },
+  statusDeclined: {
+    color: "#D10000",
+  },
+  statusConfirmed: {
+    color: "#2B74B4", // A suitable color for confirmed status
+  },
+  statusCancelled: {
+    color: "#D10000", // Same as declined, or a different shade of red
+  },
   viewButton: {
     backgroundColor: '#2B74B4',
     borderRadius: 10,
@@ -475,6 +590,15 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 15,
+  },
+
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
 
   studentModal: {

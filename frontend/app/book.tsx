@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -12,7 +12,7 @@ import { createBooking } from '../src/api/booking.js';
 import { AxiosError } from 'axios';
 
 export default function BookingPage() {
-  const router = useRouter();
+
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
   const [date, setDate] = useState(new Date());
@@ -133,10 +133,12 @@ export default function BookingPage() {
               setOpen={setOpenModality}
               setValue={setModality}
               style={styles.dropdown}
-              containerStyle={styles.dropdownContainer}
               placeholder="Select a modality"
-              placeholderStyle={{ color: '#95CDF2' }}
-              
+              placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12 }}
+              textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4' }}
+              dropDownContainerStyle={{
+                borderColor: '#2B74B4',
+              }}
             />
           </View>
 

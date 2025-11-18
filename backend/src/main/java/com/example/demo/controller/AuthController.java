@@ -6,6 +6,7 @@ import com.example.demo.service.AuthService;
 import com.example.demo.service.UserService;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.repository.StudentRepository; // Import StudentRepository
+import com.example.demo.repository.TutorRepository;
 
 // DTOs
 import com.example.demo.controller.LoginRequest;
@@ -13,6 +14,7 @@ import com.example.demo.controller.LoginResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.example.demo.model.Tutor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +31,9 @@ public class AuthController {
 
     @Autowired
     private StudentRepository studentRepository; // Inject StudentRepository
+
+    @Autowired
+    private TutorRepository tutorRepository;
 
     // signup endpoint
     @PostMapping("/signup")
@@ -48,10 +53,21 @@ public class AuthController {
         // generate token
         String token = jwtUtil.generateToken(user.getEmail());
 
-        // Find the student associated with the user
-        Student student = studentRepository.findByEmail(user.getEmail())
-                .orElseThrow(() -> new RuntimeException("Student not found for user: " + user.getEmail()));
+        Long studentId = null;
+        Long tutorId = null;
 
-        return new LoginResponse(token, user, student.getId());
+        if (user.getRoles() != null && user.getRoles().contains("STUDENT")) {
+            studentId = studentRepository.findByEmail(user.getEmail())
+                    .map(Student::getId)
+                    .orElse(null);
+        }
+
+        if (user.getRoles() != null && user.getRoles().contains("TUTOR")) {
+            tutorId = tutorRepository.findByEmail(user.getEmail())
+                    .map(Tutor::getId)
+                    .orElse(null);
+        }
+
+        return new LoginResponse(token, user, studentId, tutorId);
     }
 }

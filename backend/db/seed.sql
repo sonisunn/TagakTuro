@@ -15,4 +15,21 @@
 -- Example: create test user via API (curl):
 -- curl -X POST http://localhost:8080/api/auth/register -H "Content-Type: application/json" -d '{"name":"Test User","email":"test@example.com","password":"secret123"}'
 
+-- Example tutor user with a placeholder hashed password
+-- Replace '<BCRYPT_HASH>' with a real hash generated for your password
+INSERT INTO `users` (name, email, password, studentId, courseProgram, phoneNumber)
+VALUES ('Test Tutor', 'tutor@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'TUTOR001', 'N/A', '1234567890');
+
+-- Get the last inserted user ID
+SET @last_user_id = LAST_INSERT_ID();
+
+-- Assign the 'TUTOR' role to the new user
+INSERT INTO `user_roles` (user_id, role)
+VALUES (@last_user_id, 'TUTOR');
+
+-- Create a corresponding tutor profile
+INSERT INTO `tutors` (name, tutor_id, email, phone_number)
+VALUES ('Test Tutor', 'TUTOR001', 'tutor@example.com', '1234567890');
+
+
 -- End of seed template

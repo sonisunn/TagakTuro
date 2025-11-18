@@ -1,4 +1,4 @@
-import { Stack, useRouter, Link } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   View,
@@ -36,7 +36,11 @@ export default function TagakTuroLogin() {
           }
           // basic success flow - navigate to homepage
           alert('Login successful!');
-          router.push('/homepage');
+          if (loginResponse?.user?.roles?.includes('ROLE_TUTOR')) {
+            router.push('/tutor-homepage');
+          } else {
+            router.push('/homepage');
+          }
         })
         .catch((err) => {
           setSubmitting(false);
@@ -125,7 +129,7 @@ export default function TagakTuroLogin() {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don't have an account yet?{' '}
+              Don&apos;t have an account yet?{' '}
               <Text style={styles.link} onPress={() => router.push('/signup')}>
                 Sign up now
               </Text>

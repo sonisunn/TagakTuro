@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 
-export default function BottomNav() {
+export default function TutorBottomNav() {
   const router = useRouter();
   const pathname = usePathname();
 
