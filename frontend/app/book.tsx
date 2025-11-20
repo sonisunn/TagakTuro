@@ -86,7 +86,13 @@ export default function BookingPage() {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
       console.error('Error creating booking:', errorMessage);
-      Alert.alert('Error', 'Failed to create booking. Please try again.');
+      
+      // Check if it's a conflict error
+      if (errorMessage && errorMessage.includes('overlaps with an existing booking')) {
+        Alert.alert('Booking Conflict', errorMessage);
+      } else {
+        Alert.alert('Error', errorMessage || 'Failed to create booking. Please try again.');
+      }
     }
   };
 
