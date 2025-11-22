@@ -49,6 +49,21 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
+    
+    @GetMapping("/pending")
+    public ResponseEntity<List<Booking>> getPendingBookings() {
+        return ResponseEntity.ok(bookingService.getPendingBookings());
+    }
+    
+    @GetMapping("/tutor/{tutorName}")
+    public ResponseEntity<List<Booking>> getBookingsByTutorName(@PathVariable String tutorName) {
+        try {
+            return ResponseEntity.ok(bookingService.getBookingsByTutorName(tutorName));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(java.util.Collections.emptyList());
+        }
+    }
 
     @GetMapping("/date-range")
     public ResponseEntity<List<Booking>> getBookingsByDateRange(

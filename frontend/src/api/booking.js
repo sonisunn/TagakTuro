@@ -63,6 +63,34 @@ export async function getBookingsByStudentId(studentId) {
 }
 
 /**
+ * Get all pending bookings
+ */
+export async function getPendingBookings() {
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get('/booking/pending');
+    return response.data;
+  } catch (error) {
+    console.error('Error in getPendingBookings:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get bookings by tutor name
+ */
+export async function getBookingsByTutorName(tutorName) {
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get(`/booking/tutor/${encodeURIComponent(tutorName)}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error in getBookingsByTutorName:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
+}
+
+/**
  * Update booking by ID
  */
 export async function updateBooking(id, bookingData) {

@@ -24,5 +24,11 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     // Find bookings by student and status
     List<Booking> findByStudentAndStatus(Student student, Booking.BookingStatus status);
+    
+    // Find bookings by tutor name
+    List<Booking> findByTutorName(String tutorName);
+    
+    // Find bookings by tutor name and status
+    List<Booking> findByTutorNameAndStatus(String tutorName, Booking.BookingStatus status);
 }
 

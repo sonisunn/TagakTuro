@@ -15,7 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import TutorBottomNav from "../components/TutorBottomNav";
 import { BlurView } from "expo-blur";
-import { getAllBookings, updateBookingStatus } from "../src/api/booking";
+import { getAllBookings, updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
 import * as SplashScreen from "expo-splash-screen";
 import { isPast } from "date-fns";
 
@@ -49,25 +49,73 @@ export default function TagakTuroHomepage() {
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
 
+  // Transform backend booking format to frontend format
+  const transformBooking = (booking: any): Booking | null => {
+    try {
+      const bookingDateTime = booking.bookingDateTime 
+        ? new Date(booking.bookingDateTime) 
+        : null;
+      
+      if (!bookingDateTime || isNaN(bookingDateTime.getTime())) {
+        return null;
+      }
+
+      const dateStr = bookingDateTime.toISOString().split('T')[0];
+      const timeStr = bookingDateTime.toTimeString().split(' ')[0].substring(0, 5);
+
+      return {
+        id: String(booking.id),
+        tutorId: booking.tutorId || '',
+        tutorName: booking.tutorName || '',
+        studentName: booking.student?.name || 'Unknown Student',
+        subject: booking.subject || '',
+        location: booking.modality || '',
+        date: dateStr,
+        time: timeStr,
+        status: booking.status || 'PENDING',
+      };
+    } catch (error) {
+      console.error('Error transforming booking:', error);
+      return null;
+    }
+  };
+
   const fetchBookings = async (tutorId: string, tutorName: string) => {
     if (!tutorId || !tutorName) return;
     try {
-      const response = await getAllBookings();
-      const allBookings = response.data;
+      // Fetch all pending bookings (for tutors to see all available bookings)
+      const pendingResponse = await getPendingBookings();
+      const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
+      
+      // Fetch bookings assigned to this tutor
+      const tutorBookingsResponse = await getBookingsByTutorName(tutorName);
+      const tutorBookings = Array.isArray(tutorBookingsResponse) ? tutorBookingsResponse : [];
 
-      const filteredBookings = allBookings.filter(
-        (booking: Booking) => booking.tutorId === tutorId && booking.tutorName === tutorName
-      );
+      // Transform all bookings
+      const transformedPending = allPendingBookings
+        .map(transformBooking)
+        .filter((b): b is Booking => b !== null);
+      
+      const transformedTutor = tutorBookings
+        .map(transformBooking)
+        .filter((b): b is Booking => b !== null);
+
+      // Combine and deduplicate
+      const allBookingsMap = new Map<string, Booking>();
+      transformedPending.forEach(b => allBookingsMap.set(b.id, b));
+      transformedTutor.forEach(b => allBookingsMap.set(b.id, b));
+      const allBookings = Array.from(allBookingsMap.values());
 
       const upcoming: Booking[] = [];
       const past: Booking[] = [];
       const pending: Booking[] = [];
 
-      filteredBookings.forEach((booking: Booking) => {
+      allBookings.forEach((booking: Booking) => {
         const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
         if (booking.status === "PENDING") {
           pending.push(booking);
@@ -176,26 +224,52 @@ export default function TagakTuroHomepage() {
 
   const handleAcceptBooking = async (bookingId: string) => {
     try {
-      await updateBookingStatus(bookingId, "CONFIRMED"); // Change status to CONFIRMED
+      // Update booking status and assign tutor
+      await updateBooking(bookingId, {
+        status: "CONFIRMED",
+        tutorName: userName,
+      });
       closeStudentModal();
-      if (userId) {
+      if (userId && userName) {
         fetchBookings(userId, userName); // Re-fetch bookings to update the lists
       }
     } catch (error) {
       console.error("Failed to accept booking:", error);
+      // Fallback: try just updating status
+      try {
+        await updateBookingStatus(bookingId, "CONFIRMED");
+        closeStudentModal();
+        if (userId && userName) {
+          fetchBookings(userId, userName);
+        }
+      } catch (fallbackError) {
+        console.error("Failed to update booking status:", fallbackError);
+      }
     }
   };
 
   const handleDeclineBooking = async (bookingId: string) => {
     try {
-      await updateBookingStatus(bookingId, "DECLINED");
+      await updateBookingStatus(bookingId, "CANCELLED");
       closeStudentModal();
-      if (userId) {
+      if (userId && userName) {
         fetchBookings(userId, userName); // Re-fetch bookings to update the lists
       }
     } catch (error) {
       console.error("Failed to decline booking:", error);
     }
+  };
+
+  const toggleBookingExpansion = (bookingId: string) => {
+    setExpandedBookings(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(bookingId)) {
+        newSet.delete(bookingId);
+      } else {
+        newSet.add(bookingId);
+      }
+      return newSet;
+    });
   };
 
   return (
@@ -292,37 +366,85 @@ export default function TagakTuroHomepage() {
             </View>
             </View>
 
-            {displayedClasses.map((classItem: Booking) => (
-            <View key={classItem.id} style={styles.classCard}>
-                <View style={styles.classInfo}>
-                <Text style={styles.tutorName}>{classItem.studentName}</Text>
-                <Text style={styles.subject}>{classItem.subject}</Text>
-                <Text style={styles.location}>{classItem.location}</Text>
-                <Text style={styles.dateTime}>{`${classItem.date} | ${classItem.time}`}</Text>
+            {displayedClasses.map((classItem: Booking) => {
+              const isExpanded = expandedBookings.has(classItem.id);
+              return (
+                <View key={classItem.id} style={styles.classCard}>
+                  <View style={styles.classInfo}>
+                    <View style={styles.classHeaderRow}>
+                      <View style={styles.classHeaderLeft}>
+                        <Text style={styles.tutorName}>{classItem.studentName}</Text>
+                        <Text style={styles.subject}>{classItem.subject}</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => toggleBookingExpansion(classItem.id)}
+                        style={styles.expandButton}
+                      >
+                        <Ionicons
+                          name={isExpanded ? "chevron-up" : "chevron-down"}
+                          size={24}
+                          color="#2B74B4"
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    
+                    {isExpanded && (
+                      <View style={styles.expandedContent}>
+                        <Text style={styles.location}>{classItem.location}</Text>
+                        <Text style={styles.dateTime}>{`${classItem.date} | ${classItem.time}`}</Text>
 
-                {activeTab !== "pending" && (
-                    <Text
-                    style={[
-                        styles.status,
-                        classItem.status === "CONFIRMED" && styles.statusConfirmed,
-                        classItem.status === "COMPLETED" && styles.statusCompleted,
-                        classItem.status === "DECLINED" && styles.statusDeclined,
-                        classItem.status === "CANCELLED" && styles.statusCancelled,
-                    ]}
-                    >
-                    Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status}
-                  </Text>
-                )}
+                        {activeTab !== "pending" && (
+                          <Text
+                            style={[
+                              styles.status,
+                              classItem.status === "CONFIRMED" && styles.statusConfirmed,
+                              classItem.status === "COMPLETED" && styles.statusCompleted,
+                              classItem.status === "DECLINED" && styles.statusDeclined,
+                              classItem.status === "CANCELLED" && styles.statusCancelled,
+                            ]}
+                          >
+                            Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status}
+                          </Text>
+                        )}
+
+                        {activeTab === "pending" && (
+                          <View style={styles.actionButtons}>
+                            <TouchableOpacity
+                              style={styles.acceptButton}
+                              onPress={() => {
+                                setSelectedBooking(classItem);
+                                handleAcceptBooking(classItem.id);
+                              }}
+                            >
+                              <Text style={styles.acceptButtonText}>Accept</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                              style={styles.declineButton}
+                              onPress={() => {
+                                setSelectedBooking(classItem);
+                                handleDeclineBooking(classItem.id);
+                              }}
+                            >
+                              <Text style={styles.declineButtonText}>Decline</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
+                        {activeTab !== "pending" && (
+                          <TouchableOpacity
+                            style={styles.viewButton}
+                            onPress={() => openStudentModal(classItem)}
+                          >
+                            <Text style={styles.viewButtonText}>View Details</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+                  </View>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.viewButton}
-                  onPress={() => openStudentModal(classItem)}
-                >
-                  <Text style={styles.viewButtonText}>View</Text>
-                </TouchableOpacity>
-            </View>
-            ))}
+              );
+            })}
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -516,17 +638,65 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     marginHorizontal: 20,
     marginBottom: 10,
-    height: 115,
+    minHeight: 115,
     padding: 15,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: "#2B74B4",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   classInfo: {
     flex: 1,
+  },
+  classHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  classHeaderLeft: {
+    flex: 1,
+  },
+  expandButton: {
+    padding: 5,
+  },
+  expandedContent: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 15,
+    gap: 10,
+  },
+  acceptButton: {
+    backgroundColor: "#0FE40F",
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  acceptButtonText: {
+    color: "#fff",
+    fontFamily: "Poppins",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  declineButton: {
+    borderWidth: 2,
+    borderColor: "#D10000",
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  declineButtonText: {
+    color: "#D10000",
+    fontFamily: "Poppins",
+    fontWeight: "700",
+    fontSize: 14,
   },
   tutorName: {
     fontFamily: "Poppins",
