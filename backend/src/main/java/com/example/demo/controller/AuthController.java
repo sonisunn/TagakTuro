@@ -56,18 +56,18 @@ public class AuthController {
         Long studentId = null;
         Long tutorId = null;
 
-        if (user.getRoles() != null && user.getRoles().contains("STUDENT")) {
+        if (user.getRoles() != null && user.getRoles().contains("ROLE_STUDENT")) {
             studentId = studentRepository.findByEmail(user.getEmail())
                     .map(Student::getId)
                     .orElse(null);
         }
 
-        if (user.getRoles() != null && user.getRoles().contains("TUTOR")) {
+        if (user.getRoles() != null && user.getRoles().contains("ROLE_TUTOR")) {
             tutorId = tutorRepository.findByEmail(user.getEmail())
                     .map(Tutor::getId)
                     .orElse(null);
         }
 
-        return new LoginResponse(token, user, studentId, tutorId);
+        return new LoginResponse(token, user, studentId, tutorId, user.getRoles());
     }
 }

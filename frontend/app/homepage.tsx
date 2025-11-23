@@ -6,67 +6,141 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
+import { getBookingsByStudentId } from '../src/api/booking';
 
 export default function TagakTuroHomepage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('upcoming');
   const [userName, setUserName] = useState('');
+  const [upcomingClasses, setUpcomingClasses] = useState([]);
+  const [pastClasses, setPastClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
       const userDataString = await AsyncStorage.getItem('userData');
       if (userDataString) {
         const userData = JSON.parse(userDataString);
-        setUserName(userData.name || 'User'); // Fallback to 'User'
+        const fullName = userData.name || 'User';
+        const firstName = fullName.split(' ')[0]; // Get only the first name
+        setUserName(firstName);
       }
     };
 
     fetchUserData();
   }, []);
 
-  const upcomingClasses = [
-    {
-      id: 1,
-      tutor: 'Juan Dela Cruz',
-      subject: 'Quantum Mechanics',
-      location: 'Online Modality',
-      dateTime: 'September 25, 2025 | 8:00 am',
-      status: 'ON GOING',
-    },
-    {
-      id: 2,
-      tutor: 'Jose Rizal',
-      subject: 'Quantum Mechanics',
-      location: 'UMak HPSB Library',
-      dateTime: 'September 25, 2025 | 8:00 am',
-      status: 'UPCOMING',
-    },
-    {
-      id: 3,
-      tutor: 'Hey Study',
-      subject: 'Quantum Mechanics',
-      location: 'UMak HPSB Library',
-      dateTime: 'September 25, 2025 | 8:00 am',
-      status: 'UPCOMING',
-    },
-  ];
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const studentId = await AsyncStorage.getItem('studentId');
+        if (studentId) {
+          const bookings = await getBookingsByStudentId(studentId);
+          const upcoming = [];
+          const past = [];
 
-  const pastClasses = [
-    {
-      id: 4,
-      tutor: 'Maria Santos',
-      subject: 'Calculus',
-      location: 'Online Modality',
-      dateTime: 'September 20, 2025 | 10:00 am',
-      status: 'COMPLETED',
-    },
-  ];
+          bookings.forEach(booking => {
+            // Transform booking data for display
+            const bookingItem = {
+              id: booking.id,
+              tutor: booking.tutorName || 'Unassigned',
+              subject: booking.subject || 'N/A',
+              location: booking.modality || 'N/A',
+              dateTime: formatBookingDateTime(booking.bookingDateTime),
+              status: booking.status || 'PENDING',
+            };
+
+            // Filter by status
+            if (booking.status === 'CONFIRMED') {
+              upcoming.push(bookingItem);
+            } else if (booking.status === 'COMPLETED') {
+              past.push(bookingItem);
+            }
+          });
+
+          setUpcomingClasses(upcoming);
+          setPastClasses(past);
+        }
+      } catch (error) {
+        console.error('Error fetching bookings:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  const formatBookingDateTime = (dateTimeString) => {
+    try {
+      const date = new Date(dateTimeString);
+      const formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const formattedTime = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      return `${formattedDate} | ${formattedTime}`;
+    } catch (error) {
+      return 'Date TBA';
+    }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Clear all stored authentication data
+              await AsyncStorage.removeItem('authToken');
+              await AsyncStorage.removeItem('userData');
+              await AsyncStorage.removeItem('studentId');
+              await AsyncStorage.removeItem('tutorId');
+
+              // Navigate to login page
+              router.replace('/login');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Real booking data is now managed by state variables above
 
   const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading your classes...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -85,7 +159,11 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.badgeText}>2</Text>
               </View>
             </TouchableOpacity>
-                
+
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
+            </TouchableOpacity>
+
             <View style={styles.profilePicture}>
               <Ionicons name="person-circle" size={48} color="#2B74B4" />
             </View>
@@ -162,6 +240,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    color: '#2B74B4',
+  },
   scrollView: {
     flex: 1,
   },
@@ -189,6 +277,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
+  },
+  logoutButton: {
+    padding: 4,
   },
   notificationContainer: {
     position: 'relative',

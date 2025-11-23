@@ -13,4 +13,6 @@ public interface TutorRepository extends JpaRepository<Tutor, Long> {
 
     // Check if email already exists
     boolean existsByEmail(String email);
+
+    boolean existsByTutorId(String tutorId);
 }

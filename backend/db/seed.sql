@@ -32,4 +32,16 @@ INSERT INTO `tutors` (name, tutor_id, email, phone_number)
 VALUES ('Test Tutor', 'TUTOR001', 'tutor@example.com', '1234567890');
 
 
+-- Create a test student user with specific ID 1
+INSERT INTO `users` (id, name, email, password, studentId, courseProgram, phoneNumber)
+VALUES (1, 'Test Student', 'student@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'S123456', 'Computer Science', '1234567890');
+
+-- Assign the 'STUDENT' role to the new user
+INSERT INTO `user_roles` (user_id, role)
+VALUES (1, 'STUDENT');
+
+-- Create a corresponding student profile with ID 1
+INSERT INTO `students` (id, name, student_id, email, course_program, phone_number)
+VALUES (1, 'Test Student', 'S123456', 'student@example.com', 'Computer Science', '1234567890');
+
 -- End of seed template

@@ -1,20 +1,42 @@
 import axios from 'axios';
 import { API_BASE_URL } from './config';
-import { loadTokenToHeader } from './auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Ensure token is loaded before making requests
-loadTokenToHeader();
+/**
+ * Create an Axios instance with Authorization header
+ */
+const axiosWithAuth = async () => {
+  const token = await AsyncStorage.getItem('authToken'); // read JWT from storage
+  const instance = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  return instance;
+};
 
 export async function getAllStudents() {
-  const url = `${API_BASE_URL}/student`;
-  const res = await axios.get(url);
-  return res.data;
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get('/api/student');
+    return response.data;
+  } catch (error) {
+    console.error('Error in getAllStudents:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
 }
 
 export async function getStudentById(id) {
-  const url = `${API_BASE_URL}/student/${id}`;
-  const res = await axios.get(url);
-  return res.data;
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get(`/api/student/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error in getStudentById:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
 }
 
 export async function getStudentByEmail(email) {

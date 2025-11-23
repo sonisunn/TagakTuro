@@ -7,6 +7,7 @@ import com.example.demo.model.Tutor;
 import com.example.demo.repository.TutorApplicationRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TutorRepository;
+import com.example.demo.service.FileStorageService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -72,7 +74,10 @@ public class TutorApplicationService {
         // Create a new User for the tutor
         User newUser = new User();
         newUser.setName(request.getName());
+        newUser.setStudentId(request.getStudentId());
+        newUser.setCourseProgram(request.getCourseProgram());
         newUser.setEmail(request.getEmail());
+        newUser.setPhoneNumber(request.getPhoneNumber());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         newUser.setRoles(Collections.singleton("ROLE_TUTOR"));
         userRepository.save(newUser);
@@ -92,5 +97,30 @@ public class TutorApplicationService {
     public TutorApplication getApplicationByEmail(String email) {
         return tutorApplicationRepository.findByEmail(email)
                 .orElse(null);
+    }
+
+    public List<TutorApplication> getAllApplications() {
+        return tutorApplicationRepository.findAll();
+    }
+
+    public void acceptApplication(Long applicationId) {
+        Optional<TutorApplication> applicationOpt = tutorApplicationRepository.findById(applicationId);
+        if (applicationOpt.isPresent()) {
+            TutorApplication application = applicationOpt.get();
+            application.setStatus("APPROVED");
+            tutorApplicationRepository.save(application);
+        } else {
+            throw new IllegalArgumentException("Application not found with id: " + applicationId);
+        }
+    }
+
+    public void acceptAllApplications() {
+        List<TutorApplication> applications = tutorApplicationRepository.findAll();
+        for (TutorApplication application : applications) {
+            if (!"APPROVED".equals(application.getStatus())) {
+                application.setStatus("APPROVED");
+                tutorApplicationRepository.save(application);
+            }
+        }
     }
 }

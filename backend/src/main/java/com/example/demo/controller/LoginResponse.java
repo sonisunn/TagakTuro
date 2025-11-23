@@ -7,15 +7,20 @@ public class LoginResponse {
     private User user;
     private Long studentId;
     private Long tutorId;
+    private java.util.Set<String> roles;
 
     public LoginResponse() {}
 
-    public LoginResponse(String token, User user, Long studentId, Long tutorId) {
+    public LoginResponse(String token, User user, Long studentId, Long tutorId, java.util.Set<String> roles) {
         this.token = token;
         this.user = user;
         this.studentId = studentId;
         this.tutorId = tutorId;
+        this.roles = roles;
     }
+
+    public java.util.Set<String> getRoles() { return roles; }
+    public void setRoles(java.util.Set<String> roles) { this.roles = roles; }
 
     public String getToken() { return token; }
     public void setToken(String token) { this.token = token; }

@@ -7,8 +7,17 @@ public class SignupRequest {
     private String studentId;
     private String courseProgram;
     private String phoneNumber;
+    private String role;
 
     // Getters and Setters
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
     public String getName() {
         return name;
     }

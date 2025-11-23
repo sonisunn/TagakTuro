@@ -8,6 +8,7 @@ import {
   ScrollView,
   Animated,
   Dimensions,
+  Alert,
 } from "react-native";
 
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -36,6 +37,8 @@ interface Booking {
   date: string;
   time: string;
   status: "PENDING" | "CONFIRMED" | "COMPLETED" | "DECLINED" | "CANCELLED";
+  notes?: string;
+  durationMinutes?: number;
 }
 
 export default function TagakTuroHomepage() {
@@ -78,6 +81,8 @@ export default function TagakTuroHomepage() {
         date: dateStr,
         time: timeStr,
         status: booking.status || 'PENDING',
+        notes: booking.notes || '',
+        durationMinutes: booking.durationMinutes || 0,
       };
     } catch (error) {
       console.error('Error transforming booking:', error);
@@ -91,44 +96,35 @@ export default function TagakTuroHomepage() {
       // Fetch all pending bookings (for tutors to see all available bookings)
       const pendingResponse = await getPendingBookings();
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
-      
-      // Fetch bookings assigned to this tutor
+
+      // Fetch bookings assigned to this tutor (confirmed/accepted bookings)
       const tutorBookingsResponse = await getBookingsByTutorName(tutorName);
       const tutorBookings = Array.isArray(tutorBookingsResponse) ? tutorBookingsResponse : [];
 
-      // Transform all bookings
+      // Transform bookings
       const transformedPending = allPendingBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
-      
+
       const transformedTutor = tutorBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
 
-      // Combine and deduplicate
-      const allBookingsMap = new Map<string, Booking>();
-      transformedPending.forEach(b => allBookingsMap.set(b.id, b));
-      transformedTutor.forEach(b => allBookingsMap.set(b.id, b));
-      const allBookings = Array.from(allBookingsMap.values());
-
+      // Separate tutor's bookings by status
       const upcoming: Booking[] = [];
-      const past: Booking[] = [];
-      const pending: Booking[] = [];
+      const completed: Booking[] = [];
 
-      allBookings.forEach((booking: Booking) => {
-        const bookingDateTime = new Date(`${booking.date}T${booking.time}`);
-        if (booking.status === "PENDING") {
-          pending.push(booking);
-        } else if (isPast(bookingDateTime)) {
-            past.push(booking);
-        } else {
-            upcoming.push(booking);
+      transformedTutor.forEach((booking: Booking) => {
+        if (booking.status === "CONFIRMED") {
+          upcoming.push(booking);
+        } else if (booking.status === "COMPLETED") {
+          completed.push(booking);
         }
       });
 
+      setPendingBookings(transformedPending);
       setUpcomingClasses(upcoming);
-      setPastClasses(past);
-      setPendingBookings(pending);
+      setPastClasses(completed);
       } catch (error) {
           console.error("Failed to fetch bookings:", error);
       }
@@ -180,11 +176,11 @@ export default function TagakTuroHomepage() {
   }
 
   const displayedClasses =
-    activeTab === "upcoming"
+    activeTab === "pending"
+      ? pendingBookings
+      : activeTab === "upcoming"
       ? upcomingClasses
-      : activeTab === "past"
-      ? pastClasses
-      : pendingBookings;
+      : pastClasses;
 
   const openStudentModal = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -224,27 +220,26 @@ export default function TagakTuroHomepage() {
 
   const handleAcceptBooking = async (bookingId: string) => {
     try {
-      // Update booking status and assign tutor
-      await updateBooking(bookingId, {
-        status: "CONFIRMED",
-        tutorName: userName,
-      });
+      if (!selectedBooking) {
+        console.error("No booking selected for acceptance.");
+        return;
+      }
+
+      // First update the booking status to CONFIRMED
+      await updateBookingStatus(bookingId, "CONFIRMED");
+
+      // Then update the booking with tutor name assignment
+      const updatedBooking = { ...selectedBooking, status: "CONFIRMED", tutorName: userName };
+      await updateBooking(bookingId, updatedBooking);
+
       closeStudentModal();
       if (userId && userName) {
         fetchBookings(userId, userName); // Re-fetch bookings to update the lists
       }
+      Alert.alert('Success', 'Booking accepted successfully!');
     } catch (error) {
       console.error("Failed to accept booking:", error);
-      // Fallback: try just updating status
-      try {
-        await updateBookingStatus(bookingId, "CONFIRMED");
-        closeStudentModal();
-        if (userId && userName) {
-          fetchBookings(userId, userName);
-        }
-      } catch (fallbackError) {
-        console.error("Failed to update booking status:", fallbackError);
-      }
+      Alert.alert('Error', 'Failed to accept booking. Please try again.');
     }
   };
 
@@ -319,23 +314,6 @@ export default function TagakTuroHomepage() {
                 <TouchableOpacity
                 style={[
                     styles.tab,
-                    activeTab === "upcoming" && styles.activeTab,
-                ]}
-                onPress={() => setActiveTab("upcoming")}
-                >
-                <Text
-                    style={[
-                    styles.tabText,
-                    activeTab === "upcoming" && styles.activeTabText,
-                    ]}
-                >
-                    Upcoming
-                </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                style={[
-                    styles.tab,
                     activeTab === "pending" && styles.activeTab,
                 ]}
                 onPress={() => setActiveTab("pending")}
@@ -347,6 +325,23 @@ export default function TagakTuroHomepage() {
                     ]}
                 >
                     Pending
+                </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                style={[
+                    styles.tab,
+                    activeTab === "upcoming" && styles.activeTab,
+                ]}
+                onPress={() => setActiveTab("upcoming")}
+                >
+                <Text
+                    style={[
+                    styles.tabText,
+                    activeTab === "upcoming" && styles.activeTabText,
+                    ]}
+                >
+                    Upcoming
                 </Text>
                 </TouchableOpacity>
 
@@ -403,11 +398,11 @@ export default function TagakTuroHomepage() {
                               classItem.status === "CANCELLED" && styles.statusCancelled,
                             ]}
                           >
-                            Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status}
+                            Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status === "COMPLETED" ? "Completed" : classItem.status}
                           </Text>
                         )}
 
-                        {activeTab === "pending" && (
+                        {activeTab === "pending" ? (
                           <View style={styles.actionButtons}>
                             <TouchableOpacity
                               style={styles.acceptButton}
@@ -429,9 +424,7 @@ export default function TagakTuroHomepage() {
                               <Text style={styles.declineButtonText}>Decline</Text>
                             </TouchableOpacity>
                           </View>
-                        )}
-
-                        {activeTab !== "pending" && (
+                        ) : (
                           <TouchableOpacity
                             style={styles.viewButton}
                             onPress={() => openStudentModal(classItem)}

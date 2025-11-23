@@ -11,7 +11,9 @@ public class User {
     private Long id;
 
     private String name;
+    @Column(nullable = false)
     private String studentId;
+    @Column(nullable = false)
     private String courseProgram;
     @Column(nullable = false, unique = true)
     private String email;

@@ -47,6 +47,19 @@ public class BookingService {
     public List<Booking> getBookingsByStatus(Booking.BookingStatus status) {
         return bookingRepository.findByStatus(status);
     }
+    
+    // Get all pending bookings (for tutors to see all available bookings)
+    public List<Booking> getPendingBookings() {
+        return bookingRepository.findByStatus(Booking.BookingStatus.PENDING);
+    }
+    
+    // Get bookings by tutor name
+    public List<Booking> getBookingsByTutorName(String tutorName) {
+        if (tutorName == null || tutorName.isEmpty()) {
+            throw new IllegalArgumentException("Tutor name cannot be null or empty");
+        }
+        return bookingRepository.findByTutorName(tutorName);
+    }
 
     // Get bookings within a date range
     public List<Booking> getBookingsByDateRange(LocalDateTime start, LocalDateTime end) {
@@ -65,7 +78,7 @@ public class BookingService {
 
         Long studentId = booking.getStudent().getId();
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + studentId));
+                .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId + ". Please log in again to refresh your session."));
 
         booking.setStudent(student);
 
@@ -76,6 +89,38 @@ public class BookingService {
         
         if (booking.getModality() == null || booking.getModality().isEmpty()) {
             throw new IllegalArgumentException("Modality is required for booking");
+        }
+
+        // Check for booking conflicts (overlapping time ranges)
+        if (booking.getBookingDateTime() != null && booking.getDurationMinutes() != null) {
+            LocalDateTime bookingStart = booking.getBookingDateTime();
+            LocalDateTime bookingEnd = bookingStart.plusMinutes(booking.getDurationMinutes());
+            
+            // Get all existing bookings for the same date
+            LocalDateTime dayStart = bookingStart.toLocalDate().atStartOfDay();
+            LocalDateTime dayEnd = bookingStart.toLocalDate().atTime(23, 59, 59);
+            
+            List<Booking> existingBookings = bookingRepository.findByBookingDateTimeBetween(dayStart, dayEnd);
+            
+            // Check for overlaps with existing bookings (excluding cancelled ones)
+            for (Booking existing : existingBookings) {
+                if (existing.getStatus() == Booking.BookingStatus.CANCELLED) {
+                    continue; // Skip cancelled bookings
+                }
+                
+                if (existing.getBookingDateTime() != null && existing.getDurationMinutes() != null) {
+                    LocalDateTime existingStart = existing.getBookingDateTime();
+                    LocalDateTime existingEnd = existingStart.plusMinutes(existing.getDurationMinutes());
+                    
+                    // Check if time ranges overlap
+                    // Overlap occurs if: newStart < existingEnd AND newEnd > existingStart
+                    if (bookingStart.isBefore(existingEnd) && bookingEnd.isAfter(existingStart)) {
+                        throw new IllegalArgumentException(
+                            "The selected time overlaps with an existing booking. Please choose a different time."
+                        );
+                    }
+                }
+            }
         }
 
         return bookingRepository.save(booking);

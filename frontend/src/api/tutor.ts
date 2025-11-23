@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://192.168.1.8:8080'; // Make sure this is your backend IP
+import { API_BASE_URL } from './config';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

@@ -9,6 +9,7 @@ import BottomNav from '../components/BottomNav';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { createBooking } from '../src/api/booking.js';
+import { getStudentById } from '../src/api/student.js';
 import { AxiosError } from 'axios';
 
 export default function BookingPage() {
@@ -55,6 +56,16 @@ export default function BookingPage() {
       return;
     }
 
+    // Validate that the student exists in the database
+    try {
+      await getStudentById(studentId);
+    } catch (error) {
+      console.error('Student validation failed:', error);
+      await AsyncStorage.removeItem('studentId');
+      Alert.alert('Session Expired', 'Your student session is invalid. Please log in again.');
+      return;
+    }
+
     // Validate time range
     const bookingStart = new Date(date);
     bookingStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
@@ -87,6 +98,11 @@ export default function BookingPage() {
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
       console.error('Error creating booking:', errorMessage);
       
+      if (errorMessage && (errorMessage.includes('FK95ehd6idg3lvmpah7byi8pfwc') || errorMessage.includes('Student not found'))) { // Specific FK error for student_id or student not found
+        await AsyncStorage.removeItem('studentId');
+        Alert.alert('Session Expired', 'Your student session is invalid. Please log in again.');
+        return;
+      }
       // Check if it's a conflict error
       if (errorMessage && errorMessage.includes('overlaps with an existing booking')) {
         Alert.alert('Booking Conflict', errorMessage);

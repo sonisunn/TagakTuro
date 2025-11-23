@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * Create an Axios instance with Authorization header
  */
 const axiosWithAuth = async () => {
-  const token = await AsyncStorage.getItem('token'); // read JWT from storage
+  const token = await AsyncStorage.getItem('authToken'); // read JWT from storage
   const instance = axios.create({
     baseURL: API_BASE_URL,
     headers: {
@@ -26,7 +26,7 @@ const axiosWithAuth = async () => {
 export async function createBooking(bookingData) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.post('/booking', bookingData);
+    const response = await client.post('/api/booking', bookingData);
     return response.data;
   } catch (error) {
     console.error('Error in createBooking:', (error.response && error.response.data) || error.message);
@@ -40,7 +40,7 @@ export async function createBooking(bookingData) {
 export async function getAllBookings() {
   try {
     const client = await axiosWithAuth();
-    const response = await client.get('/booking');
+    const response = await client.get('/api/booking');
     return response.data;
   } catch (error) {
     console.error('Error in getAllBookings:', (error.response && error.response.data) || error.message);
@@ -54,7 +54,7 @@ export async function getAllBookings() {
 export async function getBookingsByStudentId(studentId) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.get(`/booking/student/${studentId}`);
+    const response = await client.get(`/api/booking/student/${studentId}`);
     return response.data;
   } catch (error) {
     console.error('Error in getBookingsByStudentId:', (error.response && error.response.data) || error.message);
@@ -68,7 +68,7 @@ export async function getBookingsByStudentId(studentId) {
 export async function getPendingBookings() {
   try {
     const client = await axiosWithAuth();
-    const response = await client.get('/booking/pending');
+    const response = await client.get('/api/booking/pending');
     return response.data;
   } catch (error) {
     console.error('Error in getPendingBookings:', (error.response && error.response.data) || error.message);
@@ -82,7 +82,7 @@ export async function getPendingBookings() {
 export async function getBookingsByTutorName(tutorName) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.get(`/booking/tutor/${encodeURIComponent(tutorName)}`);
+    const response = await client.get(`/api/booking/tutor/${encodeURIComponent(tutorName)}`);
     return response.data;
   } catch (error) {
     console.error('Error in getBookingsByTutorName:', (error.response && error.response.data) || error.message);
@@ -96,7 +96,7 @@ export async function getBookingsByTutorName(tutorName) {
 export async function updateBooking(id, bookingData) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.put(`/booking/${id}`, bookingData);
+    const response = await client.put(`/api/booking/${id}`, bookingData);
     return response.data;
   } catch (error) {
     console.error('Error in updateBooking:', (error.response && error.response.data) || error.message);
@@ -110,7 +110,7 @@ export async function updateBooking(id, bookingData) {
 export async function updateBookingStatus(id, status) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.patch(`/booking/${id}/status`, { status });
+    const response = await client.patch(`/api/booking/${id}/status`, { status });
     return response.data;
   } catch (error) {
     console.error('Error in updateBookingStatus:', (error.response && error.response.data) || error.message);
@@ -124,7 +124,7 @@ export async function updateBookingStatus(id, status) {
 export async function deleteBooking(id) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.delete(`/booking/${id}`);
+    const response = await client.delete(`/api/booking/${id}`);
     return response.data;
   } catch (error) {
     console.error('Error in deleteBooking:', (error.response && error.response.data) || error.message);
