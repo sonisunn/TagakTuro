@@ -313,6 +313,8 @@ export default function TagakTuroHomepage() {
             <TouchableOpacity style={styles.bookCard} onPress={() => {
               if (pendingBookings.length > 0) {
                 openStudentModal(pendingBookings[0]);
+              } else {
+                alert('There are no bookings yet');
               }
             }}>
             <Text style={styles.bookCardTitle}>Students are waiting!</Text>
