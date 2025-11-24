@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,7 @@ export default function TagakTuroHomepage() {
   const [loading, setLoading] = useState(true);
   const [showMatchNotification, setShowMatchNotification] = useState(false);
   const [matchBooking, setMatchBooking] = useState(null);
+  const previousBookingsRef = useRef([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -45,8 +46,8 @@ export default function TagakTuroHomepage() {
         const upcoming = [];
         const past = [];
 
-        // Check for newly confirmed bookings
-        const previousBookings = [...upcomingClasses, ...pastClasses];
+        // Check for newly confirmed bookings using the ref
+        const previousBookings = previousBookingsRef.current;
         let newlyConfirmedBooking = null;
 
         bookings.forEach(booking => {
@@ -75,6 +76,9 @@ export default function TagakTuroHomepage() {
           }
         });
 
+        // Update the ref with current bookings for next comparison
+        previousBookingsRef.current = [...upcoming, ...past];
+
         setUpcomingClasses(upcoming);
         setPastClasses(past);
 
@@ -94,8 +98,8 @@ export default function TagakTuroHomepage() {
   useEffect(() => {
     fetchBookings();
 
-    // Set up polling to check for booking updates every 30 seconds
-    const interval = setInterval(fetchBookings, 30000);
+    // Set up polling to check for booking updates every 5 seconds
+    const interval = setInterval(fetchBookings, 5000);
 
     return () => clearInterval(interval);
   }, []);
