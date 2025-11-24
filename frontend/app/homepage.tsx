@@ -20,6 +20,8 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [pastClasses, setPastClasses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showMatchNotification, setShowMatchNotification] = useState(false);
+  const [matchBooking, setMatchBooking] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -35,45 +37,67 @@ export default function TagakTuroHomepage() {
     fetchUserData();
   }, []);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const studentId = await AsyncStorage.getItem('studentId');
-        if (studentId) {
-          const bookings = await getBookingsByStudentId(studentId);
-          const upcoming = [];
-          const past = [];
+  const fetchBookings = async () => {
+    try {
+      const studentId = await AsyncStorage.getItem('studentId');
+      if (studentId) {
+        const bookings = await getBookingsByStudentId(studentId);
+        const upcoming = [];
+        const past = [];
 
-          bookings.forEach(booking => {
-            // Transform booking data for display
-            const bookingItem = {
-              id: booking.id,
-              tutor: booking.tutorName || 'Unassigned',
-              subject: booking.subject || 'N/A',
-              location: booking.modality || 'N/A',
-              dateTime: formatBookingDateTime(booking.bookingDateTime),
-              status: booking.status || 'PENDING',
-            };
+        // Check for newly confirmed bookings
+        const previousBookings = [...upcomingClasses, ...pastClasses];
+        let newlyConfirmedBooking = null;
 
-            // Filter by status
-            if (booking.status === 'CONFIRMED') {
-              upcoming.push(bookingItem);
-            } else if (booking.status === 'COMPLETED') {
-              past.push(bookingItem);
-            }
-          });
+        bookings.forEach(booking => {
+          // Transform booking data for display
+          const bookingItem = {
+            id: booking.id,
+            tutor: booking.tutorName || 'Unassigned',
+            subject: booking.subject || 'N/A',
+            location: booking.modality || 'N/A',
+            dateTime: formatBookingDateTime(booking.bookingDateTime),
+            status: booking.status || 'PENDING',
+            rawStatus: booking.status,
+          };
 
-          setUpcomingClasses(upcoming);
-          setPastClasses(past);
+          // Check if this booking was previously pending and is now confirmed
+          const previousBooking = previousBookings.find(b => b.id === booking.id);
+          if (previousBooking && previousBooking.rawStatus === 'PENDING' && booking.status === 'CONFIRMED') {
+            newlyConfirmedBooking = bookingItem;
+          }
+
+          // Filter by status
+          if (booking.status === 'CONFIRMED') {
+            upcoming.push(bookingItem);
+          } else if (booking.status === 'COMPLETED') {
+            past.push(bookingItem);
+          }
+        });
+
+        setUpcomingClasses(upcoming);
+        setPastClasses(past);
+
+        // Show match notification if a booking was newly confirmed
+        if (newlyConfirmedBooking && !loading) {
+          setMatchBooking(newlyConfirmedBooking);
+          setShowMatchNotification(true);
         }
-      } catch (error) {
-        console.error('Error fetching bookings:', error);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBookings();
+
+    // Set up polling to check for booking updates every 30 seconds
+    const interval = setInterval(fetchBookings, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const formatBookingDateTime = (dateTimeString) => {
@@ -225,10 +249,24 @@ export default function TagakTuroHomepage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <View style={styles.matchCard}>
-        <Text style={styles.matchTitle}>We found a match!</Text>
-        <Text style={styles.matchSubtitle}>Discrete Structure 2 - September 30, 2025</Text>
-      </View>
+      {showMatchNotification && matchBooking && (
+        <TouchableOpacity
+          style={styles.matchCard}
+          onPress={() => setShowMatchNotification(false)}
+        >
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowMatchNotification(false)}
+          >
+            <Ionicons name="close" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.matchTitle}>We found a match!</Text>
+          <Text style={styles.matchSubtitle}>
+            {matchBooking.subject} with {matchBooking.tutor} - {matchBooking.dateTime}
+          </Text>
+          <Text style={styles.matchDetails}>Tap to dismiss</Text>
+        </TouchableOpacity>
+      )}
 
       <BottomNav />
     </View>
@@ -458,7 +496,14 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     padding: 15,
     borderRadius: 15,
-    height: 80,
+    height: 100,
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 5,
   },
   matchTitle: {
     fontFamily: 'Poppins',
@@ -471,6 +516,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#fff',
+    marginBottom: 2,
+  },
+  matchDetails: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    color: '#95CDF2',
+    fontStyle: 'italic',
   },
   bottomSpacing: {
     height: 160,
