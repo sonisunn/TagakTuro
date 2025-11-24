@@ -53,6 +53,8 @@ export default function TagakTuroHomepage() {
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<Booking | null>(null);
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
@@ -96,7 +98,7 @@ export default function TagakTuroHomepage() {
       // Fetch all pending bookings (for tutors to see all available bookings)
       const pendingResponse = await getPendingBookings();
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
-
+      
       // Fetch bookings assigned to this tutor (confirmed/accepted bookings)
       const tutorBookingsResponse = await getBookingsByTutorName(tutorName);
       const tutorBookings = Array.isArray(tutorBookingsResponse) ? tutorBookingsResponse : [];
@@ -105,7 +107,7 @@ export default function TagakTuroHomepage() {
       const transformedPending = allPendingBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
-
+      
       const transformedTutor = tutorBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
@@ -116,7 +118,7 @@ export default function TagakTuroHomepage() {
 
       transformedTutor.forEach((booking: Booking) => {
         if (booking.status === "CONFIRMED") {
-          upcoming.push(booking);
+            upcoming.push(booking);
         } else if (booking.status === "COMPLETED") {
           completed.push(booking);
         }
@@ -176,9 +178,7 @@ export default function TagakTuroHomepage() {
   }
 
   const displayedClasses =
-    activeTab === "pending"
-      ? pendingBookings
-      : activeTab === "upcoming"
+    activeTab === "upcoming"
       ? upcomingClasses
       : pastClasses;
 
@@ -198,6 +198,16 @@ export default function TagakTuroHomepage() {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  const showBookingDetailsModal = (booking: Booking) => {
+    setBookingDetails(booking);
+    setShowBookingDetails(true);
+  };
+
+  const closeBookingDetailsModal = () => {
+    setShowBookingDetails(false);
+    setBookingDetails(null);
   };
 
   const closeStudentModal = () => {
@@ -300,7 +310,12 @@ export default function TagakTuroHomepage() {
             </View>
             </View>
 
-            <TouchableOpacity style={styles.bookCard} onPress={() => setActiveTab("pending")}>
+            <TouchableOpacity style={styles.bookCard} onPress={() => {
+              if (pendingBookings.length > 0) {
+                setSelectedBooking(pendingBookings[0]);
+                setShowStudents(true);
+              }
+            }}>
             <Text style={styles.bookCardTitle}>Students are waiting!</Text>
             <Text style={styles.bookCardSubtitle}>
                 Click here to view the list of students you can teach
@@ -311,23 +326,6 @@ export default function TagakTuroHomepage() {
             <Text style={styles.classesTitle}>Classes</Text>
 
             <View style={styles.tabContainer}>
-                <TouchableOpacity
-                style={[
-                    styles.tab,
-                    activeTab === "pending" && styles.activeTab,
-                ]}
-                onPress={() => setActiveTab("pending")}
-                >
-                <Text
-                    style={[
-                    styles.tabText,
-                    activeTab === "pending" && styles.activeTabText,
-                    ]}
-                >
-                    Pending
-                </Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity
                 style={[
                     styles.tab,
@@ -342,6 +340,23 @@ export default function TagakTuroHomepage() {
                     ]}
                 >
                     Upcoming
+                </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                style={[
+                    styles.tab,
+                    activeTab === "past" && styles.activeTab,
+                ]}
+                onPress={() => setActiveTab("past")}
+                >
+                <Text
+                    style={[
+                    styles.tabText,
+                    activeTab === "past" && styles.activeTabText,
+                    ]}
+                >
+                    Past
                 </Text>
                 </TouchableOpacity>
 
@@ -427,7 +442,13 @@ export default function TagakTuroHomepage() {
                         ) : (
                           <TouchableOpacity
                             style={styles.viewButton}
-                            onPress={() => openStudentModal(classItem)}
+                            onPress={() => {
+                              if (activeTab === "upcoming") {
+                                showBookingDetailsModal(classItem);
+                              } else {
+                                openStudentModal(classItem);
+                              }
+                            }}
                           >
                             <Text style={styles.viewButtonText}>View Details</Text>
                           </TouchableOpacity>
@@ -499,6 +520,70 @@ export default function TagakTuroHomepage() {
         </>
       )}
 
+      {/* Booking Details Modal */}
+      {showBookingDetails && bookingDetails && (
+        <View style={styles.bookingDetailsModal}>
+          <BlurView intensity={20} style={styles.blurBackground}>
+            <View style={styles.bookingDetailsContainer}>
+              <View style={styles.bookingDetailsHeader}>
+                <Text style={styles.bookingDetailsTitle}>Booking Details</Text>
+                <TouchableOpacity onPress={closeBookingDetailsModal}>
+                  <Ionicons name="close" size={24} color="#2B74B4" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.bookingDetailsContent}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Student:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.studentName}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Subject:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.subject}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Date:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.date}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Time:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.time}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Location:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.location}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Duration:</Text>
+                  <Text style={styles.detailValue}>{bookingDetails.durationMinutes} minutes</Text>
+                </View>
+
+                {bookingDetails.notes && (
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Notes:</Text>
+                    <Text style={styles.detailValue}>{bookingDetails.notes}</Text>
+                  </View>
+                )}
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Status:</Text>
+                  <Text style={styles.detailValue}>
+                    {bookingDetails.status === "CONFIRMED" ? "Confirmed" :
+                     bookingDetails.status === "CANCELLED" ? "Cancelled" :
+                     bookingDetails.status === "COMPLETED" ? "Completed" :
+                     bookingDetails.status}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </BlurView>
+        </View>
+      )}
 
       <TutorBottomNav />
     </View>
@@ -830,5 +915,69 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins",
     fontWeight: "700",
     fontSize: 14,
+  },
+  bookingDetailsModal: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  blurBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  bookingDetailsContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+    maxHeight: '80%',
+  },
+  bookingDetailsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  bookingDetailsTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2B74B4',
+  },
+  bookingDetailsContent: {
+    padding: 20,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  detailLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2B74B4',
+    flex: 1,
+  },
+  detailValue: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#666',
+    flex: 2,
+    textAlign: 'right',
   },
 });
