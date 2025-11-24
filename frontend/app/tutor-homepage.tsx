@@ -230,8 +230,10 @@ export default function TagakTuroHomepage() {
 
   const handleAcceptBooking = async (bookingId: string) => {
     try {
-      if (!selectedBooking) {
-        console.error("No booking selected for acceptance.");
+      // Find the booking from pendingBookings
+      const bookingToAccept = pendingBookings.find(b => b.id === bookingId);
+      if (!bookingToAccept) {
+        console.error("Booking not found in pending bookings.");
         return;
       }
 
@@ -239,7 +241,7 @@ export default function TagakTuroHomepage() {
       await updateBookingStatus(bookingId, "CONFIRMED");
 
       // Then update the booking with tutor name assignment
-      const updatedBooking = { ...selectedBooking, status: "CONFIRMED", tutorName: userName };
+      const updatedBooking = { ...bookingToAccept, status: "CONFIRMED", tutorName: userName };
       await updateBooking(bookingId, updatedBooking);
 
       closeStudentModal();
