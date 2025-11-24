@@ -312,7 +312,20 @@ export default function TagakTuroHomepage() {
 
             <TouchableOpacity style={styles.bookCard} onPress={() => {
               if (pendingBookings.length > 0) {
-                openStudentModal(pendingBookings[0]);
+                setShowStudents(true);
+                Animated.parallel([
+                  Animated.spring(slideAnim, {
+                    toValue: 0,
+                    tension: 65,
+                    friction: 11,
+                    useNativeDriver: true,
+                  }),
+                  Animated.timing(backdropOpacity, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: true,
+                  }),
+                ]).start();
               } else {
                 alert('There are no bookings yet');
               }
@@ -464,7 +477,7 @@ export default function TagakTuroHomepage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {showStudents && selectedBooking && (
+      {showStudents && (
         <>
           <AnimatedView
             style={[
@@ -496,24 +509,26 @@ export default function TagakTuroHomepage() {
                 style={{ paddingHorizontal: 20 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.studentCard}>
-                    <Text style={styles.studentName}>{selectedBooking.studentName}</Text>
-                    <Text style={styles.studentSub}>{selectedBooking.subject}</Text>
-                    <Text style={styles.studentSub}>{selectedBooking.location}</Text>
-                    <Text style={styles.studentSub}>
-                    {`${selectedBooking.date} | ${selectedBooking.time}`}
-                    </Text>
+                {pendingBookings.map((booking, index) => (
+                    <View key={booking.id} style={styles.studentCard}>
+                        <Text style={styles.studentName}>{booking.studentName}</Text>
+                        <Text style={styles.studentSub}>{booking.subject}</Text>
+                        <Text style={styles.studentSub}>{booking.location}</Text>
+                        <Text style={styles.studentSub}>
+                        {`${booking.date} | ${booking.time}`}
+                        </Text>
 
-                    <View style={styles.btnRow}>
-                    <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptBooking(selectedBooking.id)}>
-                        <Text style={styles.acceptText}>Accept</Text>
-                    </TouchableOpacity>
+                        <View style={styles.btnRow}>
+                        <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptBooking(booking.id)}>
+                            <Text style={styles.acceptText}>Accept</Text>
+                        </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.declineBtn} onPress={() => handleDeclineBooking(selectedBooking.id)}>
-                        <Text style={styles.declineText}>Decline</Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity style={styles.declineBtn} onPress={() => handleDeclineBooking(booking.id)}>
+                            <Text style={styles.declineText}>Decline</Text>
+                        </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                ))}
 
             <View style={{ height: 15 }} />
           </ScrollView>
