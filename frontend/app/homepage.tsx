@@ -253,9 +253,11 @@ export default function TagakTuroHomepage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
+      <BottomNav />
+
       {showMatchNotification && matchBooking && (
         <TouchableOpacity
-          style={styles.matchCard}
+          style={styles.matchCardOverlay}
           onPress={() => setShowMatchNotification(false)}
         >
           <TouchableOpacity
@@ -271,8 +273,6 @@ export default function TagakTuroHomepage() {
           <Text style={styles.matchDetails}>Tap to dismiss</Text>
         </TouchableOpacity>
       )}
-
-      <BottomNav />
     </View>
   );
 }
@@ -494,14 +494,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
-  matchCard: {
+  matchCardOverlay: {
+    position: 'absolute',
+    bottom: 100, // Position above the bottom nav
+    left: 20,
+    right: 20,
     backgroundColor: '#2B74B4',
-    marginHorizontal: 20,
-    marginVertical: 10,
     padding: 15,
     borderRadius: 15,
     height: 100,
-    position: 'relative',
+    zIndex: 1000, // High z-index to appear above everything
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5, // For Android shadow
   },
   closeButton: {
     position: 'absolute',
