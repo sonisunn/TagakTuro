@@ -42,26 +42,64 @@ export default function ApplyTutorPage() {
   
   const [error, setError] = useState(false);
 
+  const validateName = (name: string): boolean => {
+    if (!name.trim()) return false;
+    return /^[a-zA-Z\s]+$/.test(name.trim());
+  };
+
+  const validateEmail = (email: string): boolean => {
+    if (!email.trim()) return false;
+    // Must have content before @ and end with @umak.edu.ph
+    const emailRegex = /^[^@\s]+@umak\.edu\.ph$/;
+    return emailRegex.test(email.trim());
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone.trim()) return false;
+    return phone.length === 11 && /^\d+$/.test(phone);
+  };
+
+  const validatePassword = (password: string): boolean => {
+    if (!password) return false;
+    // 12-16 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special char (^, _, *)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\^\_\*])[A-Za-z\d\^\_\*]{12,16}$/;
+    return passwordRegex.test(password);
+  };
+
   const handleNext = () => {
     if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
       setError(true);
       return;
     }
-    
-    // Email validation
-    if (!email.endsWith('@umak.edu.ph')) {
-      alert('Email must end with @umak.edu.ph');
+
+    // Name validation - alphabetic characters only
+    if (!validateName(name)) {
+      alert('Name must contain only alphabetic characters');
       setError(true);
       return;
     }
-    
-    // Phone number validation
-    if (phoneNumber.length !== 11 || !/^\d+$/.test(phoneNumber)) {
-      alert('Phone number must be exactly 11 digits');
+
+    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
+    if (!validateEmail(email)) {
+      alert('Error: Only @umak.edu.ph email addresses are allowed!');
       setError(true);
       return;
     }
-    
+
+    // Phone number validation - must be 11 digits
+    if (!validatePhoneNumber(phoneNumber)) {
+      alert('Must be 11 digits');
+      setError(true);
+      return;
+    }
+
+    // Password validation - 12-16 chars, mix of upper/lower, number, special char
+    if (!validatePassword(password)) {
+      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+      setError(true);
+      return;
+    }
+
     setError(false);
     setStep(2);
   };
@@ -108,7 +146,7 @@ export default function ApplyTutorPage() {
     try {
       await applyAsTutor(formData);
       alert('Application submitted successfully! You will be notified upon approval.');
-      router.push('/tutor-login');
+      router.push('/login');
     } catch (error) {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
@@ -430,11 +468,9 @@ export default function ApplyTutorPage() {
                 <Text style={styles.submitButtonText}>Submit</Text>
               </TouchableOpacity>
 
-              <View style={styles.backButton}>
-                <TouchableOpacity onPress={() => setStep(1)}>
-                  <Text style={styles.back}>← Back</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
+                <Text style={styles.back}>← Back</Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -690,15 +726,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   backButton: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#95CDF2',
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#2B74B4',
     borderRadius: 8,
+    paddingHorizontal: 20,
+    marginTop: 10,
   },
   back: {
     fontFamily: 'Poppins',

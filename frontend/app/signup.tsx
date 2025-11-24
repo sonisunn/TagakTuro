@@ -27,12 +27,64 @@ export default function TagakTuroSignUp() {
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
 
+  const validateName = (name: string): boolean => {
+    if (!name.trim()) return false;
+    return /^[a-zA-Z\s]+$/.test(name.trim());
+  };
+
+  const validateEmail = (email: string): boolean => {
+    if (!email.trim()) return false;
+    // Must have content before @ and end with @umak.edu.ph
+    const emailRegex = /^[^@\s]+@umak\.edu\.ph$/;
+    return emailRegex.test(email.trim());
+  };
+
+  const validatePhoneNumber = (phone: string): boolean => {
+    if (!phone.trim()) return false;
+    return phone.length === 11 && /^\d+$/.test(phone);
+  };
+
+  const validatePassword = (password: string): boolean => {
+    if (!password) return false;
+    // 12-16 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 special char (^, _, *)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\^\_\*])[A-Za-z\d\^\_\*]{12,16}$/;
+    return passwordRegex.test(password);
+  };
+
   const handleSubmit = async () => {
     if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
       setError(true);
       return;
     }
-    
+
+    // Name validation - alphabetic characters only
+    if (!validateName(name)) {
+      alert('Name must contain only alphabetic characters');
+      setError(true);
+      return;
+    }
+
+    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
+    if (!validateEmail(email)) {
+      alert('Error: Only @umak.edu.ph email addresses are allowed!');
+      setError(true);
+      return;
+    }
+
+    // Phone number validation - must be 11 digits
+    if (!validatePhoneNumber(phoneNumber)) {
+      alert('Must be 11 digits');
+      setError(true);
+      return;
+    }
+
+    // Password validation - 12-16 chars, mix of upper/lower, number, special char
+    if (!validatePassword(password)) {
+      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+      setError(true);
+      return;
+    }
+
     if (!agreedToTerms) {
       alert('Please agree to the User Agreement and Privacy Policy');
       return;
@@ -48,7 +100,7 @@ export default function TagakTuroSignUp() {
       setSubmitting(false);
       alert('Registration successful! You can now log in.');
       router.push('/');
-    } catch (err) {
+    } catch (err: any) {
       setSubmitting(false);
       console.warn('Signup error', err);
       alert('Registration failed: ' + (err.message || 'An unexpected error occurred.'));

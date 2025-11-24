@@ -31,6 +31,11 @@ public class AuthService {
 
     @Transactional
     public User registerUser(SignupRequest signupRequest) {
+        // Validate email domain - only @umak.edu.ph emails are allowed
+        if (signupRequest.getEmail() == null || !signupRequest.getEmail().endsWith("@umak.edu.ph")) {
+            throw new IllegalArgumentException("Error: Only @umak.edu.ph email addresses are allowed!");
+        }
+
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
             throw new IllegalArgumentException("Error: Email is already in use!");
         }
