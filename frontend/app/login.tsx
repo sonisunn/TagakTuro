@@ -188,7 +188,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
     color: '#fff',
     opacity: 0.9,
   },
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -217,16 +218,17 @@ const styles = StyleSheet.create({
     color: '#95CDF2',
     textAlign: 'center',
     marginBottom: 30,
+    fontWeight: '700'
   },
   inputGroup: {
     marginBottom: 15,
   },
   label: {
     fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#2B74B4',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   input: {
     fontFamily: 'Poppins',
@@ -236,15 +238,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '700',
     color: '#2B74B4',
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
     marginBottom: 20,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   submitButton: {
     fontFamily: 'Poppins',
@@ -257,8 +259,8 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
@@ -267,13 +269,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
+    fontWeight: '700',
     marginBottom: 5,
   },
   link: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '600',
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
   passwordContainer: {
@@ -283,11 +286,13 @@ const styles = StyleSheet.create({
     borderColor: "#2B74B4",
     borderRadius: 10,
     paddingHorizontal: 10,
+    fontWeight: '700',
   },
   passwordInput: {
     flex: 1,
     paddingVertical: 10,
     fontSize: 12,
     color: "#2B74B4",
+    fontWeight: '700',
   },
 });

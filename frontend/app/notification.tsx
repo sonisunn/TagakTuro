@@ -73,7 +73,7 @@ export default function NotificationsPage() {
         onPress={() => markAsRead(notification.id)}
       >
         <Text style={styles.notificationTitle}>{notification.title}</Text>
-        <Text style={styles.notificationBody}>{notification.body}</Text>
+        <Text numberOfLines={2} ellipsizeMode='tail' style={styles.notificationBody}>{notification.body}</Text>
       </TouchableOpacity>
     );
   };
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   section: {
     marginTop: 20,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '500',
+    fontWeight: '700',
   },
   bottomSpacing: {
     height: 15,

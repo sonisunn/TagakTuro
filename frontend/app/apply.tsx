@@ -15,7 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { applyAsTutor } from '../src/api/tutor';
-import { AxiosError } from 'axios';
+import { AxiosError } from 'axios'
+import { BlurView } from 'expo-blur';
+
 
 export default function ApplyTutorPage() {
   const router = useRouter();
@@ -39,6 +41,8 @@ export default function ApplyTutorPage() {
   const [certificates, setCertificates] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [experience, setExperience] = useState('');
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsModalVisible, setTermsModalVisible] = useState(false);
+  const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   
   const [error, setError] = useState(false);
 
@@ -191,7 +195,7 @@ export default function ApplyTutorPage() {
                   placeholder="Jayson Partido"
                   value={name}
                   onChangeText={setName}
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                 />
               </View>
 
@@ -202,7 +206,7 @@ export default function ApplyTutorPage() {
                   placeholder="K12148008"
                   value={studentId}
                   onChangeText={setStudentId}
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                 />
               </View>
 
@@ -213,7 +217,7 @@ export default function ApplyTutorPage() {
                   placeholder="CCIS - BS COMPUTER SCIENCE"
                   value={courseProgram}
                   onChangeText={setCourseProgram}
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                 />
               </View>
 
@@ -226,9 +230,9 @@ export default function ApplyTutorPage() {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                 />
-                <Text style={styles.helperText}>Must end with @umak.edu.ph</Text>
+                {/* <Text style={styles.helperText}>Must end with @umak.edu.ph</Text> */}
               </View>
 
               <View style={styles.inputGroup}>
@@ -245,10 +249,10 @@ export default function ApplyTutorPage() {
                     }
                   }}
                   keyboardType="phone-pad"
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                   maxLength={11}
                 />
-                <Text style={styles.helperText}>Must be 11 digits</Text>
+                {/* <Text style={styles.helperText}>Must be 11 digits</Text> */}
               </View>
 
               <View style={styles.inputGroup}>
@@ -260,7 +264,7 @@ export default function ApplyTutorPage() {
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
-                    placeholderTextColor="#95CDF2"
+                    placeholderTextColor="#95BADA"
                   />
                   <TouchableOpacity 
                     style={styles.eyeIcon}
@@ -302,14 +306,14 @@ export default function ApplyTutorPage() {
               <Text style={styles.formTitle}>Upload your documents</Text>
               <Text style={styles.formSubtitle}>To ensure and verify your credibility</Text>
 
-              <View style={styles.inputGroup}>
+              {/* <View style={styles.inputGroup}>
                 <Text style={styles.label}>Time Available</Text>
                 <View style={styles.timeInputContainer}>
                   <TouchableOpacity
                     style={[styles.timeInput, error && !timeAvailableStart && styles.inputError]}
                     onPress={() => setShowStartTimePicker(true)}
                   >
-                    <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95CDF2', fontSize: 12 }}>
+                    <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
                       {timeAvailableStart ? timeAvailableStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start Time'}
                     </Text>
                   </TouchableOpacity>
@@ -318,13 +322,12 @@ export default function ApplyTutorPage() {
                     style={[styles.timeInput, error && !timeAvailableEnd && styles.inputError]}
                     onPress={() => setShowEndTimePicker(true)}
                   >
-                    <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95CDF2', fontSize: 12 }}>
+                    <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
                       {timeAvailableEnd ? timeAvailableEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End Time'}
                     </Text>
                   </TouchableOpacity>
                 </View>
 
-                {/* Start Time Picker */}
                 {showStartTimePicker && (
                   Platform.OS === 'ios' ? (
                     <Modal transparent={true} animationType="fade">
@@ -361,7 +364,6 @@ export default function ApplyTutorPage() {
                   )
                 )}
 
-                {/* End Time Picker */}
                 {showEndTimePicker && (
                   Platform.OS === 'ios' ? (
                     <Modal transparent={true} animationType="fade">
@@ -397,7 +399,7 @@ export default function ApplyTutorPage() {
                     />
                   )
                 )}
-              </View>
+              </View> */}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
@@ -432,7 +434,7 @@ export default function ApplyTutorPage() {
                   placeholder="Experience Description"
                   value={experience}
                   onChangeText={setExperience}
-                  placeholderTextColor="#95CDF2"
+                  placeholderTextColor="#95BADA"
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
@@ -448,15 +450,195 @@ export default function ApplyTutorPage() {
 
                 <View style={styles.checkboxTextContainer}>
                   <Text style={styles.checkboxLabel}>I have read and agreed to the </Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => setTermsModalVisible(true)}>
                     <Text style={styles.link}>User Agreement</Text>
                   </TouchableOpacity>
                   <Text style={styles.checkboxLabel}> and </Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity onPress={() => setPrivacyModalVisible(true)}>
                     <Text style={styles.link}>Privacy Policy</Text>
                   </TouchableOpacity>
                 </View>
               </View>
+{/* User Agreement Modal */}
+          <Modal
+            visible={termsModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setTermsModalVisible(false)}
+          >
+            <BlurView intensity={15} style={styles.blurBackground}>
+              <View style={styles.modalContainer}>
+                <ScrollView style={styles.modalScroll}>
+                  <Text style={styles.modalTitle}>Terms and Condition</Text>
+                  
+                  <Text style={styles.modalIntro}>
+                  Welcome to TagakTuro: Tutor Services for UMak Students. By using our application, you agree to the following Terms and Conditions. Please read them carefully.
+                  </Text>
+
+                  <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
+                  <Text style={styles.sectionText}>
+                  By accessing or using our tutoring platform, you confirm that you have read, understood, and agree to comply with these Terms and Conditions and any future updates. If you disagree, please refrain from using the Service. Electronic signatures, One-Time Passwords (OTPs), and other electronic confirmations are legally binding under the Philippine E-Commerce Act (RA 8792).
+                  </Text>
+
+                  <Text style={styles.sectionTitle}>2. Service Overview</Text>
+                  <Text style={styles.sectionText}>
+                  TagakTuro provides a platform where bona fide students of the University of Makati can book tutoring sessions with approved tutors, and where qualified individuals may apply to become Tutors.
+                  </Text>
+
+                  <Text style={styles.sectionTitle}>3. User Eligibility</Text>
+                  <Text style={styles.sectionText}>
+                    • Users must be bona fide students or staff of the University of Makati.{'\n'}  
+                    • Tutors must meet our qualifications and pass the approval process.{'\n'}    
+                    • Users confirm they are of legal age and have full legal capacity to enter into this agreement.
+                  </Text>
+                  <Text style={styles.sectionTitle}>4. User Accounts</Text>
+                  <Text style={styles.sectionText}>
+                    • You must provide accurate and current information when creating an account.{'\n'}
+                    • You are responsible for safeguarding your login credentials (username, password, OTP).{'\n'}
+                    • Notify TagakTuro immediately of any material changes to your account information.
+
+                  </Text>
+                    <Text style={styles.sectionTitle}>5. Booking</Text>
+                    <Text style={styles.sectionText}>
+                    • Students can book tutoring sessions through the app.{'\n'}
+                    • Students shall book 3 days before the target date of the schedule                  
+                    </Text>
+                    <Text style={styles.sectionTitle}>6. Tutor Application and Approval</Text>
+                    <Text style={styles.sectionText}>
+                    • Tutors must submit proof of academic qualifications and relevant experience. Applications are subject to administrator review.{'\n'}
+                    • Conduct and Standards: Tutors must maintain professionalism, punctuality, respectful communication, and preparedness.{'\n'}
+                    • Session Delivery: Sessions must be conducted either on UMak premises or via the app's integrated video conferencing system.{'\n'}
+                    • Documentation: Tutors must indicate session location and upload photos before, during, and after sessions, with third-party monitoring for face-to-face sessions.{'\n'}
+                    • Materials: Tutors must prepare instructional materials that comply with intellectual property laws.{'\n'}
+                    • Prohibited Conduct: Tutors may not:{'\n'}
+                    • Conduct sessions outside approved venues/platforms.{'\n'}
+                    • Accept direct payments outside the system.{'\n'}
+                    • Share personal contact information or engage in non-academic relationships.{'\n'}
+                    • Use or distribute copyrighted, offensive, or inappropriate materials.{'\n'}
+                    • Violation and Termination: Breaches may result in suspension, revocation of tutor status, or permanent removal.
+                    </Text>
+                    <Text style={styles.sectionTitle}>7. Prohibited Conduct (Users & Tutors)</Text>
+                    <Text style={styles.sectionText}>
+                    • No illegal, fraudulent, or harmful activities.{'\n'}
+                    • No study sessions outside UMak premises or the app's video platform.{'\n'}
+                    • No sharing of offensive or copyrighted materials.{'\n'}
+                    • Misuse may result in suspension or termination.
+                    </Text>
+                    <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro owns all app content, logos, mascot, and materials.{'\n'}
+                    • Users receive a limited, non-transferable license to use the Service.{'\n'}
+                    • Unauthorized reproduction, modification, or distribution is prohibited under the Intellectual Property Code (RA 8293).
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>9. Privacy and Data Protection</Text>
+                    <Text style={styles.sectionText}>
+                    • Your use of the Service is subject to our separate Privacy Policy, compliant with the Philippine Data Privacy Act (RA 10173).{'\n'}
+                    • By using the Service, you consent to the collection, use, and processing of your Personal Data as outlined in the Privacy Policy.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>10. Disclaimers and Limitation of Liability</Text>
+                    <Text style={styles.sectionText}>
+                    • The Service is provided "as is." We do not guarantee learning outcomes or session availability.{'\n'}
+                    • Liability is limited to the extent permitted by Philippine law. Waivers for fraud or gross negligence are void.{'\n'}
+                    • Users agree to indemnify TagakTuro against claims arising from misuse or violations of these Terms.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>11. Communication and Electronic Transactions</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro may send notices via email, SMS, or app notifications.{'\n'}
+                    • Communications sent to your registered contact details are considered valid.{'\n'}
+                    • Communications may be recorded and stored as proof of acceptance.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>12. Termination</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro reserves the right to suspend or terminate accounts for violations of these Terms.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>13. Changes to Terms</Text>
+                    <Text style={styles.sectionText}>
+                    • We may update these Terms at any time.{'\n'}
+                    • Updates are binding once published in the app or communicated via email/SMS.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>14. Governing Law and Dispute Resolution</Text>
+                    <Text style={styles.sectionText}>
+                    • These Terms are governed by the laws of the Republic of the Philippines.{'\n'}
+                    • Disputes shall be brought exclusively before the courts of Metro Manila.{'\n'}
+                    • Arbitration or mediation may be used as alternative dispute resolution methods.
+                    </Text>
+                  </ScrollView>
+
+                  <TouchableOpacity 
+                    style={styles.returnButton}
+                    onPress={() => setTermsModalVisible(false)}
+                  >
+                  <Text style={styles.returnButtonText}>Return</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </Modal>
+
+          {/* Privacy Policy Modal */}
+          <Modal
+            visible={privacyModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPrivacyModalVisible(false)}
+          >
+            <BlurView intensity={80} style={styles.blurBackground}>
+              <View style={styles.modalContainer}>
+                <ScrollView style={styles.modalScroll}>
+                  <Text style={styles.modalTitle}>Privacy Policy</Text>
+                  
+                  <Text style={styles.modalIntro}>
+                  We care about your privacy. Here’s how TagakTuro handles your data in simple terms:
+                  </Text>
+
+                  <Text style={styles.sectionTitle}>What We Collect</Text>
+                    <Text style={styles.sectionText}>
+                    • Your name, UMak ID, email, and mobile number.{'\n'}
+                    • Tutor applicants: qualifications and proof of experience.{'\n'}
+                    • Technical info like device type and usage logs.
+                    </Text>
+                  <Text style={styles.sectionTitle}>Why We Collect It</Text>
+                  <Text style={styles.sectionText}>
+                    • To let you book tutoring sessions.{'\n'}
+                    • To approve tutors.{'\n'}
+                    • To send updates and confirmations.{'\n'}
+                    • To improve the app and keep it secure.
+                  </Text>
+                  <Text style={styles.sectionTitle}>Who We Share With</Text>
+                  <Text style={styles.sectionText}>
+                    • Tutors (only session‑related info).{'\n'}
+                    • Service providers (like hosting and payments).{'\n'}
+                    • Government if legally required.{'\n\n'}
+                    We never sell your data.
+                  </Text>
+                  <Text style={styles.sectionTitle}>Your Rights</Text>
+                  <Text style={styles.sectionText}>
+                    You can ask to see your data, correct it, delete it, or stop certain uses.
+                  </Text>
+                  <Text style={styles.sectionTitle}>Security</Text>
+                  <Text style={styles.sectionText}>
+                    We use encryption and monitoring to protect your data. If a breach happens, we’ll notify you and the NPC within 72 hours.
+                  </Text>
+                  <Text style={styles.sectionTitle}>Consent</Text>
+                  <Text style={styles.sectionText}>
+                    By clicking "Agree," you allow us to process your data. You can withdraw consent anytime in the app or by contacting us.
+                  </Text>
+                </ScrollView>
+
+                <TouchableOpacity 
+                  style={styles.returnButton}
+                  onPress={() => setPrivacyModalVisible(false)}
+                >
+                  <Text style={styles.returnButtonText}>Return</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </Modal>
 
               {error && (
                 <Text style={styles.errorText}>
@@ -469,7 +651,7 @@ export default function ApplyTutorPage() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.backButton} onPress={() => setStep(1)}>
-                <Text style={styles.back}>← Back</Text>
+                <Text style={styles.back}>Back</Text>
               </TouchableOpacity>
             </>
           )}
@@ -503,7 +685,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
     color: '#fff',
     opacity: 0.9,
   },
@@ -516,18 +699,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignContent: 'center',
     justifyContent: 'center',
+    height: '80%',
   },
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2B74B4',
     textAlign: 'center',
   },
   formSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95CDF2',
+    fontWeight: '700',
+    color: '#95BADA',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -536,15 +721,16 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#2B74B4',
     marginBottom: 6,
   },
   pdfLabel: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95CDF2',
+    fontWeight: '700',
+    color: '#95BADA',
   },
   input: {
     fontFamily: 'Poppins',
@@ -554,7 +740,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '700',
     color: '#2B74B4',
   },
   inputError: {
@@ -573,7 +759,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '700',
     color: '#2B74B4',
     flex: 1,
     alignItems: 'center',
@@ -591,7 +777,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 45,
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '700',
     color: '#2B74B4',
   },
   eyeIcon: {
@@ -601,8 +787,9 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontFamily: 'Poppins',
-    fontSize: 10,
-    color: '#95CDF2',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#95BADA',
     marginTop: 4,
   },
   modalOverlay: {
@@ -611,15 +798,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  modalContainer: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 15,
-    padding: 20,
-    width: '80%',
-    alignItems: 'center',
-  },
+  // modalContainer: {
+  //   backgroundColor: '#fff',
+  //   borderWidth: 1,
+  //   borderColor: '#2B74B4',
+  //   borderRadius: 15,
+  //   padding: 20,
+  //   width: '80%',
+  //   alignItems: 'center',
+  // },
   modalClose: {
     marginTop: 10,
     borderRadius: 10,
@@ -633,8 +820,8 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#2B74B4',
     fontFamily: 'Poppins',
-    fontWeight: '600',
-    fontSize: 12,
+    fontWeight: '700',
+    fontSize: 15,
   },
   uploadButton: {
     fontFamily: 'Poppins',
@@ -648,8 +835,8 @@ const styles = StyleSheet.create({
   uploadButtonText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95CDF2',
-    fontWeight: '400',
+    color: '#95BADA',
+    fontWeight: '700',
   },
   textArea: {
     fontFamily: 'Poppins',
@@ -686,7 +873,7 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   checkboxTextContainer: {
     flex: 1,
@@ -701,26 +888,26 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   submitButton: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     backgroundColor: '#2B74B4',
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 15,
+    marginBottom: 5,
     height: 50,
-
+    fontWeight: '700',
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
@@ -737,21 +924,86 @@ const styles = StyleSheet.create({
   },
   back: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     color: '#2B74B4',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   footerText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95CDF2',
+    color: '#95BADA',
     marginBottom: 5,
   },
   link: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '600',
+    fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  blurBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#2B74B4',
+    padding: 20,
+    width: '95%',
+    marginTop: 20,
+    maxHeight: '100%',    
+  },
+  modalScroll: {
+    maxHeight: '90%',
+  },
+  modalTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  modalIntro: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    textAlign: 'justify',
+    marginBottom: 5,
+    lineHeight: 18,
+  },
+  sectionTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#2B74B4',
+    marginTop: 5,
+  },
+  sectionText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    lineHeight: 18,
+    marginBottom: 5,
+    textAlign: 'justify',
+  },
+  returnButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  returnButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#2B74B4',
   },
 });
