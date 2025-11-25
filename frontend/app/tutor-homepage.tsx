@@ -9,24 +9,27 @@ import {
   Animated,
   Dimensions,
   Alert,
+  Modal,
+  Platform,
 } from "react-native";
-
+ 
 const AnimatedView = Animated.createAnimatedComponent(View);
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import TutorBottomNav from "../components/TutorBottomNav";
 import { BlurView } from "expo-blur";
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { getAllBookings, updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
 import * as SplashScreen from "expo-splash-screen";
 import { isPast } from "date-fns";
-
+ 
 import {
     useFonts,
     Poppins_400Regular,
     Poppins_600SemiBold,
     Poppins_700Bold,
   } from "@expo-google-fonts/poppins";
-
+ 
 interface Booking {
   id: string;
   tutorId: string;
@@ -36,11 +39,13 @@ interface Booking {
   location: string;
   date: string;
   time: string;
+  startTime: string;
   status: "PENDING" | "CONFIRMED" | "COMPLETED" | "DECLINED" | "CANCELLED";
   notes?: string;
   durationMinutes?: number;
+  rawDate?: string; // Raw date string for modal operations
 }
-
+ 
 export default function TagakTuroHomepage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("upcoming");
@@ -53,25 +58,103 @@ export default function TagakTuroHomepage() {
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
-  const [showBookingDetails, setShowBookingDetails] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState<Booking | null>(null);
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
 
+  // --- Modal State Management ---
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [selectedBookingForModal, setSelectedBookingForModal] = useState<Booking | null>(null);
+  const [modalView, setModalView] = useState<string>('details'); // 'details', 'reschedule', 'success', 'cancel', 'cancelSuccess'
+  const [modalLoading, setModalLoading] = useState<boolean>(false);
+
+  // --- Date/Time Picker State ---
+  const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
+ 
   // Transform backend booking format to frontend format
+  const formatBookingDateTime = (dateTimeString: string) => {
+    try {
+      // Force UTC interpretation since backend sends LocalDateTime as ISO string
+      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
+      const date = new Date(utcDateTimeString);
+      const formattedDate = date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const formattedTime = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      return `${formattedDate} | ${formattedTime}`;
+    } catch {
+      return 'Date TBA';
+    }
+  };
+
+  const formatSessionTime = (dateTimeString: string, durationMinutes: number = 60) => {
+    try {
+      // Force UTC interpretation since backend sends LocalDateTime as ISO string
+      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
+      const startDate = new Date(utcDateTimeString);
+      const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
+
+      const startTime = startDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+      const endTime = endDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+
+      return `${startTime} - ${endTime}`;
+    } catch {
+      return 'Time TBA';
+    }
+  };
+
+  const formatStartTime = (dateTimeString: string) => {
+    try {
+      // Force UTC interpretation since backend sends LocalDateTime as ISO string
+      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
+      const startDate = new Date(utcDateTimeString);
+      const startTime = startDate.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      return startTime;
+    } catch {
+      return 'Time TBA';
+    }
+  };
+
   const transformBooking = (booking: any): Booking | null => {
     try {
-      const bookingDateTime = booking.bookingDateTime 
-        ? new Date(booking.bookingDateTime) 
+      // Force UTC interpretation for consistent date parsing
+      const dateTimeString = booking.bookingDateTime;
+      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
+      const bookingDateTime = utcDateTimeString
+        ? new Date(utcDateTimeString)
         : null;
-      
+
       if (!bookingDateTime || isNaN(bookingDateTime.getTime())) {
         return null;
       }
 
       const dateStr = bookingDateTime.toISOString().split('T')[0];
-      const timeStr = bookingDateTime.toTimeString().split(' ')[0].substring(0, 5);
+      const sessionTimeStr = formatSessionTime(dateTimeString, booking.durationMinutes || 60);
+
+      const startTimeStr = formatStartTime(dateTimeString);
 
       return {
         id: String(booking.id),
@@ -81,41 +164,43 @@ export default function TagakTuroHomepage() {
         subject: booking.subject || '',
         location: booking.modality || '',
         date: dateStr,
-        time: timeStr,
+        time: sessionTimeStr,
+        startTime: startTimeStr,
         status: booking.status || 'PENDING',
         notes: booking.notes || '',
         durationMinutes: booking.durationMinutes || 0,
+        rawDate: booking.bookingDateTime, // Store raw date for modal operations
       };
     } catch (error) {
       console.error('Error transforming booking:', error);
       return null;
     }
   };
-
+ 
   const fetchBookings = async (tutorId: string, tutorName: string) => {
     if (!tutorId || !tutorName) return;
     try {
       // Fetch all pending bookings (for tutors to see all available bookings)
       const pendingResponse = await getPendingBookings();
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
-      
+ 
       // Fetch bookings assigned to this tutor (confirmed/accepted bookings)
       const tutorBookingsResponse = await getBookingsByTutorName(tutorName);
       const tutorBookings = Array.isArray(tutorBookingsResponse) ? tutorBookingsResponse : [];
-
+ 
       // Transform bookings
       const transformedPending = allPendingBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
-      
+ 
       const transformedTutor = tutorBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
-
+ 
       // Separate tutor's bookings by status
       const upcoming: Booking[] = [];
       const completed: Booking[] = [];
-
+ 
       transformedTutor.forEach((booking: Booking) => {
         if (booking.status === "CONFIRMED") {
             upcoming.push(booking);
@@ -123,7 +208,7 @@ export default function TagakTuroHomepage() {
           completed.push(booking);
         }
       });
-
+ 
       setPendingBookings(transformedPending);
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
@@ -131,26 +216,26 @@ export default function TagakTuroHomepage() {
           console.error("Failed to fetch bookings:", error);
       }
     };
-
+ 
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
     "Poppins-Bold": Poppins_700Bold,
     "Poppins-SemiBold": Poppins_600SemiBold,
   });
-
+ 
   useEffect(() => {
     async function prepare() {
       await SplashScreen.preventAutoHideAsync();
     }
     prepare();
   }, []);
-
+ 
   useEffect(() => {
     if (fontsLoaded) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
-
+ 
   useEffect(() => {
     const fetchUserData = async () => {
       const userDataString = await AsyncStorage.getItem("userData");
@@ -161,27 +246,35 @@ export default function TagakTuroHomepage() {
         setUserName(fullName); // Use full name for filtering
         setDisplayUserName(firstName); // Use first name for display
         setUserId(userData.id); // Assuming userData contains the tutor's ID
+      } else {
+        console.log('No user data found in AsyncStorage');
       }
     };
-
+ 
     fetchUserData();
   }, []);
-
+ 
   useEffect(() => {
     if (userId) {
       fetchBookings(userId, userName);
-    }
-  }, [userId, userName]);
+      // Set up polling every 5 seconds to see real-time updates from students
+      const interval = setInterval(() => {
+        fetchBookings(userId, userName);
+      }, 5000);
 
+      return () => clearInterval(interval);
+    }
+  }, [userId, userName]); // eslint-disable-line react-hooks/exhaustive-deps
+ 
   if (!fontsLoaded) {
     return null;
   }
-
+ 
   const displayedClasses =
     activeTab === "upcoming"
       ? upcomingClasses
       : pastClasses;
-
+ 
   const openStudentModal = (booking: Booking) => {
     setSelectedBooking(booking);
     setShowStudents(true);
@@ -199,17 +292,24 @@ export default function TagakTuroHomepage() {
       }),
     ]).start();
   };
-
+ 
   const showBookingDetailsModal = (booking: Booking) => {
-    setBookingDetails(booking);
-    setShowBookingDetails(true);
+    setSelectedBookingForModal(booking);
+    // Initialize picker with current booking date or now
+    setTempDate(booking.rawDate ? new Date(booking.rawDate) : new Date());
+    setModalView('details');
+    setModalVisible(true);
   };
-
+ 
   const closeBookingDetailsModal = () => {
-    setShowBookingDetails(false);
-    setBookingDetails(null);
+    setModalVisible(false);
+    setSelectedBookingForModal(null);
+    setModalView('details');
+    setModalLoading(false);
+    setSelectedDate(null);
+    setSelectedTime(null);
   };
-
+ 
   const closeStudentModal = () => {
     Animated.parallel([
       Animated.timing(slideAnim, {
@@ -227,7 +327,7 @@ export default function TagakTuroHomepage() {
       setSelectedBooking(null);
     });
   };
-
+ 
   const handleAcceptBooking = async (bookingId: string) => {
     try {
       // Find the booking from pendingBookings
@@ -236,14 +336,14 @@ export default function TagakTuroHomepage() {
         console.error("Booking not found in pending bookings.");
         return;
       }
-
+ 
       // First update the booking status to CONFIRMED
       await updateBookingStatus(bookingId, "CONFIRMED");
-
+ 
       // Then update the booking with tutor name assignment
       const updatedBooking = { ...bookingToAccept, status: "CONFIRMED", tutorName: userName };
       await updateBooking(bookingId, updatedBooking);
-
+ 
       closeStudentModal();
       if (userId && userName) {
         fetchBookings(userId, userName); // Re-fetch bookings to update the lists
@@ -254,7 +354,7 @@ export default function TagakTuroHomepage() {
       Alert.alert('Error', 'Failed to accept booking. Please try again.');
     }
   };
-
+ 
   const handleDeclineBooking = async (bookingId: string) => {
     try {
       await updateBookingStatus(bookingId, "CANCELLED");
@@ -266,7 +366,7 @@ export default function TagakTuroHomepage() {
       console.error("Failed to decline booking:", error);
     }
   };
-
+ 
   const toggleBookingExpansion = (bookingId: string) => {
     setExpandedBookings(prev => {
       const newSet = new Set(prev);
@@ -279,10 +379,112 @@ export default function TagakTuroHomepage() {
     });
   };
 
+  // --- Modal Handlers ---
+  const handleRescheduleSubmit = async () => {
+    try {
+      setModalLoading(true);
+
+      // Combine selected date and time into a single Date object
+      let newDateTime;
+
+      if (selectedDate && selectedTime) {
+        // Both date and time selected
+        newDateTime = new Date(selectedDate);
+        newDateTime.setHours(selectedTime.getHours());
+        newDateTime.setMinutes(selectedTime.getMinutes());
+        newDateTime.setSeconds(0);
+        newDateTime.setMilliseconds(0);
+      } else if (selectedDate) {
+        // Only date selected, use the time from tempDate
+        newDateTime = new Date(selectedDate);
+        newDateTime.setHours(tempDate.getHours());
+        newDateTime.setMinutes(tempDate.getMinutes());
+        newDateTime.setSeconds(0);
+        newDateTime.setMilliseconds(0);
+      } else if (selectedTime) {
+        // Only time selected, use the date from tempDate
+        newDateTime = new Date(tempDate);
+        newDateTime.setHours(selectedTime.getHours());
+        newDateTime.setMinutes(selectedTime.getMinutes());
+        newDateTime.setSeconds(0);
+        newDateTime.setMilliseconds(0);
+      } else {
+        // No new date/time selected, use tempDate as-is
+        newDateTime = tempDate;
+      }
+
+      // Validate that the new date/time is in the future
+      if (newDateTime <= new Date()) {
+        Alert.alert('Error', 'Please select a date and time in the future.');
+        return;
+      }
+
+      // Convert to ISO string for API
+      const isoDateTime = newDateTime.toISOString();
+
+      // Call API to update booking
+      await updateBooking(selectedBookingForModal!.id, {
+        bookingDateTime: isoDateTime
+      });
+
+      // Refresh bookings to show updated data
+      if (userId && userName) {
+        fetchBookings(userId, userName);
+      }
+
+      setModalView('success');
+    } catch (error) {
+      console.error('Error rescheduling booking:', error);
+      Alert.alert('Error', 'Failed to reschedule booking. Please try again.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const handleCancelConfirm = async () => {
+    try {
+      setModalLoading(true);
+
+      // Call API to cancel booking
+      await updateBookingStatus(selectedBookingForModal!.id, 'CANCELLED');
+
+      // Refresh bookings to show updated data
+      if (userId && userName) {
+        fetchBookings(userId, userName);
+      }
+
+      setModalView('cancelSuccess');
+    } catch (error) {
+      console.error('Error canceling booking:', error);
+      Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  // Date Picker Handlers
+  const onDateChange = (event: any, selectedDate: Date | undefined) => {
+    const currentDate = selectedDate || tempDate;
+    setShowDatePicker(Platform.OS === 'ios'); // Keep open on iOS if needed, close on Android
+    if (event.type !== 'dismissed') {
+      setShowDatePicker(false);
+      setTempDate(currentDate);
+    }
+  };
+
+  const onTimeChange = (event: any, selectedTime: Date | undefined) => {
+    const currentTime = selectedTime || tempDate;
+    setShowTimePicker(Platform.OS === 'ios');
+    if (event.type !== 'dismissed') {
+      setShowTimePicker(false);
+      setTempDate(currentTime);
+    }
+  };
+ 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-
+ 
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -294,7 +496,7 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.greeting}>Hi, {displayUserName}!</Text>
                 <Text style={styles.subGreeting}>Ready to teach?</Text>
             </View>
-
+ 
             <View style={styles.headerIcons}>
                 <TouchableOpacity
                 style={styles.notificationContainer}
@@ -305,13 +507,13 @@ export default function TagakTuroHomepage() {
                     <Text style={styles.badgeText}>2</Text>
                 </View>
                 </TouchableOpacity>
-
+ 
                 <View style={styles.profilePicture}>
                 <Ionicons name="person-circle" size={48} color="#2B74B4" />
                 </View>
             </View>
             </View>
-
+ 
             <TouchableOpacity style={styles.bookCard} onPress={() => {
               if (pendingBookings.length > 0) {
                 setShowStudents(true);
@@ -329,18 +531,19 @@ export default function TagakTuroHomepage() {
                   }),
                 ]).start();
               } else {
+                console.log('No bookings available');
                 alert('There are no bookings yet');
               }
             }}>
-            <Text style={styles.bookCardTitle}>Students are waiting!</Text>
+            <Text style={styles.bookCardTitle}>Student are waiting!</Text>
             <Text style={styles.bookCardSubtitle}>
                 Click here to view the list of students you can teach
             </Text>
             </TouchableOpacity>
-
+ 
             <View style={styles.classesHeader}>
             <Text style={styles.classesTitle}>Classes</Text>
-
+ 
             <View style={styles.tabContainer}>
                 <TouchableOpacity
                 style={[
@@ -358,7 +561,7 @@ export default function TagakTuroHomepage() {
                     Upcoming
                 </Text>
                 </TouchableOpacity>
-
+ 
                 <TouchableOpacity
                 style={[
                     styles.tab,
@@ -375,110 +578,39 @@ export default function TagakTuroHomepage() {
                     Past
                 </Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                style={[styles.tab, activeTab === "past" && styles.activeTab]}
-                onPress={() => setActiveTab("past")}
-                >
-                <Text
-                    style={[
-                    styles.tabText,
-                    activeTab === "past" && styles.activeTabText,
-                    ]}
-                >
-                    Past
-                </Text>
-                </TouchableOpacity>
             </View>
             </View>
-
-            {displayedClasses.map((classItem: Booking) => {
-              const isExpanded = expandedBookings.has(classItem.id);
-              return (
-                <View key={classItem.id} style={styles.classCard}>
-                  <View style={styles.classInfo}>
-                    <View style={styles.classHeaderRow}>
-                      <View style={styles.classHeaderLeft}>
-                        <Text style={styles.tutorName}>{classItem.studentName}</Text>
-                        <Text style={styles.subject}>{classItem.subject}</Text>
-                      </View>
+ 
+            {/* UPDATED CLASS CARD RENDERING */}
+            {displayedClasses.map((classItem: Booking) => (
+                <View key={classItem.id} style={styles.newClassCard}>
+                  <View style={styles.newClassContentRow}>
+                    <View style={styles.newClassInfoCol}>
+                      <Text style={styles.newStudentName}>{classItem.studentName}</Text>
+                      <Text style={styles.newClassDetail}>{classItem.subject}</Text>
+                      <Text style={styles.newClassDetail}>{classItem.location}</Text>
+                      <Text style={styles.newClassDetail}>{formatBookingDateTime(classItem.rawDate || classItem.date)}</Text>
+                      <Text style={styles.newStatusText}>
+                        Status: {classItem.status === "CONFIRMED" ? "UPCOMING" : classItem.status} 
+                      </Text>
+                    </View>
+                    <View style={styles.newButtonCol}>
                       <TouchableOpacity
-                        onPress={() => toggleBookingExpansion(classItem.id)}
-                        style={styles.expandButton}
+                        style={styles.newViewButton}
+                        onPress={() => {
+                            showBookingDetailsModal(classItem);
+                        }}
                       >
-                        <Ionicons
-                          name={isExpanded ? "chevron-up" : "chevron-down"}
-                          size={24}
-                          color="#2B74B4"
-                        />
+                        <Text style={styles.newViewButtonText}>View</Text>
                       </TouchableOpacity>
                     </View>
-                    
-                    {isExpanded && (
-                      <View style={styles.expandedContent}>
-                        <Text style={styles.location}>{classItem.location}</Text>
-                        <Text style={styles.dateTime}>{`${classItem.date} | ${classItem.time}`}</Text>
-
-                        {activeTab !== "pending" && (
-                          <Text
-                            style={[
-                              styles.status,
-                              classItem.status === "CONFIRMED" && styles.statusConfirmed,
-                              classItem.status === "COMPLETED" && styles.statusCompleted,
-                              classItem.status === "DECLINED" && styles.statusDeclined,
-                              classItem.status === "CANCELLED" && styles.statusCancelled,
-                            ]}
-                          >
-                            Status: {classItem.status === "CONFIRMED" ? "Confirmed" : classItem.status === "CANCELLED" ? "Cancelled" : classItem.status === "COMPLETED" ? "Completed" : classItem.status}
-                          </Text>
-                        )}
-
-                        {activeTab === "pending" ? (
-                          <View style={styles.actionButtons}>
-                            <TouchableOpacity
-                              style={styles.acceptButton}
-                              onPress={() => {
-                                setSelectedBooking(classItem);
-                                handleAcceptBooking(classItem.id);
-                              }}
-                            >
-                              <Text style={styles.acceptButtonText}>Accept</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                              style={styles.declineButton}
-                              onPress={() => {
-                                setSelectedBooking(classItem);
-                                handleDeclineBooking(classItem.id);
-                              }}
-                            >
-                              <Text style={styles.declineButtonText}>Decline</Text>
-                            </TouchableOpacity>
-                          </View>
-                        ) : (
-                          <TouchableOpacity
-                            style={styles.viewButton}
-                            onPress={() => {
-                              if (activeTab === "upcoming") {
-                                showBookingDetailsModal(classItem);
-                              } else {
-                                openStudentModal(classItem);
-                              }
-                            }}
-                          >
-                            <Text style={styles.viewButtonText}>View Details</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
                   </View>
                 </View>
-              );
-            })}
-
+            ))}
+ 
         <View style={styles.bottomSpacing} />
       </ScrollView>
-
+ 
       {showStudents && (
         <>
           <AnimatedView
@@ -490,7 +622,7 @@ export default function TagakTuroHomepage() {
             ]}
             pointerEvents="none"
           />
-
+ 
           <AnimatedView
             style={[
               styles.studentModal,
@@ -506,7 +638,7 @@ export default function TagakTuroHomepage() {
                 <Ionicons name="chevron-down" size={36} color="#2B74B4" />
                 </TouchableOpacity>
             </View>
-
+ 
             <ScrollView
                 style={{ paddingHorizontal: 20 }}
                 showsVerticalScrollIndicator={false}
@@ -517,97 +649,200 @@ export default function TagakTuroHomepage() {
                         <Text style={styles.studentSub}>{booking.subject}</Text>
                         <Text style={styles.studentSub}>{booking.location}</Text>
                         <Text style={styles.studentSub}>
-                        {`${booking.date} | ${booking.time}`}
+                        {formatBookingDateTime(booking.rawDate || booking.date)}
                         </Text>
-
+ 
                         <View style={styles.btnRow}>
                         <TouchableOpacity style={styles.acceptBtn} onPress={() => handleAcceptBooking(booking.id)}>
                             <Text style={styles.acceptText}>Accept</Text>
                         </TouchableOpacity>
-
+ 
                         <TouchableOpacity style={styles.declineBtn} onPress={() => handleDeclineBooking(booking.id)}>
                             <Text style={styles.declineText}>Decline</Text>
                         </TouchableOpacity>
                         </View>
                     </View>
                 ))}
-
+ 
             <View style={{ height: 15 }} />
           </ScrollView>
           </AnimatedView>
         </>
       )}
+ 
+      {/* --- SESSION DETAILS MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeBookingDetailsModal}
+      >
+        <BlurView intensity={20} tint="light" style={styles.absolute}>
+          <View style={styles.modalContent}>
 
-      {/* Booking Details Modal */}
-      {showBookingDetails && bookingDetails && (
-        <View style={styles.bookingDetailsModal}>
-          <BlurView intensity={20} style={styles.blurBackground}>
-            <View style={styles.bookingDetailsContainer}>
-              <View style={styles.bookingDetailsHeader}>
-                <Text style={styles.bookingDetailsTitle}>Booking Details</Text>
-                <TouchableOpacity onPress={closeBookingDetailsModal}>
-                  <Ionicons name="close" size={24} color="#2B74B4" />
+            {/* VIEW 1: Session Details */}
+            {modalView === 'details' && selectedBookingForModal && (
+              <>
+                <Text style={styles.modalHeadline}>{selectedBookingForModal.studentName}</Text>
+                <Text style={styles.modalCaption}>{selectedBookingForModal.subject}</Text>
+                <Text style={styles.modalCaption}>{selectedBookingForModal.location}</Text>
+                <Text style={styles.modalCaption}>{formatStartTime(selectedBookingForModal.rawDate || selectedBookingForModal.date)}</Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{color: '#95CDF2', fontWeight: '400'}}>{selectedBookingForModal.status}</Text></Text>
+ 
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity style={styles.modalChatButton}>
+                        <Text style={styles.modalBtnTextWhite}>Chat with your Student</Text>
+                    </TouchableOpacity>
+ 
+                  <TouchableOpacity
+                    style={styles.modalRescheduleButton}
+                    onPress={() => setModalView('reschedule')}
+                  >
+                        <Text style={styles.modalBtnTextWhite}>Reschedule</Text>
+                    </TouchableOpacity>
+ 
+                  <TouchableOpacity
+                    style={styles.modalCancelButton}
+                    onPress={() => setModalView('cancel')}
+                  >
+                        <Text style={styles.modalBtnTextWhite}>Cancel Session</Text>
+                    </TouchableOpacity>
+ 
+                  <TouchableOpacity style={styles.modalReturnButton} onPress={closeBookingDetailsModal}>
+                    <Text style={styles.modalBtnTextBlue}>Return</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            {/* VIEW 2: Reschedule */}
+            {modalView === 'reschedule' && selectedBookingForModal && (
+              <>
+                <Text style={styles.modalSectionTitle}>Current Session</Text>
+                <Text style={styles.modalTextSmall}>{selectedBookingForModal.location}</Text>
+                <Text style={styles.modalTextSmall}>{formatSessionTime(selectedBookingForModal.rawDate || selectedBookingForModal.date, selectedBookingForModal.durationMinutes)}</Text>
+
+                <Text style={[styles.modalSectionTitle, { marginTop: 15 }]}>Date</Text>
+
+                {/* Custom Date Input Trigger */}
+                <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.pickerTrigger}>
+                  <Text style={styles.pickerText}>
+                    {tempDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                  </Text>
                 </TouchableOpacity>
-              </View>
 
-              <View style={styles.bookingDetailsContent}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Student:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.studentName}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Subject:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.subject}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Date:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.date}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Time:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.time}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Location:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.location}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Duration:</Text>
-                  <Text style={styles.detailValue}>{bookingDetails.durationMinutes} minutes</Text>
-                </View>
-
-                {bookingDetails.notes && (
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Notes:</Text>
-                    <Text style={styles.detailValue}>{bookingDetails.notes}</Text>
-                  </View>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onDateChange}
+                    minimumDate={new Date()}
+                  />
                 )}
 
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Status:</Text>
-                  <Text style={styles.detailValue}>
-                    {bookingDetails.status === "CONFIRMED" ? "Confirmed" :
-                     bookingDetails.status === "CANCELLED" ? "Cancelled" :
-                     bookingDetails.status === "COMPLETED" ? "Completed" :
-                     bookingDetails.status}
+                <Text style={[styles.modalSectionTitle, { marginTop: 15 }]}>Preferred Time</Text>
+
+                {/* Custom Time Input Trigger */}
+                <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.pickerTrigger}>
+                  <Text style={styles.pickerText}>
+                    {tempDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                   </Text>
+                </TouchableOpacity>
+
+                {showTimePicker && (
+                  <DateTimePicker
+                    value={tempDate}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onTimeChange}
+                  />
+                )}
+
+                <View style={styles.modalButtonContainer}>
+                    <TouchableOpacity 
+                    style={[styles.modalSubmitButton, modalLoading && styles.disabledButton]}
+                    onPress={handleRescheduleSubmit}
+                    disabled={modalLoading}
+                  >
+                    <Text style={styles.modalBtnTextWhite}>
+                      {modalLoading ? 'Rescheduling...' : 'Submit'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalReturnButton, modalLoading && styles.disabledButton]}
+                    onPress={() => setModalView('details')}
+                    disabled={modalLoading}
+                  >
+                    <Text style={styles.modalBtnTextBlue}>Return</Text>
+                    </TouchableOpacity>
                 </View>
+              </>
+            )}
+
+            {/* VIEW 3: Reschedule Success */}
+            {modalView === 'success' && (
+              <View style={{alignItems: 'center', paddingVertical: 20}}>
+                <Text style={styles.successTitle}>Successfully Rescheduled!</Text>
+                <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
+
+                <TouchableOpacity style={[styles.modalReturnButton, { width: '100%', marginTop: 20 }]} onPress={closeBookingDetailsModal}>
+                  <Text style={styles.modalBtnTextBlue}>Return</Text>
+                </TouchableOpacity>
               </View>
+            )}
+
+            {/* VIEW 4: Cancel Confirmation */}
+            {modalView === 'cancel' && (
+              <View style={{alignItems: 'center'}}>
+                <Text style={[styles.cancelHeadline, {marginBottom: 20, textAlign: 'center'}]}>
+                  Are you sure you want to cancel?
+                </Text>
+
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={[styles.modalCancelButton, modalLoading && styles.disabledButton]}
+                    onPress={handleCancelConfirm}
+                    disabled={modalLoading}
+                  >
+                    <Text style={styles.modalBtnTextWhite}>
+                      {modalLoading ? 'Cancelling...' : 'Cancel'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.modalReturnButton, modalLoading && styles.disabledButton]}
+                    onPress={() => setModalView('details')}
+                    disabled={modalLoading}
+                  >
+                    <Text style={styles.modalBtnTextBlue}>Return</Text>
+                  </TouchableOpacity>
             </View>
-          </BlurView>
         </View>
       )}
 
+            {/* VIEW 5: Cancel Success */}
+            {modalView === 'cancelSuccess' && (
+              <View style={{alignItems: 'center', paddingVertical: 20}}>
+                <Text style={styles.successTitle}>Session Cancelled</Text>
+                <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
+
+                <TouchableOpacity style={[styles.modalReturnButton, { width: '100%', marginTop: 20 }]} onPress={closeBookingDetailsModal}>
+                  <Text style={styles.modalBtnTextBlue}>Return</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+          </View>
+        </BlurView>
+      </Modal>
+ 
       <TutorBottomNav />
     </View>
   );
 }
-
+ 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -705,16 +940,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderRadius: 25,
     height: 35,
-    width: 167,
+    width: 170, // Adjusted width
     alignItems: "center",
     borderColor: "#2B74B4",
     borderWidth: 1,
+    overflow: 'hidden',
   },
   tab: {
+    flex: 1, // Equal width
     height: 35,
-    paddingVertical: 6,
-    paddingHorizontal: 16.5,
-    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -730,6 +964,65 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: "#fff",
   },
+  // New Card Styles
+  newClassCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 20,
+    marginBottom: 15,
+    padding: 20,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: "#2B74B4",
+  },
+  newClassContentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end', // Aligns the View button to the bottom right relative to content
+  },
+  newClassInfoCol: {
+    flex: 1,
+    paddingRight: 10,
+  },
+  newStudentName: {
+    fontFamily: "Poppins",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#2B74B4",
+    marginBottom: 4,
+  },
+  newClassDetail: {
+    fontFamily: "Poppins",
+    fontSize: 12,
+    color: "#95CDF2",
+    marginBottom: 1,
+  },
+  newStatusText: {
+    fontFamily: "Poppins",
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#FCC419", // Yellow/Gold
+    marginTop: 4,
+  },
+  newButtonCol: {
+    justifyContent: 'flex-end',
+    paddingBottom: 2,
+  },
+  newViewButton: {
+    backgroundColor: "#2B74B4",
+    paddingVertical: 8,
+    paddingHorizontal: 25,
+    borderRadius: 10,
+    width: 100,
+    alignItems: "center",
+  },
+  newViewButtonText: {
+    fontFamily: "Poppins",
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#fff",
+  },
+ 
+  // Existing styles kept for compatibility with other parts if needed
   classCard: {
     backgroundColor: "#fff",
     marginHorizontal: 20,
@@ -834,10 +1127,10 @@ const styles = StyleSheet.create({
     color: "#D10000",
   },
   statusConfirmed: {
-    color: "#2B74B4", // A suitable color for confirmed status
+    color: "#2B74B4",
   },
   statusCancelled: {
-    color: "#D10000", // Same as declined, or a different shade of red
+    color: "#D10000",
   },
   viewButton: {
     backgroundColor: '#2B74B4',
@@ -857,7 +1150,7 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 15,
   },
-
+ 
   backdrop: {
     position: "absolute",
     top: 0,
@@ -867,7 +1160,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     zIndex: 998,
   },
-
+ 
   studentModal: {
     position: "absolute",
     bottom: 0,
@@ -935,68 +1228,161 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-  bookingDetailsModal: {
+
+  // --- UPDATED STYLES FOR MODAL ---
+  absolute: {
     position: 'absolute',
     top: 0,
     left: 0,
-    right: 0,
     bottom: 0,
+    right: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    // Removed background color to let BlurView handle it
   },
-  blurBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  bookingDetailsContainer: {
-    backgroundColor: '#fff',
+  modalContent: {
+    backgroundColor: 'white',
+    width: '85%',
     borderRadius: 20,
-    margin: 20,
-    maxWidth: 400,
-    width: '90%',
-    maxHeight: '80%',
-  },
-  bookingDetailsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  bookingDetailsTitle: {
+  // Typography updates
+  modalHeadline: {
     fontFamily: 'Poppins',
-    fontSize: 20,
+    fontSize: 17, // Updated
     fontWeight: '700',
     color: '#2B74B4',
   },
-  bookingDetailsContent: {
-    padding: 20,
+  modalCaption: {
+    fontFamily: 'Poppins',
+    fontSize: 12, // Updated
+    color: '#95CDF2',
+    marginBottom: 2,
   },
-  detailRow: {
+  modalText: {
+    fontFamily: 'Poppins',
+    fontSize: 12, // Updated
+    color: '#95CDF2',
+    marginBottom: 2,
+  },
+  modalStatus: {
+    fontFamily: 'Poppins',
+    fontSize: 12, // Updated
+    fontWeight: '700',
+    color: '#2B74B4',
+    marginBottom: 20,
+  },
+  modalSectionTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2B74B4',
+  },
+  modalTextSmall: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    marginBottom: 2,
+  },
+  modalButtonContainer: {
+    width: '100%',
+    gap: 10,
+    marginTop: 10,
+  },
+  modalChatButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalRescheduleButton: {
+    backgroundColor: '#FCC419',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalCancelButton: {
+    backgroundColor: '#FF0000',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  modalReturnButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    opacity: 0.6,
+  },
+  modalSubmitButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  // Button text size updated
+  modalBtnTextWhite: {
+    fontFamily: 'Poppins',
+    fontSize: 15, // Updated
+    fontWeight: '700',
+    color: '#fff',
+  },
+  modalBtnTextBlue: {
+    fontFamily: 'Poppins',
+    fontSize: 15, // Updated
+    fontWeight: '700',
+    color: '#2B74B4',
+  },
+
+  // Reschedule Inputs
+  pickerTrigger: {
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 5,
+    padding: 10,
+    marginTop: 5,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F5F5F5',
   },
-  detailLabel: {
+  pickerText: {
     fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: '600',
     color: '#2B74B4',
-    flex: 1,
   },
-  detailValue: {
+
+  // Success view
+  successTitle: {
     fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#666',
-    flex: 2,
-    textAlign: 'right',
+    fontSize: 17, // Updated
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
+  },
+  successCaption: {
+    fontFamily: 'Poppins',
+    fontSize: 12, // Updated
+    color: '#95CDF2',
+    textAlign: 'center',
+  },
+
+  // Cancel view
+  cancelHeadline: {
+    fontFamily: 'Poppins',
+    fontSize: 17, // Updated
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
   },
 });
