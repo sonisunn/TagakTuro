@@ -289,7 +289,8 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
+    fontWeight: '700',
     color: '#2B74B4',
   },
   scrollView: {
@@ -313,7 +314,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   headerIcons: {
     flexDirection: 'row',
@@ -358,8 +359,9 @@ const styles = StyleSheet.create({
   },
   bookCardTitle: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
     color: '#fff',
+    fontWeight: '700',
     marginBottom: 2,
   },
   bookCardSubtitle: {
@@ -380,7 +382,7 @@ const styles = StyleSheet.create({
   },
   bookButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#2B74B4',
   },
@@ -402,7 +404,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 25,
     height: 35,
-    width: 167,
+    width: 175,
     alignItems: 'center',
     borderColor: '#2B74B4',
     borderWidth: 1,
@@ -420,7 +422,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#2B74B4',
   },
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
   },
   tutorName: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '700',
     color: '#2B74B4',
     marginBottom: 2,
@@ -491,7 +493,7 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#fff',
   },
   matchCardOverlay: {

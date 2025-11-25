@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { signup } from '../src/api/auth';
 import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function TagakTuroSignUp() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function TagakTuroSignUp() {
   const [error, setError] = useState(false);
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
@@ -185,14 +187,31 @@ export default function TagakTuroSignUp() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={[styles.input, error && !password && styles.inputError]}
-              placeholder="ILOVEYOU_123"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholderTextColor="#95CDF2"
-            />
+
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[
+                  styles.passwordInput,
+                  error && !password && styles.inputError
+                ]}
+                placeholder="ILOVEYOU123"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#95CDF2"
+              />
+
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off" : "eye"}
+                  size={20}
+                  color="#2B74B4"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.checkboxContainer}>
@@ -227,51 +246,108 @@ export default function TagakTuroSignUp() {
                   <Text style={styles.modalTitle}>Terms and Condition</Text>
                   
                   <Text style={styles.modalIntro}>
-                    Welcome To TagakTuro: Tutor Services for UMak Students. By using our system application, you agree to the following terms and conditions. Please read them carefully.
+                  Welcome to TagakTuro: Tutor Services for UMak Students. By using our application, you agree to the following Terms and Conditions. Please read them carefully.
                   </Text>
 
                   <Text style={styles.sectionTitle}>1. Acceptance of Terms</Text>
                   <Text style={styles.sectionText}>
-                    By accessing or using our tutoring platform, you agree to comply with these Terms and Conditions and any future updates to them. If you disagree, please refrain from using the Service.                  </Text>
+                  By accessing or using our tutoring platform, you confirm that you have read, understood, and agree to comply with these Terms and Conditions and any future updates. If you disagree, please refrain from using the Service. Electronic signatures, One-Time Passwords (OTPs), and other electronic confirmations are legally binding under the Philippine E-Commerce Act (RA 8792).
+                  </Text>
 
                   <Text style={styles.sectionTitle}>2. Service Overview</Text>
                   <Text style={styles.sectionText}>
-                    TagakTuro: Tutor Services for UMak Students provides a platform where bona fide students of the University of Makati can search for Tutors. Individuals can voluntarily apply to become Tutors themselves.
+                  TagakTuro provides a platform where bona fide students of the University of Makati can book tutoring sessions with approved tutors, and where qualified individuals may apply to become Tutors.
                   </Text>
 
                   <Text style={styles.sectionTitle}>3. User Eligibility</Text>
                   <Text style={styles.sectionText}>
                     • Users must be bona fide students or staff of the University of Makati.{'\n'}  
-                    • Tutors must meet our qualifications and approval process to offer tutoring sessions.
+                    • Tutors must meet our qualifications and pass the approval process.{'\n'}    
+                    • Users confirm they are of legal age and have full legal capacity to enter into this agreement.
                   </Text>
                   <Text style={styles.sectionTitle}>4. User Accounts</Text>
                   <Text style={styles.sectionText}>
-                    • You are responsible for providing accurate information when creating an account.{'\n'}
-                    • Keep your login credentials confidential; you are responsible for all activities under your account.
-                  </Text>
+                    • You must provide accurate and current information when creating an account.{'\n'}
+                    • You are responsible for safeguarding your login credentials (username, password, OTP).{'\n'}
+                    • Notify TagakTuro immediately of any material changes to your account information.
 
-                  <Text style={styles.sectionTitle}>5. Booking</Text>
-                  <Text style={styles.sectionText}>
+                  </Text>
+                    <Text style={styles.sectionTitle}>5. Booking</Text>
+                    <Text style={styles.sectionText}>
                     • Students can book tutoring sessions through the app.{'\n'}
                     • Students shall book 3 days before the target date of the schedule                  
-                  </Text>
+                    </Text>
+                    <Text style={styles.sectionTitle}>6. Tutor Application and Approval</Text>
+                    <Text style={styles.sectionText}>
+                    • Tutors must submit proof of academic qualifications and relevant experience. Applications are subject to administrator review.{'\n'}
+                    • Conduct and Standards: Tutors must maintain professionalism, punctuality, respectful communication, and preparedness.{'\n'}
+                    • Session Delivery: Sessions must be conducted either on UMak premises or via the app's integrated video conferencing system.{'\n'}
+                    • Documentation: Tutors must indicate session location and upload photos before, during, and after sessions, with third-party monitoring for face-to-face sessions.{'\n'}
+                    • Materials: Tutors must prepare instructional materials that comply with intellectual property laws.{'\n'}
+                    • Prohibited Conduct: Tutors may not:{'\n'}
+                    • Conduct sessions outside approved venues/platforms.{'\n'}
+                    • Accept direct payments outside the system.{'\n'}
+                    • Share personal contact information or engage in non-academic relationships.{'\n'}
+                    • Use or distribute copyrighted, offensive, or inappropriate materials.{'\n'}
+                    • Violation and Termination: Breaches may result in suspension, revocation of tutor status, or permanent removal.
+                    </Text>
+                    <Text style={styles.sectionTitle}>7. Prohibited Conduct (Users & Tutors)</Text>
+                    <Text style={styles.sectionText}>
+                    • No illegal, fraudulent, or harmful activities.{'\n'}
+                    • No study sessions outside UMak premises or the app's video platform.{'\n'}
+                    • No sharing of offensive or copyrighted materials.{'\n'}
+                    • Misuse may result in suspension or termination.
+                    </Text>
+                    <Text style={styles.sectionTitle}>8. Intellectual Property</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro owns all app content, logos, mascot, and materials.{'\n'}
+                    • Users receive a limited, non-transferable license to use the Service.{'\n'}
+                    • Unauthorized reproduction, modification, or distribution is prohibited under the Intellectual Property Code (RA 8293).
+                    </Text>
 
-                  <Text style={styles.sectionTitle}>6. Tutor Application and Approval</Text>
-                  <Text style={styles.sectionText}>
-                    • 6.1 Application and Qualification. Individuals seeking to become Tutors must submit a formal application through the designated platform, including proof of academic qualifications and relevant experience. All applications are subject to review and approval by the administrators of TagakTuro.{'\n'}
-                    • 6.2 Conduct and Professional Standards. Approved Tutors shall uphold the highest standards of professionalism, including punctuality, respectful communication, and preparedness for each tutoring session. Tutors are expected to foster a supportive and academically focused environment.{'\n'}
-                    • 6.3 Session Delivery and Platform Use. Tutors shall conduct all tutoring sessions either within the approved physical premises of the University of Makati or through the integrated video conferencing system provided by the application. Sessions conducted outside these channels are strictly prohibited.{'\n'}
-                    • 6.4 Tutors are required to indicate the location of the session and upload photos taken before, during, and after the meeting, including documentation of activities conducted with the assigned third-party monitor for face-to-face sessions.{'\n'}
-                    • 6.5 Materials and Preparation. Tutors are responsible for preparing appropriate instructional materials tailored to the students&apos; academic needs. All materials must comply with intellectual property laws and institutional guidelines.{'\n'}
-                    • 6.6 Evaluation and Certification. Tutors may be subject to periodic evaluations based on student feedback, attendance, and performance metrics. The administrators may award tutors who consistently meet or exceed expectations certificates of recognition.{'\n'}
+                    <Text style={styles.sectionTitle}>9. Privacy and Data Protection</Text>
+                    <Text style={styles.sectionText}>
+                    • Your use of the Service is subject to our separate Privacy Policy, compliant with the Philippine Data Privacy Act (RA 10173).{'\n'}
+                    • By using the Service, you consent to the collection, use, and processing of your Personal Data as outlined in the Privacy Policy.
+                    </Text>
 
-                  </Text>
-                </ScrollView>
+                    <Text style={styles.sectionTitle}>10. Disclaimers and Limitation of Liability</Text>
+                    <Text style={styles.sectionText}>
+                    • The Service is provided "as is." We do not guarantee learning outcomes or session availability.{'\n'}
+                    • Liability is limited to the extent permitted by Philippine law. Waivers for fraud or gross negligence are void.{'\n'}
+                    • Users agree to indemnify TagakTuro against claims arising from misuse or violations of these Terms.
+                    </Text>
 
-                <TouchableOpacity 
-                  style={styles.returnButton}
-                  onPress={() => setTermsModalVisible(false)}
-                >
+                    <Text style={styles.sectionTitle}>11. Communication and Electronic Transactions</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro may send notices via email, SMS, or app notifications.{'\n'}
+                    • Communications sent to your registered contact details are considered valid.{'\n'}
+                    • Communications may be recorded and stored as proof of acceptance.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>12. Termination</Text>
+                    <Text style={styles.sectionText}>
+                    • TagakTuro reserves the right to suspend or terminate accounts for violations of these Terms.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>13. Changes to Terms</Text>
+                    <Text style={styles.sectionText}>
+                    • We may update these Terms at any time.{'\n'}
+                    • Updates are binding once published in the app or communicated via email/SMS.
+                    </Text>
+
+                    <Text style={styles.sectionTitle}>14. Governing Law and Dispute Resolution</Text>
+                    <Text style={styles.sectionText}>
+                    • These Terms are governed by the laws of the Republic of the Philippines.{'\n'}
+                    • Disputes shall be brought exclusively before the courts of Metro Manila.{'\n'}
+                    • Arbitration or mediation may be used as alternative dispute resolution methods.
+                    </Text>
+                  </ScrollView>
+
+                  <TouchableOpacity 
+                    style={styles.returnButton}
+                    onPress={() => setTermsModalVisible(false)}
+                  >
                   <Text style={styles.returnButtonText}>Return</Text>
                 </TouchableOpacity>
               </View>
@@ -291,37 +367,40 @@ export default function TagakTuroSignUp() {
                   <Text style={styles.modalTitle}>Privacy Policy</Text>
                   
                   <Text style={styles.modalIntro}>
-                    At TagakTuro, we value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data.
+                  We care about your privacy. Here’s how TagakTuro handles your data in simple terms:
                   </Text>
 
-                  <Text style={styles.sectionTitle}>1. Information We Collect</Text>
+                  <Text style={styles.sectionTitle}>What We Collect</Text>
+                    <Text style={styles.sectionText}>
+                    • Your name, UMak ID, email, and mobile number.{'\n'}
+                    • Tutor applicants: qualifications and proof of experience.{'\n'}
+                    • Technical info like device type and usage logs.
+                    </Text>
+                  <Text style={styles.sectionTitle}>Why We Collect It</Text>
                   <Text style={styles.sectionText}>
-                    We collect personal information such as your name, email address, student ID, phone number, and academic details when you register or use our services.
+                    • To let you book tutoring sessions.{'\n'}
+                    • To approve tutors.{'\n'}
+                    • To send updates and confirmations.{'\n'}
+                    • To improve the app and keep it secure.
                   </Text>
-
-                  <Text style={styles.sectionTitle}>2. How We Use Your Information</Text>
+                  <Text style={styles.sectionTitle}>Who We Share With</Text>
                   <Text style={styles.sectionText}>
-                    Your information is used to provide tutoring services, match students with tutors, process bookings, and improve our platform.
+                    • Tutors (only session‑related info).{'\n'}
+                    • Service providers (like hosting and payments).{'\n'}
+                    • Government if legally required.{'\n\n'}
+                    We never sell your data.
                   </Text>
-
-                  <Text style={styles.sectionTitle}>3. Data Security</Text>
+                  <Text style={styles.sectionTitle}>Your Rights</Text>
                   <Text style={styles.sectionText}>
-                    We implement security measures to protect your personal information from unauthorized access, alteration, or disclosure.
+                    You can ask to see your data, correct it, delete it, or stop certain uses.
                   </Text>
-
-                  <Text style={styles.sectionTitle}>4. Information Sharing</Text>
+                  <Text style={styles.sectionTitle}>Security</Text>
                   <Text style={styles.sectionText}>
-                    We do not sell your personal information. We only share data with tutors and students as necessary to facilitate tutoring sessions.
+                    We use encryption and monitoring to protect your data. If a breach happens, we’ll notify you and the NPC within 72 hours.
                   </Text>
-
-                  <Text style={styles.sectionTitle}>5. Your Rights</Text>
+                  <Text style={styles.sectionTitle}>Consent</Text>
                   <Text style={styles.sectionText}>
-                    You have the right to access, update, or delete your personal information. Contact us if you wish to exercise these rights.
-                  </Text>
-
-                  <Text style={styles.sectionTitle}>6. Changes to Policy</Text>
-                  <Text style={styles.sectionText}>
-                    We may update this Privacy Policy from time to time. Continued use of the platform constitutes acceptance of any changes.
+                    By clicking "Agree," you allow us to process your data. You can withdraw consent anytime in the app or by contacting us.
                   </Text>
                 </ScrollView>
 
@@ -393,7 +472,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 17,
     color: '#fff',
     opacity: 0.9,
   },
@@ -412,7 +491,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -422,14 +501,15 @@ const styles = StyleSheet.create({
     color: '#95CDF2',
     textAlign: 'center',
     marginBottom: 20,
+    fontWeight: '700',
   },
   inputGroup: {
     marginBottom: 12,
   },
   label: {
     fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#2B74B4',
     marginBottom: 6,
   },
@@ -441,7 +521,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '400',
+    fontWeight: '700',
     color: '#2B74B4',
   },
   inputError: {
@@ -470,7 +550,7 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
   checkboxTextContainer: {
     flex: 1,
@@ -481,31 +561,33 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontFamily: 'Poppins',
     fontSize: 12,
+    fontWeight: '700',
     color: '#2B74B4',
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   submitButton: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     backgroundColor: '#2B74B4',
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 15,
+    fontWeight: '700',
   },
   submitButtonDisabled: {
     opacity: 0.5,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   footer: {
     alignItems: 'center',
@@ -520,7 +602,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '600',
+    fontWeight: '700',
     textDecorationLine: 'underline',
   },
   blurBackground: {
@@ -545,7 +627,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#2B74B4',
     textAlign: 'center',
     marginBottom: 10,
@@ -560,11 +642,10 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#2B74B4',
     marginTop: 5,
-    marginBottom: 8,
   },
   sectionText: {
     fontFamily: 'Poppins',
@@ -585,8 +666,24 @@ const styles = StyleSheet.create({
   },
   returnButtonText: {
     fontFamily: 'Poppins',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#2B74B4',
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#2B74B4",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    fontWeight: '700',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: "#2B74B4",
+    fontWeight: '700',
   },
 });

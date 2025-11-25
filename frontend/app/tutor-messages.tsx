@@ -120,7 +120,7 @@ export default function MessagesPage() {
                   message.sender === 'student' ? styles.studentBubble : styles.tutorBubble,
                 ]}
               >
-                <Text
+                <Text 
                   style={[
                     styles.messageText,
                     message.sender === 'student' ? styles.studentText : styles.tutorText,
