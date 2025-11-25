@@ -17,7 +17,6 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from "expo-blur";
 import * as SplashScreen from "expo-splash-screen";
-import { isPast } from "date-fns";
 import {
   useFonts,
   Poppins_400Regular,

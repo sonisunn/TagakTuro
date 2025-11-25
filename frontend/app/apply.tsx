@@ -626,7 +626,7 @@ export default function ApplyTutorPage() {
                   </Text>
                   <Text style={styles.sectionTitle}>Consent</Text>
                   <Text style={styles.sectionText}>
-                    By clicking "Agree," you allow us to process your data. You can withdraw consent anytime in the app or by contacting us.
+                    By clicking &quot;Agree,&quot; you allow us to process your data. You can withdraw consent anytime in the app or by contacting us.
                   </Text>
                 </ScrollView>
 
