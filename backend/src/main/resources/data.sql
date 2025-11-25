@@ -1,5 +1,5 @@
 -- Create a test student user (minimal required fields)
-INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
+INSERT INTO `users` (name, email, password, studentId, courseProgram, phone_number)
 VALUES ('Test Student', 'student@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'S123456', 'Computer Science', '1234567890');
 
 -- Get the auto-generated user ID and assign STUDENT role
@@ -11,7 +11,7 @@ INSERT INTO `students` (name, student_id, email, course_program, phone_number)
 VALUES ('Test Student', 'S123456', 'student@example.com', 'Computer Science', '1234567890');
 
 -- Create a test tutor user
-INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
+INSERT INTO `users` (name, email, password, studentId, courseProgram, phone_number)
 VALUES ('Test Tutor', 'tutor@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'TUTOR001', 'N/A', '1234567890');
 
 -- Assign TUTOR role
