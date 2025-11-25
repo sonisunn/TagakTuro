@@ -507,7 +507,7 @@ export default function ApplyTutorPage() {
                     <Text style={styles.sectionText}>
                     • Tutors must submit proof of academic qualifications and relevant experience. Applications are subject to administrator review.{'\n'}
                     • Conduct and Standards: Tutors must maintain professionalism, punctuality, respectful communication, and preparedness.{'\n'}
-                    • Session Delivery: Sessions must be conducted either on UMak premises or via the app's integrated video conferencing system.{'\n'}
+                    • Session Delivery: Sessions must be conducted either on UMak premises or via the app&apos;s integrated video conferencing system.{'\n'}
                     • Documentation: Tutors must indicate session location and upload photos before, during, and after sessions, with third-party monitoring for face-to-face sessions.{'\n'}
                     • Materials: Tutors must prepare instructional materials that comply with intellectual property laws.{'\n'}
                     • Prohibited Conduct: Tutors may not:{'\n'}
@@ -520,7 +520,7 @@ export default function ApplyTutorPage() {
                     <Text style={styles.sectionTitle}>7. Prohibited Conduct (Users & Tutors)</Text>
                     <Text style={styles.sectionText}>
                     • No illegal, fraudulent, or harmful activities.{'\n'}
-                    • No study sessions outside UMak premises or the app's video platform.{'\n'}
+                    • No study sessions outside UMak premises or the app&apos;s video platform.{'\n'}
                     • No sharing of offensive or copyrighted materials.{'\n'}
                     • Misuse may result in suspension or termination.
                     </Text>
@@ -539,7 +539,7 @@ export default function ApplyTutorPage() {
 
                     <Text style={styles.sectionTitle}>10. Disclaimers and Limitation of Liability</Text>
                     <Text style={styles.sectionText}>
-                    • The Service is provided "as is." We do not guarantee learning outcomes or session availability.{'\n'}
+                    • The Service is provided &quot;as is.&quot; We do not guarantee learning outcomes or session availability.{'\n'}
                     • Liability is limited to the extent permitted by Philippine law. Waivers for fraud or gross negligence are void.{'\n'}
                     • Users agree to indemnify TagakTuro against claims arising from misuse or violations of these Terms.
                     </Text>

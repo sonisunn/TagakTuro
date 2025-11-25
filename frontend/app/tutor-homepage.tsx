@@ -12,23 +12,22 @@ import {
   Modal,
   Platform,
 } from "react-native";
- 
-const AnimatedView = Animated.createAnimatedComponent(View);
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import TutorBottomNav from "../components/TutorBottomNav";
-import { BlurView } from "expo-blur";
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { getAllBookings, updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
+import { BlurView } from "expo-blur";
 import * as SplashScreen from "expo-splash-screen";
 import { isPast } from "date-fns";
- 
 import {
-    useFonts,
-    Poppins_400Regular,
-    Poppins_600SemiBold,
-    Poppins_700Bold,
-  } from "@expo-google-fonts/poppins";
+  useFonts,
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from "@expo-google-fonts/poppins";
+
+const AnimatedView = Animated.createAnimatedComponent(View);
+import TutorBottomNav from "../components/TutorBottomNav";
+import { updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
  
 interface Booking {
   id: string;
@@ -56,8 +55,6 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
@@ -275,23 +272,6 @@ export default function TagakTuroHomepage() {
       ? upcomingClasses
       : pastClasses;
  
-  const openStudentModal = (booking: Booking) => {
-    setSelectedBooking(booking);
-    setShowStudents(true);
-    Animated.parallel([
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 65,
-        friction: 11,
-        useNativeDriver: true,
-      }),
-      Animated.timing(backdropOpacity, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
  
   const showBookingDetailsModal = (booking: Booking) => {
     setSelectedBookingForModal(booking);
@@ -367,17 +347,6 @@ export default function TagakTuroHomepage() {
     }
   };
  
-  const toggleBookingExpansion = (bookingId: string) => {
-    setExpandedBookings(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(bookingId)) {
-        newSet.delete(bookingId);
-      } else {
-        newSet.add(bookingId);
-      }
-      return newSet;
-    });
-  };
 
   // --- Modal Handlers ---
   const handleRescheduleSubmit = async () => {
