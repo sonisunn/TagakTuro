@@ -288,9 +288,9 @@ export default function ApplyTutorPage() {
               <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
                 <Text style={styles.submitButtonText}>Next</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/tutor-homepage')}>
+              {/* <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/tutor-homepage')}>
                 <Text style={styles.submitButtonText}>skip</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
@@ -680,13 +680,13 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     opacity: 0.9,
   },
@@ -704,14 +704,14 @@ const styles = StyleSheet.create({
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
   formSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#95BADA',
     textAlign: 'center',
     marginBottom: 20,
@@ -722,14 +722,14 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 6,
   },
   pdfLabel: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#95BADA',
   },
   input: {
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   inputError: {
@@ -759,7 +759,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     flex: 1,
     alignItems: 'center',
@@ -777,7 +777,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 45,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   eyeIcon: {
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   helperText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#95BADA',
     marginTop: 4,
   },
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: '#2B74B4',
     fontFamily: 'Poppins',
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 15,
   },
   uploadButton: {
@@ -836,7 +836,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95BADA',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   textArea: {
     fontFamily: 'Poppins',
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   checkboxTextContainer: {
     flex: 1,
@@ -891,7 +891,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   submitButton: {
     fontFamily: 'Poppins',
@@ -902,12 +902,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 5,
     height: 50,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   submitButtonText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 15,
     color: '#2B74B4',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   footerText: {
     fontFamily: 'Poppins',
@@ -938,7 +938,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   blurBackground: {
@@ -963,7 +963,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
     marginBottom: 10,
@@ -979,7 +979,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginTop: 5,
   },
@@ -1003,7 +1003,7 @@ const styles = StyleSheet.create({
   returnButtonText: {
     fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
 });

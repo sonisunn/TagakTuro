@@ -66,9 +66,9 @@ export default function TagakTuroLogin() {
         });
     });
   };
-  const handleSkip = () => {
-    router.push('/homepage');
-  };
+  // const handleSkip = () => {
+  //   router.push('/homepage');
+  // };
 
   const [submitting, setSubmitting] = React.useState(false);
 
@@ -140,9 +140,9 @@ export default function TagakTuroLogin() {
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>{submitting ? 'Signing in...' : 'Submit'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
+          {/* <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
             <Text style={styles.submitButtonText}>Skip</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
@@ -183,13 +183,13 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     opacity: 0.9,
   },
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     color: '#95CDF2',
     textAlign: 'center',
     marginBottom: 30,
-    fontWeight: '700'
+    fontWeight: '600'
   },
   inputGroup: {
     marginBottom: 15,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   errorText: {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 20,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   submitButton: {
     fontFamily: 'Poppins',
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
@@ -269,14 +269,14 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 5,
   },
   link: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   passwordContainer: {
@@ -286,13 +286,13 @@ const styles = StyleSheet.create({
     borderColor: "#2B74B4",
     borderRadius: 10,
     paddingHorizontal: 10,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   passwordInput: {
     flex: 1,
     paddingVertical: 10,
     fontSize: 12,
     color: "#2B74B4",
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

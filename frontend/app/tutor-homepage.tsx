@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   greeting: {
     fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
   },
   subGreeting: {
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: "Poppins",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#fff",
   },
   profilePicture: {
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
   bookCardTitle: {
     fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#fff",
     marginBottom: 2,
   },
@@ -900,7 +900,7 @@ const styles = StyleSheet.create({
   classesTitle: {
     fontFamily: "Poppins",
     fontSize: 24,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
   },
   tabContainer: {
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
   },
   activeTabText: {
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
   newStudentName: {
     fontFamily: "Poppins",
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
     marginBottom: 4,
   },
@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
   newStatusText: {
     fontFamily: "Poppins",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#FCC419", // Yellow/Gold
     marginTop: 4,
   },
@@ -986,7 +986,7 @@ const styles = StyleSheet.create({
   newViewButtonText: {
     fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#fff",
   },
  
@@ -1038,7 +1038,7 @@ const styles = StyleSheet.create({
   acceptButtonText: {
     color: "#fff",
     fontFamily: "Poppins",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
   },
   declineButton: {
@@ -1052,13 +1052,13 @@ const styles = StyleSheet.create({
   declineButtonText: {
     color: "#D10000",
     fontFamily: "Poppins",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
   },
   tutorName: {
     fontFamily: "Poppins",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
     marginBottom: 2,
   },
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
   status: {
     fontFamily: "Poppins",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "600",
   },
   statusOnGoing: {
     color: "#FCC419",
@@ -1155,7 +1155,7 @@ const styles = StyleSheet.create({
   studentName: {
     fontFamily: "Poppins",
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "#2B74B4",
   },
   studentSub: {
@@ -1179,7 +1179,7 @@ const styles = StyleSheet.create({
   acceptText: {
     color: "#fff",
     fontFamily: "Poppins",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
   },
   declineBtn: {
@@ -1193,7 +1193,7 @@ const styles = StyleSheet.create({
   declineText: {
     color: "#D10000",
     fontFamily: "Poppins",
-    fontWeight: "700",
+    fontWeight: "600",
     fontSize: 14,
   },
 
@@ -1225,7 +1225,7 @@ const styles = StyleSheet.create({
   modalHeadline: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   modalCaption: {
@@ -1243,14 +1243,14 @@ const styles = StyleSheet.create({
   modalStatus: {
     fontFamily: 'Poppins',
     fontSize: 12, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 20,
   },
   modalSectionTitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   modalTextSmall: {
@@ -1303,13 +1303,13 @@ const styles = StyleSheet.create({
   modalBtnTextWhite: {
     fontFamily: 'Poppins',
     fontSize: 15, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   modalBtnTextBlue: {
     fontFamily: 'Poppins',
     fontSize: 15, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
 
@@ -1334,7 +1334,7 @@ const styles = StyleSheet.create({
   successTitle: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -1349,7 +1349,7 @@ const styles = StyleSheet.create({
   cancelHeadline: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },

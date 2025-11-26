@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 14,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   feedbackSection: {
     marginTop: 20,
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   feedbackTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 15,
   },
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   feedbackName: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#95CDF2',
     fontStyle: 'italic',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   divider: {
     height: 1,

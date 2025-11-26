@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   subtitle: {
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   formTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -501,7 +501,7 @@ const styles = StyleSheet.create({
     color: '#95CDF2',
     textAlign: 'center',
     marginBottom: 20,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   inputGroup: {
     marginBottom: 12,
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 6,
   },
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   inputError: {
@@ -550,7 +550,7 @@ const styles = StyleSheet.create({
   checkmark: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   checkboxTextContainer: {
     flex: 1,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   errorText: {
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   submitButton: {
     fontFamily: 'Poppins',
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginBottom: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   submitButtonDisabled: {
     opacity: 0.5,
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#fff',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
@@ -602,7 +602,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '700',
+    fontWeight: '600',
     textDecorationLine: 'underline',
   },
   blurBackground: {
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
     marginBottom: 10,
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginTop: 5,
   },
@@ -667,7 +667,7 @@ const styles = StyleSheet.create({
   returnButtonText: {
     fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   passwordContainer: {
@@ -677,13 +677,13 @@ const styles = StyleSheet.create({
     borderColor: "#2B74B4",
     borderRadius: 10,
     paddingHorizontal: 10,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   passwordInput: {
     flex: 1,
     paddingVertical: 10,
     fontSize: 12,
     color: "#2B74B4",
-    fontWeight: '700',
+    fontWeight: '600',
   },
 });

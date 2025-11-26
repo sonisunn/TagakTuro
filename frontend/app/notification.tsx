@@ -130,14 +130,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   section: {
     marginTop: 20,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 15,
     marginLeft: 10,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   bottomSpacing: {
     height: 15,
