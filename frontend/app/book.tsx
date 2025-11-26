@@ -156,8 +156,8 @@ export default function BookingPage() {
               setValue={setModality}
               style={styles.dropdown}
               placeholder="Select a modality"
-              placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12, fontWeight: '700',}}
-              textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4', fontWeight:'700',}}
+              placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12, fontWeight: '600',}}
+              textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4', fontWeight:'600',}}
               dropDownContainerStyle={{
                 borderColor: '#2B74B4',
               }}
@@ -167,7 +167,7 @@ export default function BookingPage() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Date</Text>
             <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={{ color: '#2B74B4', fontWeight: '700', fontSize: 12 }}>{date.toLocaleDateString()}</Text>
+              <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>{date.toLocaleDateString()}</Text>
             </TouchableOpacity>
             {showDatePicker && (
               <DateTimePicker
@@ -186,7 +186,7 @@ export default function BookingPage() {
             <Text style={styles.label}>Time</Text>
             <View style={styles.timeInputContainer}>
               <TouchableOpacity style={styles.timeInput} onPress={() => setShowStartPicker(true)}>
-                <Text style={{ color: '#2B74B4', fontWeight: '700', fontSize: 12}}>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12}}>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
               </TouchableOpacity>
               {showStartPicker && (
                 <DateTimePicker
@@ -198,9 +198,9 @@ export default function BookingPage() {
                   }}
                 />
               )}
-              <Text style={{ color: '#2B74B4', fontWeight: '700', fontSize: 12 }}>to</Text>
+              <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>to</Text>
               <TouchableOpacity style={styles.timeInput} onPress={() => setShowEndPicker(true)}>
-                <Text style={{ color: '#2B74B4', fontWeight: '700', fontSize: 12 }}>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
               </TouchableOpacity>
               {showEndPicker && (
                 <DateTimePicker
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   infoText: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     textAlign: 'center',
   },
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 5,
   },
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 12,
     color: '#2B74B4',
-    fontWeight: '700',
+    fontWeight: '600',
     width: '100%',
   },
   timeInputContainer: {
@@ -344,14 +344,14 @@ const styles = StyleSheet.create({
   successTitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 8,
   },
   successText: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#95CDF2',
     lineHeight: 20,
   },
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   bottomSpacing: {

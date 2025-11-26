@@ -210,14 +210,14 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   filterContainer: {
     paddingHorizontal: 20,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   filterText: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   conversationsList: {
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   conversationName: {
     fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   conversationPreview: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   chatHeaderName: {
     fontFamily: 'Poppins',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   chatHeaderSubtitle: {            

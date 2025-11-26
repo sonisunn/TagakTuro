@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   scrollView: {
@@ -659,14 +659,14 @@ const styles = StyleSheet.create({
   greeting: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   subGreeting: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '700',
+    fontWeight: '600',
   },
   headerIcons: {
     flexDirection: 'row',
@@ -694,7 +694,7 @@ const styles = StyleSheet.create({
   badgeText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   profilePicture: {
@@ -713,13 +713,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 17,
     color: '#fff',
-    fontWeight: '700',
+    fontWeight: '600',
     marginBottom: 2,
   },
   bookCardSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     marginBottom: 15,
   },
@@ -735,7 +735,7 @@ const styles = StyleSheet.create({
   bookButtonText: {
     fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   classesHeader: {
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
   classesTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   tabContainer: {
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontFamily: 'Poppins',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   activeTabText: {
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   tutorName: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 2,
   },
@@ -822,7 +822,7 @@ const styles = StyleSheet.create({
   status: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   statusOnGoing: {
     color: '#FCC419',
@@ -845,7 +845,7 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontFamily: 'Poppins',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   matchCardOverlay: {
@@ -873,7 +873,7 @@ const styles = StyleSheet.create({
   matchTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     marginBottom: 2,
   },
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
   modalHeadline: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   modalCaption: {
@@ -939,14 +939,14 @@ const styles = StyleSheet.create({
   modalStatus: {
     fontFamily: 'Poppins',
     fontSize: 12, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 20,
   },
   modalSectionTitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
   modalTextSmall: {
@@ -999,13 +999,13 @@ const styles = StyleSheet.create({
   modalBtnTextWhite: {
     fontFamily: 'Poppins',
     fontSize: 15, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
   },
   modalBtnTextBlue: {
     fontFamily: 'Poppins',
     fontSize: 15, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
   },
 
@@ -1030,7 +1030,7 @@ const styles = StyleSheet.create({
   successTitle: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
@@ -1045,7 +1045,7 @@ const styles = StyleSheet.create({
   cancelHeadline: {
     fontFamily: 'Poppins',
     fontSize: 17, // Updated
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
   },
