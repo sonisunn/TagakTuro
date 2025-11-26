@@ -91,6 +91,11 @@ public class BookingService {
             throw new IllegalArgumentException("Modality is required for booking");
         }
 
+        // Validate venue is required for in-person bookings
+        if ("In-Person".equals(booking.getModality()) && (booking.getVenue() == null || booking.getVenue().isEmpty())) {
+            throw new IllegalArgumentException("Venue is required for in-person bookings");
+        }
+
         // Check for booking conflicts (overlapping time ranges)
         if (booking.getBookingDateTime() != null && booking.getDurationMinutes() != null) {
             LocalDateTime bookingStart = booking.getBookingDateTime();
