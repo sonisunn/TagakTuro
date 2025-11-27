@@ -33,6 +33,8 @@ export default function TagakTuroLogin() {
           setSubmitting(false);
           // Store user data
           if (loginResponse?.user) {
+            console.log('🔍 Login Debug - user object:', JSON.stringify(loginResponse.user, null, 2));
+            console.log('🔍 Login Debug - phone number:', loginResponse.user.phoneNumber);
             await AsyncStorage.setItem('userData', JSON.stringify(loginResponse.user));
           }
 

@@ -74,6 +74,8 @@ export default function ProfilePage() {
 
         if (userDataString) {
           const userData = JSON.parse(userDataString);
+          console.log('🔍 Profile Debug - userData:', JSON.stringify(userData, null, 2));
+          console.log('🔍 Profile Debug - phoneNumber:', userData.phoneNumber);
           setProfileData(prev => ({
             ...prev,
             name: userData.name || '',
@@ -81,7 +83,7 @@ export default function ProfilePage() {
             email: userData.email || '',
             course: userData.courseProgram || '',
             // Load phone number from user data (from registration)
-            phone: userData.phoneNumber || 'Not provided',
+            phone: userData.phoneNumber || 'No phone in userData',
           }));
         }
 
@@ -134,8 +136,7 @@ export default function ProfilePage() {
   };
 
   const handleUpdateClick = () => {
-    // Pre-populate with current phone number, or empty if "Not provided"
-    setTempPhone(profileData.phone === 'Not provided' ? '' : profileData.phone);
+    setTempPhone(profileData.phone);
     setTempImage(profileData.imageUri);
     setIsEditing(true);
   };
@@ -167,10 +168,9 @@ export default function ProfilePage() {
       }
 
       // Update local state with what was actually changed
-      const newPhone = tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : 'Not provided';
       setProfileData(prev => ({
         ...prev,
-        phone: newPhone,
+        phone: tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : prev.phone,
         imageUri: tempImage || prev.imageUri,
       }));
 
