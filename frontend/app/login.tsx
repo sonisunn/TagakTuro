@@ -76,20 +76,28 @@ export default function TagakTuroLogin() {
   // Progress bar animation effect for filling the submit button
   useEffect(() => {
     if (submitting) {
-      // Start the progress animation - fill from 0% to 100%
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: 2000, // 2 seconds to fill completely
-        useNativeDriver: false,
-      }).start();
+      // Start the looping progress animation - continuously fill from 0% to 100%
+      const loopAnimation = Animated.loop(
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 1500, // 1.5 seconds per cycle
+          useNativeDriver: false,
+        })
+      );
+      loopAnimation.start();
     } else {
-      // Reset progress when not submitting
+      // Stop animation and reset progress when not submitting
+      progressAnim.stopAnimation();
       Animated.timing(progressAnim, {
         toValue: 0,
         duration: 300, // Quick reset
         useNativeDriver: false,
       }).start();
     }
+
+    return () => {
+      progressAnim.stopAnimation();
+    };
   }, [submitting, progressAnim]);
 
   const handleSkip = () => {
