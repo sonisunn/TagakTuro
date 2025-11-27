@@ -52,7 +52,7 @@ export default function ProfilePage() {
     fullName: '',
     email: '',
     course: '',
-    phone: '',
+    phone: '', // Will be loaded from user data
     imageUri: null,
   });
 
@@ -71,6 +71,8 @@ export default function ProfilePage() {
             fullName: userData.name || '',
             email: userData.email || '',
             course: userData.courseProgram || '',
+            // Load phone number from user data (from registration)
+            phone: userData.phoneNumber || '',
           }));
         }
 
@@ -83,7 +85,7 @@ export default function ProfilePage() {
           }));
         }
 
-        // Load saved phone number
+        // Load saved phone number (overrides the registration phone if user updated it)
         const savedPhone = await AsyncStorage.getItem('profilePhone');
         if (savedPhone) {
           setProfileData(prev => ({
