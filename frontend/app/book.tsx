@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  Platform, Alert,
+  Platform, Alert, Modal
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { BlurView } from 'expo-blur'; // Added import
 import { createBooking } from '../src/api/booking.js';
 import { getStudentById } from '../src/api/student.js';
 import { AxiosError } from 'axios';
@@ -17,15 +18,23 @@ export default function BookingPage() {
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
   const [date, setDate] = useState(new Date());
+  
+  // Time State
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
+
+  // Date Picker State (Kept original logic for Calendar Date)
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  // New Modal Time Picker State
+  const [showTimeModal, setShowTimeModal] = useState(false);
+  const [timePickerMode, setTimePickerMode] = useState(null); // 'start' or 'end'
+  const [tempTime, setTempTime] = useState(new Date());
+
   const [openModality, setOpenModality] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [studentId, setStudentId] = useState<string | null>(null);
-  const [studentEmail, setStudentEmail] = useState<string | null>(null);
+  const [studentId, setStudentId] = useState(null);
+  const [studentEmail, setStudentEmail] = useState(null);
 
   useEffect(() => {
             const loadUserData = async () => {
@@ -45,6 +54,30 @@ export default function BookingPage() {
             };    loadUserData();
   }, []);
 
+  // --- Modal Time Picker Logic ---
+  const openTimePicker = (mode) => {
+    setTimePickerMode(mode);
+    // Set temp time to currently selected time for that mode
+    setTempTime(mode === 'start' ? startTime : endTime);
+    setShowTimeModal(true);
+  };
+
+  const onTimeChange = (event, selectedDate) => {
+    if (selectedDate) {
+      setTempTime(selectedDate);
+    }
+  };
+
+  const saveTimeSelection = () => {
+    if (timePickerMode === 'start') {
+      setStartTime(tempTime);
+    } else {
+      setEndTime(tempTime);
+    }
+    setShowTimeModal(false);
+  };
+  // -------------------------------
+
   const handleSubmit = async () => {
     if (!studentId || !studentEmail) {
       Alert.alert('Error', 'Student not logged in. Please log in to book a session.');
@@ -56,7 +89,6 @@ export default function BookingPage() {
       return;
     }
 
-    // Validate that the student exists in the database
     try {
       await getStudentById(studentId);
     } catch (error) {
@@ -66,7 +98,6 @@ export default function BookingPage() {
       return;
     }
 
-    // Validate time range
     const bookingStart = new Date(date);
     bookingStart.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
     const bookingEnd = new Date(date);
@@ -79,7 +110,7 @@ export default function BookingPage() {
     }
 
     const bookingData = {
-      student: { id: studentId }, // Revert to sending the ID
+      student: { id: studentId },
       subject: subject,
       bookingDateTime: bookingStart.toISOString(),
       modality,
@@ -93,17 +124,16 @@ export default function BookingPage() {
     try {
       await createBooking(bookingData);
       setBookingSuccess(true);
-    } catch (error: unknown) {
-      const err = error as AxiosError;
-      const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
+    } catch (error) {
+      const err = error;
+      const errorMessage = (err.response?.data)?.error || err.message;
       console.error('Error creating booking:', errorMessage);
       
-      if (errorMessage && (errorMessage.includes('FK95ehd6idg3lvmpah7byi8pfwc') || errorMessage.includes('Student not found'))) { // Specific FK error for student_id or student not found
+      if (errorMessage && (errorMessage.includes('FK95ehd6idg3lvmpah7byi8pfwc') || errorMessage.includes('Student not found'))) {
         await AsyncStorage.removeItem('studentId');
         Alert.alert('Session Expired', 'Your student session is invalid. Please log in again.');
         return;
       }
-      // Check if it's a conflict error
       if (errorMessage && errorMessage.includes('overlaps with an existing booking')) {
         Alert.alert('Booking Conflict', errorMessage);
       } else {
@@ -121,7 +151,6 @@ export default function BookingPage() {
           <Text style={styles.subtitle}>Find a tutor that fits your needs and schedule!</Text>
         </View>
 
-        {/* Info Card */}
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
             TagakTuro offers a wide range of topics!
@@ -185,33 +214,23 @@ export default function BookingPage() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Time</Text>
             <View style={styles.timeInputContainer}>
-              <TouchableOpacity style={styles.timeInput} onPress={() => setShowStartPicker(true)}>
-                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12}}>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+              
+              {/* Start Time Trigger */}
+              <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('start')}>
+                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12}}>
+                  {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
               </TouchableOpacity>
-              {showStartPicker && (
-                <DateTimePicker
-                  mode="time"
-                  value={startTime}
-                  onChange={(event, selected) => {
-                    setShowStartPicker(Platform.OS === 'ios');
-                    if (selected) setStartTime(selected);
-                  }}
-                />
-              )}
+              
               <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>to</Text>
-              <TouchableOpacity style={styles.timeInput} onPress={() => setShowEndPicker(true)}>
-                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+              
+              {/* End Time Trigger */}
+              <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('end')}>
+                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>
+                  {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
               </TouchableOpacity>
-              {showEndPicker && (
-                <DateTimePicker
-                  mode="time"
-                  value={endTime}
-                  onChange={(event, selected) => {
-                    setShowEndPicker(Platform.OS === 'ios');
-                    if (selected) setEndTime(selected);
-                  }}
-                />
-              )}
+
             </View>
           </View>
         </View>
@@ -233,6 +252,37 @@ export default function BookingPage() {
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      {/* Time Picker Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showTimeModal}
+        onRequestClose={() => setShowTimeModal(false)}
+      >
+        <BlurView intensity={10} style={styles.blurContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Select {timePickerMode === 'start' ? 'Start' : 'End'} Time
+            </Text>
+            
+            <DateTimePicker
+              value={tempTime}
+              mode="time"
+              display="spinner"
+              is24Hour={false}
+              onChange={onTimeChange}
+              textColor="#000"
+              style={styles.picker}
+            />
+
+            <TouchableOpacity style={styles.closeModalButton} onPress={saveTimeSelection}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
       <BottomNav />
     </View>
   );
@@ -381,5 +431,47 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     borderColor: '#2B74B4',
+  },
+  // Modal Styles
+  blurContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  modalContent: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+  },
+  modalTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 10,
+  },
+  picker: {
+    width: '100%',
+    height: 150,
+  },
+  closeModalButton: {
+    marginTop: 10,
+    backgroundColor: '#2B74B4',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+  },
+  closeModalText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
