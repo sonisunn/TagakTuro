@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   Modal,
+  Animated,
 } from 'react-native';
 import { signup } from '../src/api/auth';
 import { BlurView } from 'expo-blur';
@@ -29,7 +30,8 @@ export default function TagakTuroSignUp() {
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const validateName = (name: string): boolean => {
+  // Progress bar animation for filling the submit button
+  const progressAnim = useRef(new Animated.Value(0)).current;
     if (!name.trim()) return false;
     return /^[a-zA-Z\s]+$/.test(name.trim());
   };
@@ -110,6 +112,33 @@ export default function TagakTuroSignUp() {
   };
 
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Progress bar animation effect for filling the submit button
+  useEffect(() => {
+    if (submitting) {
+      // Start the looping progress animation - continuously fill from 0% to 100%
+      const loopAnimation = Animated.loop(
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 1500, // 1.5 seconds per cycle
+          useNativeDriver: false,
+        })
+      );
+      loopAnimation.start();
+    } else {
+      // Stop animation and reset progress when not submitting
+      progressAnim.stopAnimation();
+      Animated.timing(progressAnim, {
+        toValue: 0,
+        duration: 300, // Quick reset
+        useNativeDriver: false,
+      }).start();
+    }
+
+    return () => {
+      progressAnim.stopAnimation();
+    };
+  }, [submitting, progressAnim]);
 
   return (
     <KeyboardAvoidingView
@@ -194,7 +223,7 @@ export default function TagakTuroSignUp() {
                   styles.passwordInput,
                   error && !password && styles.inputError
                 ]}
-                placeholder="ILOVEYOU123"
+                placeholder="ILOVEyou_123"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -244,7 +273,7 @@ export default function TagakTuroSignUp() {
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Terms and Condition</Text>
-                  
+                  <Text style={styles.modalCaption}>Last Updated: November 24, 2025</Text>
                   <Text style={styles.modalIntro}>
                   Welcome to TagakTuro: Tutor Services for UMak Students. By using our application, you agree to the following Terms and Conditions. Please read them carefully.
                   </Text>
@@ -365,7 +394,7 @@ export default function TagakTuroSignUp() {
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Privacy Policy</Text>
-                  
+                  <Text style={styles.modalCaption}>Last Updated: November 24, 2025</Text>
                   <Text style={styles.modalIntro}>
                   We care about your privacy. Here’s how TagakTuro handles your data in simple terms:
                   </Text>
@@ -420,13 +449,33 @@ export default function TagakTuroSignUp() {
             </Text>
           )}
 
-          <TouchableOpacity 
-            style={[styles.submitButton, (error || submitting) && styles.submitButtonDisabled]} 
-            onPress={handleSubmit}
-            disabled={submitting}
-          >
-            <Text style={styles.submitButtonText}>{submitting ? 'Submitting...' : 'Submit'}</Text>
-          </TouchableOpacity>
+          <View style={styles.submitButtonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                submitting && styles.submitButtonDisabled
+              ]}
+              onPress={handleSubmit}
+              disabled={submitting}
+            >
+              <Text style={styles.submitButtonText}>
+                {submitting ? 'Submitting...' : 'Submit'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Animated progress bar that fills the button */}
+            <Animated.View
+              style={[
+                styles.submitButtonProgress,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
@@ -571,6 +620,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontWeight: '600',
   },
+  submitButtonContainer: {
+    position: 'relative',
+    marginBottom: 15,
+  },
   submitButton: {
     fontFamily: 'Poppins',
     fontSize: 15,
@@ -578,8 +631,18 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 15,
     fontWeight: '600',
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
+  },
+  submitButtonProgress: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Semi-transparent white overlay
+    borderRadius: 8,
   },
   submitButtonDisabled: {
     opacity: 0.5,
@@ -630,7 +693,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  modalCaption: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 5,
   },
   modalIntro: {
     fontFamily: 'Poppins',
