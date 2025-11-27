@@ -175,7 +175,12 @@ export default function TagakTuroHomepage() {
   const filterBookingsByAvailability = (bookings: any[], availability: any[]) => {
     console.log('🔍 Filtering function called with:', { bookingsCount: bookings.length, availability });
 
-    if (!availability || availability.length === 0) {
+    // Check if any day has availability slots set
+    const hasAnyAvailability = availability && availability.some((day: any) =>
+      day.slots && day.slots.length > 0
+    );
+
+    if (!availability || availability.length === 0 || !hasAnyAvailability) {
       console.log('🔍 No availability set, showing all bookings');
       return bookings; // If no availability set, show all bookings
     }
@@ -191,7 +196,11 @@ export default function TagakTuroHomepage() {
         const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
         const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
 
-        console.log(`🔍 Checking booking ${booking.id}: ${bookingDate.toLocaleString()} (day ${dayOfWeek}, ${bookingTime} minutes)`);
+        console.log(`🔍 Checking booking ${booking.id}:`);
+        console.log(`   Raw dateTime: ${booking.bookingDateTime}`);
+        console.log(`   Parsed date: ${bookingDate.toISOString()}`);
+        console.log(`   Local string: ${bookingDate.toLocaleString()}`);
+        console.log(`   Day of week: ${dayOfWeek}, Time: ${bookingTime} minutes`);
 
         // Find availability slots for this day
         const dayAvailability = availability.find((day: any) => day.id === dayOfWeek);
@@ -239,6 +248,7 @@ export default function TagakTuroHomepage() {
       // Debug logging
       console.log('🔍 Tutor availability loaded:', parsedAvailability);
       console.log('🔍 All pending bookings before filtering:', allPendingBookings.length);
+      console.log('🔍 Sample booking data:', allPendingBookings.slice(0, 2));
 
       // Transform bookings
       const transformedPending = allPendingBookings
@@ -250,6 +260,7 @@ export default function TagakTuroHomepage() {
         .filter((b): b is Booking => b !== null);
 
       console.log('🔍 Transformed pending bookings:', transformedPending.length);
+      console.log('🔍 Sample transformed booking:', transformedPending.slice(0, 2));
 
       // Filter pending bookings based on tutor's availability
       const filteredPending = filterBookingsByAvailability(transformedPending, parsedAvailability);
