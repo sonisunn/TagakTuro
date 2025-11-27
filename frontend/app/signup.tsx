@@ -109,7 +109,15 @@ export default function TagakTuroSignUp() {
     } catch (err: any) {
       setSubmitting(false);
       console.warn('Signup error', err);
-      alert('Registration failed: ' + (err.message || 'An unexpected error occurred.'));
+
+      // Check for specific error messages
+      const errorMessage = err.message || 'An unexpected error occurred.';
+
+      if (errorMessage.includes('Email is already in use')) {
+        alert('This email address is already registered. Please use a different email address or try logging in instead.');
+      } else {
+        alert('Registration failed: ' + errorMessage);
+      }
     }
   };
 
