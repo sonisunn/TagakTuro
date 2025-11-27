@@ -172,30 +172,72 @@ export default function TagakTuroHomepage() {
     }
   };
  
+  const filterBookingsByAvailability = (bookings: any[], availability: any[]) => {
+    if (!availability || availability.length === 0) {
+      return bookings; // If no availability set, show all bookings
+    }
+
+    return bookings.filter((booking: any) => {
+      if (!booking.bookingDateTime) return false;
+
+      try {
+        const bookingDate = new Date(booking.bookingDateTime);
+        const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+        // Find availability slots for this day
+        const dayAvailability = availability.find((day: any) => day.id === dayOfWeek);
+        if (!dayAvailability || dayAvailability.slots.length === 0) {
+          return false; // No availability for this day
+        }
+
+        // Check if booking time falls within any available slot
+        const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes(); // Convert to minutes
+
+        return dayAvailability.slots.some((slot: any) => {
+          // slot.start and slot.end are stored as minutes from midnight
+          const startTime = slot.start;
+          const endTime = slot.end;
+
+          // Check if booking time is within the slot
+          return bookingTime >= startTime && bookingTime <= endTime;
+        });
+      } catch (error) {
+        return false; // Skip invalid dates
+      }
+    });
+  };
+
   const fetchBookings = async (tutorId: string, tutorName: string) => {
     if (!tutorId || !tutorName) return;
     try {
       // Fetch all pending bookings (for tutors to see all available bookings)
       const pendingResponse = await getPendingBookings();
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
- 
+
       // Fetch bookings assigned to this tutor (confirmed/accepted bookings)
       const tutorBookingsResponse = await getBookingsByTutorName(tutorName);
       const tutorBookings = Array.isArray(tutorBookingsResponse) ? tutorBookingsResponse : [];
- 
+
+      // Load tutor's availability schedule
+      const availabilitySchedule = await AsyncStorage.getItem('tutorAvailability');
+      const parsedAvailability = availabilitySchedule ? JSON.parse(availabilitySchedule) : [];
+
       // Transform bookings
       const transformedPending = allPendingBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
- 
+
       const transformedTutor = tutorBookings
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
- 
+
+      // Filter pending bookings based on tutor's availability
+      const filteredPending = filterBookingsByAvailability(transformedPending, parsedAvailability);
+
       // Separate tutor's bookings by status
       const upcoming: Booking[] = [];
       const completed: Booking[] = [];
- 
+
       transformedTutor.forEach((booking: Booking) => {
         if (booking.status === "CONFIRMED") {
             upcoming.push(booking);
@@ -203,8 +245,8 @@ export default function TagakTuroHomepage() {
           completed.push(booking);
         }
       });
- 
-      setPendingBookings(transformedPending);
+
+      setPendingBookings(filteredPending);
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
       } catch (error) {
