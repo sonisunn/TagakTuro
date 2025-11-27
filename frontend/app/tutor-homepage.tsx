@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import ProfileAvatar from '../components/ProfileAvatar';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from "expo-blur";
 import * as SplashScreen from "expo-splash-screen";
@@ -476,9 +475,12 @@ export default function TagakTuroHomepage() {
                 </View>
                 </TouchableOpacity>
  
-                <View style={styles.profilePicture}>
-                <ProfileAvatar size={48} showPlaceholder={true} />
-                </View>
+                <TouchableOpacity
+                  style={styles.profilePicture}
+                  onPress={() => router.push('/profile')}
+                >
+                  <Ionicons name="person-circle" size={48} color="#2B74B4" />
+                </TouchableOpacity>
             </View>
             </View>
  

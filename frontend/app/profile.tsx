@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Image,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 // --- FIXED: InputGroup moved OUTSIDE the main component ---
 const InputGroup = ({ label, value, editable, onChangeText, keyboardType }) => {
@@ -45,14 +45,57 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
-  
+
   const [profileData, setProfileData] = useState({
-    name: 'Jayson Partido',
-    fullName: 'Jayson Partido',
-    email: 'jpartido.k12148008@umak.edu.ph',
-    course: 'CCIS - BS COMPUTER SCIENCE',
-    phone: '09672411911',
-    imageUri: null, 
+    name: '',
+    fullName: '',
+    email: '',
+    course: '',
+    phone: '',
+    imageUri: null,
+  });
+
+  // Load user data on component mount
+  useState(() => {
+    const loadUserData = async () => {
+      try {
+        const userDataString = await AsyncStorage.getItem('userData');
+        const studentId = await AsyncStorage.getItem('studentId');
+
+        if (userDataString) {
+          const userData = JSON.parse(userDataString);
+          setProfileData(prev => ({
+            ...prev,
+            name: userData.name || '',
+            fullName: userData.name || '',
+            email: userData.email || '',
+            course: userData.courseProgram || '',
+          }));
+        }
+
+        // Load saved profile image
+        const savedImage = await AsyncStorage.getItem('profileImage');
+        if (savedImage) {
+          setProfileData(prev => ({
+            ...prev,
+            imageUri: savedImage,
+          }));
+        }
+
+        // Load saved phone number
+        const savedPhone = await AsyncStorage.getItem('profilePhone');
+        if (savedPhone) {
+          setProfileData(prev => ({
+            ...prev,
+            phone: savedPhone,
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
   });
 
   const [tempPhone, setTempPhone] = useState('');
@@ -68,21 +111,37 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Phone Number Validation (11 Digits)
-    const phoneRegex = /^\d{11}$/; 
+    const phoneRegex = /^\d{11}$/;
 
     if (!tempPhone || !phoneRegex.test(tempPhone)) {
       Alert.alert("Invalid Input", "Phone number must be exactly 11 digits.");
       return;
     }
 
-    setProfileData({
-      ...profileData,
-      phone: tempPhone,
-      imageUri: tempImage,
-    });
-    setIsEditing(false);
+    try {
+      // Save profile data to AsyncStorage
+      await AsyncStorage.setItem('profilePhone', tempPhone);
+      if (tempImage) {
+        await AsyncStorage.setItem('profileImage', tempImage);
+      }
+
+      // Update local state
+      setProfileData({
+        ...profileData,
+        phone: tempPhone,
+        imageUri: tempImage,
+      });
+
+      setIsEditing(false);
+
+      // Show success message
+      Alert.alert("Success", "Profile updated successfully!");
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      Alert.alert("Error", "Failed to save profile changes.");
+    }
   };
 
   const handlePickImage = async () => {
@@ -105,6 +164,17 @@ export default function ProfilePage() {
     }
   };
 
+  // Reusable Component for Image vs Icon logic
+  const ProfileAvatar = ({ uri, opacity = 1 }) => {
+    if (uri) {
+      return <Image source={{ uri: uri }} style={[styles.avatar, { opacity }]} />;
+    }
+    return (
+      <View style={[styles.avatarPlaceholder, { opacity }]}>
+        <Ionicons name="person" size={65} color="#cbd5e1" />
+      </View>
+    );
+  };
 
   // --- EDIT VIEW ---
   if (isEditing) {
@@ -120,7 +190,7 @@ export default function ProfilePage() {
             
             <View style={styles.headerSection}>
               <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper}>
-                <ProfileAvatar uri={tempImage} size={120} opacity={0.7} />
+                <ProfileAvatar uri={tempImage} opacity={0.7} />
                 <View style={styles.editIconOverlay}>
                    <MaterialIcons name="edit" size={30} color="#2B74B4" />
                 </View>
@@ -163,7 +233,7 @@ export default function ProfilePage() {
         
         <View style={styles.headerSection}>
           <View style={styles.avatarWrapper}>
-            <ProfileAvatar uri={profileData.imageUri} size={120} />
+            <ProfileAvatar uri={profileData.imageUri} />
           </View>
           <Text style={styles.h1Name}>{profileData.name}</Text>
         </View>
@@ -212,6 +282,28 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
+  },
+  avatarWrapper: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 15,
+    position: 'relative',
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
+    backgroundColor: '#f0f2f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   editIconOverlay: {
     position: 'absolute',

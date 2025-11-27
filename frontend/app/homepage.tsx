@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -9,13 +9,13 @@ import {
   Alert,
   Modal,
   Platform,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import BottomNav from '../components/BottomNav';
-import ProfileAvatar from '../components/ProfileAvatar';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../src/api/booking';
 
 // TypeScript interfaces
@@ -40,6 +40,7 @@ export default function TagakTuroHomepage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<string>('upcoming');
   const [userName, setUserName] = useState<string>('');
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
   const [pastClasses, setPastClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -62,18 +63,30 @@ export default function TagakTuroHomepage() {
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
 
+  const loadUserData = async () => {
+    const userDataString = await AsyncStorage.getItem('userData');
+    if (userDataString) {
+      const userData = JSON.parse(userDataString);
+      const fullName = userData.name || 'User';
+      const firstName = fullName.split(' ')[0];
+      setUserName(firstName);
+    }
+
+    // Load profile image
+    const savedImage = await AsyncStorage.getItem('profileImage');
+    setProfileImage(savedImage);
+  };
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      const userDataString = await AsyncStorage.getItem('userData');
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        const fullName = userData.name || 'User';
-        const firstName = fullName.split(' ')[0];
-        setUserName(firstName);
-      }
-    };
-    fetchUserData();
+    loadUserData();
   }, []);
+
+  // Reload profile data when returning to homepage from profile page
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUserData();
+    }, [])
+  );
 
   const fetchBookings = async () => {
     try {
@@ -385,9 +398,16 @@ export default function TagakTuroHomepage() {
               <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
             </TouchableOpacity>
 
-            <View style={styles.profilePicture}>
-              <ProfileAvatar size={48} showPlaceholder={true} />
-            </View>
+            <TouchableOpacity
+              style={styles.profilePicture}
+              onPress={() => router.push('/profile')}
+            >
+              {profileImage ? (
+                <Image source={{ uri: profileImage }} style={styles.profileImage} />
+              ) : (
+                <Ionicons name="person-circle" size={48} color="#2B74B4" />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -732,6 +752,11 @@ const styles = StyleSheet.create({
   profilePicture: {
     width: 48,
     height: 48,
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   bookCard: {
     backgroundColor: '#2B74B4',

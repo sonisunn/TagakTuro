@@ -3,15 +3,15 @@ import React from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
-import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function FeedbackPage() {
-
+  const router = useRouter();
 
   const feedbacks = [
     {
@@ -48,9 +48,12 @@ export default function FeedbackPage() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <View style={styles.profileImageContainer}>
-            <ProfileAvatar size={150} showPlaceholder={true} />
-          </View>
+          <TouchableOpacity
+            style={styles.profileImageContainer}
+            onPress={() => router.push('/profile')}
+          >
+            <Ionicons name="person-circle" size={150} color="#2B74B4" />
+          </TouchableOpacity>
           <Text style={styles.profileName}>Jayson Partido</Text>
           {/* <Text style={styles.profileRole}>Computer Science Tutor</Text> */}
         </View>
