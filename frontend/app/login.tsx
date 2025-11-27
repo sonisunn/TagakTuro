@@ -21,7 +21,7 @@ export default function TagakTuroLogin() {
   const [error, setError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Progress bar animation
+  // Progress bar animation for submit button
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const handleSubmit = () => {
@@ -73,20 +73,17 @@ export default function TagakTuroLogin() {
 
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Progress bar animation effect
+  // Progress bar animation effect for submit button
   useEffect(() => {
     if (submitting) {
       // Start the progress animation
-      const startProgressAnimation = () => {
-        Animated.loop(
-          Animated.timing(progressAnim, {
-            toValue: 1,
-            duration: 1500,
-            useNativeDriver: false,
-          })
-        ).start();
-      };
-      startProgressAnimation();
+      Animated.loop(
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: false,
+        })
+      ).start();
     } else {
       // Reset progress when not submitting
       progressAnim.setValue(0);
@@ -112,30 +109,7 @@ export default function TagakTuroLogin() {
           <Text style={styles.subtitle}>an Online Tutoring Service</Text>
         </View>
 
-        <Animated.View
-          style={[
-            styles.formContainer,
-            submitting && {
-              borderWidth: 3,
-              borderColor: '#2B74B4',
-              borderRadius: 23,
-              shadowColor: '#2B74B4',
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: progressAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.3, 0.8],
-              }),
-              shadowRadius: 8,
-              elevation: 10,
-              transform: [{
-                scale: progressAnim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [1, 1.02, 1],
-                }),
-              }],
-            }
-          ]}
-        >
+        <View style={styles.formContainer}>
           <Text style={styles.formTitle}>Log in now!</Text>
           <Text style={styles.formSubtitle}>Log in to access TagakTuro</Text>
 
@@ -188,9 +162,42 @@ export default function TagakTuroLogin() {
             </Text>
           )}
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>{submitting ? 'Signing in...' : 'Submit'}</Text>
-          </TouchableOpacity>
+          <Animated.View
+            style={[
+              styles.submitButtonContainer,
+              submitting && {
+                borderWidth: 2,
+                borderColor: '#2B74B4',
+                borderRadius: 12,
+                shadowColor: '#2B74B4',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.4, 0.9],
+                }),
+                shadowRadius: progressAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [3, 8],
+                }),
+                elevation: 8,
+              }
+            ]}
+          >
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                submitting && {
+                  backgroundColor: '#1a5a8a', // Slightly darker blue when loading
+                }
+              ]}
+              onPress={handleSubmit}
+              disabled={submitting}
+            >
+              <Text style={styles.submitButtonText}>
+                {submitting ? 'Signing in...' : 'Submit'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
           
           <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
             <Text style={styles.submitButtonText}>Skip</Text>
@@ -210,7 +217,7 @@ export default function TagakTuroLogin() {
               </Text>
             </Text>
           </View>
-        </Animated.View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -300,6 +307,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     fontWeight: '600',
   },
+  submitButtonContainer: {
+    marginBottom: 20,
+  },
   submitButton: {
     fontFamily: 'Poppins',
     fontSize: 14,
@@ -307,7 +317,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
-    marginBottom: 20,
   },
   submitButtonText: {
     color: '#fff',
