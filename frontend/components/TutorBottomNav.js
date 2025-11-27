@@ -12,7 +12,7 @@ export default function TutorBottomNav() {
     { name: 'Home', icon: 'home', route: '/tutor-homepage' },
     { name: 'Availability', icon: 'calendar', route: '/session-availability' },
     { name: 'Messages', icon: 'chatbubbles', route: '/tutor-messages' },
-    { name: 'Feedback', icon: 'star', route: '/feedback' },
+    { name: 'Profile', icon: 'person', route: '/profile' },
   ];
 
   return (

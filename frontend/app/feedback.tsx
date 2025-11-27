@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 export default function FeedbackPage() {
 
@@ -48,7 +49,7 @@ export default function FeedbackPage() {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
-            <Ionicons name="person-circle" size={150} color="#2B74B4" />
+            <ProfileAvatar size={150} showPlaceholder={true} />
           </View>
           <Text style={styles.profileName}>Jayson Partido</Text>
           {/* <Text style={styles.profileRole}>Computer Science Tutor</Text> */}

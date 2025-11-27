@@ -12,7 +12,7 @@ export default function BottomNav() {
     { name: 'Home', icon: 'home', route: '/homepage' },
     { name: 'Book', icon: 'calendar', route: '/book' },
     { name: 'Messages', icon: 'chatbubbles', route: '/messages' },
-    { name: 'Feedback', icon: 'star', route: '/feedback' },
+    { name: 'Profile', icon: 'person', route: '/profile' },
   ];
 
   return (

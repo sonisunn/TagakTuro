@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import ProfileAvatar from '../components/ProfileAvatar';
 
 // --- FIXED: InputGroup moved OUTSIDE the main component ---
 const InputGroup = ({ label, value, editable, onChangeText, keyboardType }) => {
@@ -105,17 +105,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Reusable Component for Image vs Icon logic
-  const ProfileAvatar = ({ uri, opacity = 1 }) => {
-    if (uri) {
-      return <Image source={{ uri: uri }} style={[styles.avatar, { opacity }]} />;
-    }
-    return (
-      <View style={[styles.avatarPlaceholder, { opacity }]}>
-        <Ionicons name="person" size={65} color="#cbd5e1" />
-      </View>
-    );
-  };
 
   // --- EDIT VIEW ---
   if (isEditing) {
@@ -131,7 +120,7 @@ export default function ProfilePage() {
             
             <View style={styles.headerSection}>
               <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper}>
-                <ProfileAvatar uri={tempImage} opacity={0.7} />
+                <ProfileAvatar uri={tempImage} size={120} opacity={0.7} />
                 <View style={styles.editIconOverlay}>
                    <MaterialIcons name="edit" size={30} color="#2B74B4" />
                 </View>
@@ -174,7 +163,7 @@ export default function ProfilePage() {
         
         <View style={styles.headerSection}>
           <View style={styles.avatarWrapper}>
-            <ProfileAvatar uri={profileData.imageUri} />
+            <ProfileAvatar uri={profileData.imageUri} size={120} />
           </View>
           <Text style={styles.h1Name}>{profileData.name}</Text>
         </View>
@@ -223,28 +212,6 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-  },
-  avatarWrapper: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    marginBottom: 15,
-    position: 'relative',
-  },
-  avatar: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 60,
-  },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 60,
-    backgroundColor: '#f0f2f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   editIconOverlay: {
     position: 'absolute',

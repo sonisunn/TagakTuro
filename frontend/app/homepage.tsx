@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import BottomNav from '../components/BottomNav';
+import ProfileAvatar from '../components/ProfileAvatar';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../src/api/booking';
 
 // TypeScript interfaces
@@ -385,7 +386,7 @@ export default function TagakTuroHomepage() {
             </TouchableOpacity>
 
             <View style={styles.profilePicture}>
-              <Ionicons name="person-circle" size={48} color="#2B74B4" />
+              <ProfileAvatar size={48} showPlaceholder={true} />
             </View>
           </View>
         </View>
