@@ -335,31 +335,6 @@ export default function TagakTuroHomepage() {
 
   // ----------------------
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('userData');
-              await AsyncStorage.removeItem('studentId');
-              await AsyncStorage.removeItem('tutorId');
-              router.replace('/login');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
 
   const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
 
@@ -392,10 +367,6 @@ export default function TagakTuroHomepage() {
               <View style={styles.notificationBadge}>
                 <Text style={styles.badgeText}>2</Text>
               </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -724,9 +695,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 15,
-  },
-  logoutButton: {
-    padding: 4,
   },
   notificationContainer: {
     position: 'relative',
