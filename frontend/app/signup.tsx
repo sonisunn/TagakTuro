@@ -68,78 +68,65 @@ export default function TagakTuroSignUp() {
   };
 
   const handleSubmit = async () => {
+    const errors: string[] = [];
+
     // Check for missing required fields
     if (!name.trim()) {
-      showAlert('Name is required');
-      setError(true);
-      return;
+      errors.push('• Name is required');
     }
     if (!studentId.trim()) {
-      showAlert('Student ID is required');
-      setError(true);
-      return;
+      errors.push('• Student ID is required');
     }
     if (!courseProgram.trim()) {
-      showAlert('Course and Program is required');
-      setError(true);
-      return;
+      errors.push('• Course and Program is required');
     }
     if (!email.trim()) {
-      showAlert('Email is required');
-      setError(true);
-      return;
+      errors.push('• Email is required');
     }
     if (!phoneNumber.trim()) {
-      showAlert('Phone number is required');
-      setError(true);
-      return;
+      errors.push('• Phone number is required');
     }
     if (!password) {
-      showAlert('Password is required');
-      setError(true);
-      return;
+      errors.push('• Password is required');
     }
 
     // Name validation - alphabetic characters only
-    if (!validateName(name)) {
-      showAlert('Name must contain only alphabetic characters and spaces');
-      setError(true);
-      return;
+    if (name.trim() && !validateName(name)) {
+      errors.push('• Name must contain only alphabetic characters and spaces');
     }
 
     // Email validation - comprehensive checks
-    if (!email.includes('@')) {
-      showAlert('Please enter a valid email address');
-      setError(true);
-      return;
-    }
-    if (!email.endsWith('@umak.edu.ph')) {
-      showAlert('Only @umak.edu.ph email addresses are allowed');
-      setError(true);
-      return;
-    }
-    if (email === '@umak.edu.ph') {
-      showAlert('Please enter your full email address before @umak.edu.ph');
-      setError(true);
-      return;
+    if (email.trim()) {
+      if (!email.includes('@')) {
+        errors.push('• Please enter a valid email address');
+      } else if (!email.endsWith('@umak.edu.ph')) {
+        errors.push('• Only @umak.edu.ph email addresses are allowed');
+      } else if (email === '@umak.edu.ph') {
+        errors.push('• Please enter your full email address before @umak.edu.ph');
+      }
     }
 
     // Phone number validation - must be 11 digits
-    if (!validatePhoneNumber(phoneNumber)) {
-      showAlert('Phone number must be exactly 11 digits');
-      setError(true);
-      return;
+    if (phoneNumber.trim() && !validatePhoneNumber(phoneNumber)) {
+      errors.push('• Phone Number must be 11 digits only');
     }
 
     // Password validation - 12-16 chars, mix of upper/lower, number, special char
-    if (!validatePassword(password)) {
-      showAlert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
-      setError(true);
-      return;
+    if (password && !validatePassword(password)) {
+      errors.push('• Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
     }
 
     if (!agreedToTerms) {
-      showAlert('Please agree to the User Agreement and Privacy Policy to continue');
+      errors.push('• Please agree to the User Agreement and Privacy Policy to continue');
+    }
+
+    // If there are any errors, show them all at once
+    if (errors.length > 0) {
+      const errorMessage = errors.length === 1
+        ? errors[0].substring(2) // Remove bullet point for single error
+        : 'Please fix the following issues:\n\n' + errors.join('\n');
+      showAlert(errorMessage);
+      setError(true);
       return;
     }
 
