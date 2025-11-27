@@ -66,12 +66,12 @@ export default function TagakTuroLogin() {
         });
     });
   };
-  const handleSkip = () => {
-    router.push('/homepage');
-  };
 
   const [submitting, setSubmitting] = React.useState(false);
 
+  const handleSkip = () => {
+    router.push('/homepage');
+  }
   return (
     <KeyboardAvoidingView
       style={styles.container}

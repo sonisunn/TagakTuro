@@ -8,64 +8,118 @@ import {
 import BottomNav from '../components/BottomNav';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BlurView } from 'expo-blur'; // Added import
+import { BlurView } from 'expo-blur';
 import { createBooking } from '../src/api/booking.js';
 import { getStudentById } from '../src/api/student.js';
-import { AxiosError } from 'axios';
 
 export default function BookingPage() {
-
+  
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
-  const [date, setDate] = useState(new Date());
+  const [venue, setVenue] = useState('');
   
-  // Time State
+  // -- Date State --
+  const [date, setDate] = useState(new Date());
+  const [showDateModal, setShowDateModal] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
+  
+  // -- Time State --
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
-
-  // Date Picker State (Kept original logic for Calendar Date)
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // New Modal Time Picker State
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [timePickerMode, setTimePickerMode] = useState(null); // 'start' or 'end'
   const [tempTime, setTempTime] = useState(new Date());
 
   const [openModality, setOpenModality] = useState(false);
+  const [openVenue, setOpenVenue] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [studentId, setStudentId] = useState(null);
   const [studentEmail, setStudentEmail] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({
+    subject: false,
+    modality: false,
+    venue: false,
+  });
+  const [showValidationError, setShowValidationError] = useState(false);
 
   useEffect(() => {
-            const loadUserData = async () => {
-              try {
-                const userData = await AsyncStorage.getItem('userData');
-                const storedStudentId = await AsyncStorage.getItem('studentId');
-                if (userData) {
-                  const parsedData = JSON.parse(userData);
-                  setStudentEmail(parsedData.email);
-                }
-                if (storedStudentId) {
-                  setStudentId(storedStudentId);
-                }
-              } catch (error) {
-                console.error('Failed to load user data', error);
-              }
-            };    loadUserData();
+    const loadUserData = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        const storedStudentId = await AsyncStorage.getItem('studentId');
+        if (userData) {
+          const parsedData = JSON.parse(userData);
+          setStudentEmail(parsedData.email);
+        }
+        if (storedStudentId) {
+          setStudentId(storedStudentId);
+        }
+      } catch (error) {
+        console.error('Failed to load user data', error);
+      }
+    };    
+    loadUserData();
   }, []);
 
-  // --- Modal Time Picker Logic ---
+  // Reset venue when modality changes
+  useEffect(() => {
+    if (modality !== 'In-Person') {
+      setVenue('');
+      setValidationErrors(prev => ({ ...prev, venue: false }));
+    }
+  }, [modality]);
+
+  // Dropdown management
+  useEffect(() => { if (openModality) setOpenVenue(false); }, [openModality]);
+  useEffect(() => { if (openVenue) setOpenModality(false); }, [openVenue]);
+
+  const clearFieldError = (field) => {
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const updated = { ...prev, [field]: false };
+        const hasErrors = Object.values(updated).some(error => error);
+        setShowValidationError(hasErrors);
+        return updated;
+      });
+    }
+  };
+
+  const validateFields = () => {
+    const errors = {
+      subject: !subject.trim(),
+      modality: !modality,
+      venue: modality === 'In-Person' && !venue,
+    };
+    setValidationErrors(errors);
+    setShowValidationError(Object.values(errors).some(error => error));
+    return !Object.values(errors).some(error => error);
+  };
+
+  // --- Date Picker Handlers ---
+  const openDatePicker = () => {
+    setTempDate(date); // Initialize temp date with current selection
+    setShowDateModal(true);
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    if (selectedDate) setTempDate(selectedDate);
+  };
+
+  const saveDateSelection = () => {
+    setDate(tempDate);
+    setShowDateModal(false);
+  };
+
+  // --- Time Picker Handlers (Fixed Missing Functions) ---
   const openTimePicker = (mode) => {
     setTimePickerMode(mode);
-    // Set temp time to currently selected time for that mode
+    // Initialize temp time based on which box was clicked
     setTempTime(mode === 'start' ? startTime : endTime);
     setShowTimeModal(true);
   };
 
-  const onTimeChange = (event, selectedDate) => {
-    if (selectedDate) {
-      setTempTime(selectedDate);
-    }
+  const onTimeChange = (event, selectedTime) => {
+    if (selectedTime) setTempTime(selectedTime);
   };
 
   const saveTimeSelection = () => {
@@ -76,7 +130,6 @@ export default function BookingPage() {
     }
     setShowTimeModal(false);
   };
-  // -------------------------------
 
   const handleSubmit = async () => {
     if (!studentId || !studentEmail) {
@@ -84,10 +137,7 @@ export default function BookingPage() {
       return;
     }
 
-    if (!subject || !modality) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
+    if (!validateFields()) return;
 
     try {
       await getStudentById(studentId);
@@ -114,12 +164,11 @@ export default function BookingPage() {
       subject: subject,
       bookingDateTime: bookingStart.toISOString(),
       modality,
+      venue: modality === 'In-Person' ? venue : null,
       notes: null,
       status: 'PENDING',
       durationMinutes,
     };
-
-    console.log('Sending booking data:', bookingData);
 
     try {
       await createBooking(bookingData);
@@ -127,7 +176,6 @@ export default function BookingPage() {
     } catch (error) {
       const err = error;
       const errorMessage = (err.response?.data)?.error || err.message;
-      console.error('Error creating booking:', errorMessage);
       
       if (errorMessage && (errorMessage.includes('FK95ehd6idg3lvmpah7byi8pfwc') || errorMessage.includes('Student not found'))) {
         await AsyncStorage.removeItem('studentId');
@@ -152,22 +200,21 @@ export default function BookingPage() {
         </View>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoText}>
-            TagakTuro offers a wide range of topics!
-          </Text>
+          <Text style={styles.infoText}>TagakTuro offers a wide range of topics!</Text>
         </View>
-
 
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Subject</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, validationErrors.subject && styles.inputError]}
               placeholder="e.g., Calculus, Web Development"
               value={subject}
-              onChangeText={setSubject}
+              onChangeText={(text) => {
+                setSubject(text);
+                if (text.trim()) clearFieldError('subject');
+              }}
               placeholderTextColor="#95CDF2"
-              
             />
           </View>
 
@@ -183,39 +230,58 @@ export default function BookingPage() {
               ]}
               setOpen={setOpenModality}
               setValue={setModality}
-              style={styles.dropdown}
+              style={[styles.dropdown, validationErrors.modality && styles.dropdownError]}
               placeholder="Select a modality"
-              placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12, fontWeight: '600',}}
-              textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4', fontWeight:'600',}}
+              placeholderStyle={styles.placeholderStyle}
+              textStyle={styles.dropdownText}
               dropDownContainerStyle={{
-                borderColor: '#2B74B4',
+                borderColor: validationErrors.modality ? '#FF0000' : '#2B74B4',
               }}
+              zIndex={2000}
+              zIndexInverse={1000}
             />
           </View>
 
+          {modality === 'In-Person' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Venue</Text>
+              <DropDownPicker
+                listMode="SCROLLVIEW"
+                open={openVenue}
+                value={venue}
+                items={[
+                  { label: 'OPVSSCD Conference Room', value: 'OPVSSCD Conference Room' },
+                  { label: 'Library', value: 'Library' },
+                ]}
+                setOpen={setOpenVenue}
+                setValue={setVenue}
+                style={[styles.dropdown, validationErrors.venue && styles.dropdownError]}
+                placeholder="Select a venue"
+                placeholderStyle={styles.placeholderStyle}
+                textStyle={styles.dropdownText}
+                dropDownContainerStyle={{
+                  borderColor: validationErrors.venue ? '#FF0000' : '#2B74B4',
+                }}
+                zIndex={1000}
+                zIndexInverse={2000}
+              />
+            </View>
+          )}
+
+          {/* DATE PICKER (Updated to use Modal) */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Date</Text>
-            <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-              <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>{date.toLocaleDateString()}</Text>
+            <TouchableOpacity style={styles.input} onPress={openDatePicker}>
+              <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>
+                {date.toLocaleDateString()}
+              </Text>
             </TouchableOpacity>
-            {showDatePicker && (
-              <DateTimePicker
-                mode="date"
-                value={date}
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) setDate(selectedDate);
-                }}
-              />
-            )}
           </View>
 
+          {/* TIME PICKER */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Time</Text>
             <View style={styles.timeInputContainer}>
-              
-              {/* Start Time Trigger */}
               <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('start')}>
                 <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12}}>
                   {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -224,16 +290,20 @@ export default function BookingPage() {
               
               <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>to</Text>
               
-              {/* End Time Trigger */}
               <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('end')}>
                 <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>
                   {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </TouchableOpacity>
-
             </View>
           </View>
         </View>
+
+        {showValidationError && (
+          <Text style={styles.errorMessage}>
+            Some information is missing. Please review the form and provide the required details.
+          </Text>
+        )}
 
         {bookingSuccess && (
           <View style={styles.successCard}>
@@ -253,7 +323,32 @@ export default function BookingPage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Time Picker Modal */}
+      {/* --- DATE PICKER MODAL --- */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={showDateModal}
+        onRequestClose={() => setShowDateModal(false)}
+      >
+        <BlurView intensity={10} style={styles.blurContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Date</Text>
+            <DateTimePicker
+              value={tempDate}
+              mode="date"
+              display="spinner"
+              onChange={onDateChange}
+              textColor="#000"
+              style={styles.picker}
+            />
+            <TouchableOpacity style={styles.closeModalButton} onPress={saveDateSelection}>
+              <Text style={styles.closeModalText}>Select Date</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* --- TIME PICKER MODAL --- */}
       <Modal
         animationType="fade"
         transparent={true}
@@ -265,7 +360,6 @@ export default function BookingPage() {
             <Text style={styles.modalTitle}>
               Select {timePickerMode === 'start' ? 'Start' : 'End'} Time
             </Text>
-            
             <DateTimePicker
               value={tempTime}
               mode="time"
@@ -275,9 +369,8 @@ export default function BookingPage() {
               textColor="#000"
               style={styles.picker}
             />
-
             <TouchableOpacity style={styles.closeModalButton} onPress={saveTimeSelection}>
-              <Text style={styles.closeModalText}>Close</Text>
+              <Text style={styles.closeModalText}>Select Time</Text>
             </TouchableOpacity>
           </View>
         </BlurView>
@@ -363,6 +456,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     width: '100%',
   },
+  inputError: {
+    borderColor: '#FF0000',
+  },
+  dropdownError: {
+    borderColor: '#FF0000',
+  },
   timeInputContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -396,18 +495,26 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#2B74B4',
-    marginBottom: 8,
+    marginBottom: 3,
   },
   successText: {
     fontFamily: 'Poppins',
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#95CDF2',
-    lineHeight: 20,
+  },
+  errorMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FF0000',
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginTop: 10,
   },
   submitContainer: {
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 10,
   },
   submitButton: {
     backgroundColor: '#2B74B4',
@@ -429,8 +536,17 @@ const styles = StyleSheet.create({
     borderColor: '#2B74B4',
     borderRadius: 8,
   },
-  dropdownContainer: {
-    borderColor: '#2B74B4',
+  placeholderStyle: {
+    color: '#95CDF2', 
+    fontFamily: 'Poppins', 
+    fontSize: 12, 
+    fontWeight: '600'
+  },
+  dropdownText: {
+    fontFamily: 'Poppins', 
+    fontSize: 12, 
+    color: '#2B74B4', 
+    fontWeight: '600'
   },
   // Modal Styles
   blurContainer: {
