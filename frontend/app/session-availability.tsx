@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,35 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import TutorBottomNav from '../components/TutorBottomNav';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getPendingBookings } from '../src/api/booking';
+
+// TypeScript interfaces
+interface TimeSlot {
+  start: number;
+  end: number;
+}
+
+interface DaySchedule {
+  id: number;
+  label: string;
+  slots: TimeSlot[];
+}
+
+interface PendingBooking {
+  id: string;
+  subject?: string;
+  studentName?: string;
+  bookingDateTime: string;
+  modality?: string;
+  venue?: string;
+}
 
 export default function AvailabilityPage() {
   const initialDays = [
@@ -24,17 +48,22 @@ export default function AvailabilityPage() {
     { id: 6, label: 'S', slots: [] },
   ];
 
-  const [schedule, setSchedule] = useState(initialDays);
-  const [successMessage, setSuccessMessage] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(false);
+  const [schedule, setSchedule] = useState<DaySchedule[]>(initialDays);
+  const [successMessage, setSuccessMessage] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<boolean>(false);
 
-  const [showModal, setShowModal] = useState(false);
-  const [pickerMode, setPickerMode] = useState(null);
-  const [activeDayIndex, setActiveDayIndex] = useState(null);
-  const [activeSlotIndex, setActiveSlotIndex] = useState(null);
-  const [tempDate, setTempDate] = useState(new Date());
+  const [showModal, setShowModal] = useState<boolean>(false);
+  const [pickerMode, setPickerMode] = useState<'start' | 'end' | null>(null);
+  const [activeDayIndex, setActiveDayIndex] = useState<number | null>(null);
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
 
-  const addSlot = (dayIndex) => {
+  // Pending bookings modal state
+  const [showPendingModal, setShowPendingModal] = useState<boolean>(false);
+  const [filteredBookings, setFilteredBookings] = useState<PendingBooking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState<boolean>(false);
+
+  const addSlot = (dayIndex: number) => {
     const newSchedule = [...schedule];
     const defaultStart = new Date();
     defaultStart.setHours(9, 0, 0, 0);
@@ -50,14 +79,14 @@ export default function AvailabilityPage() {
     setSuccessMessage(false);
   };
 
-  const removeSlot = (dayIndex, slotIndex) => {
+  const removeSlot = (dayIndex: number, slotIndex: number) => {
     const newSchedule = [...schedule];
     newSchedule[dayIndex].slots.splice(slotIndex, 1);
     setSchedule(newSchedule);
     setSuccessMessage(false);
   };
 
-  const openTimePicker = (dayIndex, slotIndex, type) => {
+  const openTimePicker = (dayIndex: number, slotIndex: number, type: 'start' | 'end') => {
     const currentTimestamp = schedule[dayIndex].slots[slotIndex][type];
     setTempDate(new Date(currentTimestamp));
     setActiveDayIndex(dayIndex);
@@ -66,33 +95,108 @@ export default function AvailabilityPage() {
     setShowModal(true);
   };
 
-  const onTimeChange = (event, selectedDate) => {
+  const onTimeChange = (event: any, selectedDate: Date | undefined) => {
     if (selectedDate) {
       setTempDate(selectedDate);
     }
   };
 
   const saveTimeSelection = () => {
-    const newSchedule = [...schedule];
-    newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = tempDate.getTime();
-    setSchedule(newSchedule);
-    setShowModal(false);
+    if (activeDayIndex !== null && activeSlotIndex !== null && pickerMode) {
+      const newSchedule = [...schedule];
+      newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = tempDate.getTime();
+      setSchedule(newSchedule);
+      setShowModal(false);
+    }
   };
 
-  const formatTime = (timestamp) => {
+  const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
   };
 
-  const handleSubmit = () => {
+  const formatBookingTime = (dateTimeString: string) => {
+    try {
+      const date = new Date(dateTimeString);
+      const formattedDate = date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+      const formattedTime = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      return `${formattedDate} at ${formattedTime}`;
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const handleSubmit = async () => {
     const hasSlots = schedule.some(day => day.slots.length > 0);
-    
+
     if (hasSlots) {
+        // Save availability schedule to AsyncStorage
+        await AsyncStorage.setItem('tutorAvailability', JSON.stringify(schedule));
+
+        // Filter pending bookings based on availability
+        await filterPendingBookings();
+
         setSuccessMessage(true);
         setErrorMessage(false);
     } else {
         setSuccessMessage(false);
         setErrorMessage(true);
+    }
+  };
+
+  const filterPendingBookings = async () => {
+    try {
+      setLoadingBookings(true);
+      const pendingBookingsResponse = await getPendingBookings();
+      const pendingBookings = pendingBookingsResponse || [];
+
+      // Filter bookings that match tutor's availability
+      const filtered = pendingBookings.filter((booking: any) => {
+        if (!booking.bookingDateTime) return false;
+
+        try {
+          const bookingDate = new Date(booking.bookingDateTime);
+          const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+          // Find availability slots for this day
+          const dayAvailability = schedule.find(day => day.id === dayOfWeek);
+          if (!dayAvailability || dayAvailability.slots.length === 0) {
+            return false; // No availability for this day
+          }
+
+          // Check if booking time falls within any available slot
+          const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes(); // Convert to minutes
+
+          return dayAvailability.slots.some(slot => {
+            const startTime = new Date(slot.start).getHours() * 60 + new Date(slot.start).getMinutes();
+            const endTime = new Date(slot.end).getHours() * 60 + new Date(slot.end).getMinutes();
+
+            return bookingTime >= startTime && bookingTime <= endTime;
+          });
+        } catch (error) {
+          return false; // Skip invalid dates
+        }
+      });
+
+      setFilteredBookings(filtered);
+
+      // Show modal if there are matching bookings
+      if (filtered.length > 0) {
+        setShowPendingModal(true);
+      }
+
+    } catch (error) {
+      // Error handled by console suppression in _layout.tsx
+    } finally {
+      setLoadingBookings(false);
     }
   };
 
@@ -209,7 +313,7 @@ export default function AvailabilityPage() {
             <Text style={styles.modalTitle}>
               Select {pickerMode === 'start' ? 'Start' : 'End'} Time
             </Text>
-            
+
             <DateTimePicker
               value={tempDate}
               mode="time"
@@ -221,6 +325,56 @@ export default function AvailabilityPage() {
             />
 
             <TouchableOpacity style={styles.closeModalButton} onPress={saveTimeSelection}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* Pending Bookings Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showPendingModal}
+        onRequestClose={() => setShowPendingModal(false)}
+      >
+        <BlurView intensity={10} style={styles.blurContainer}>
+          <View style={[styles.modalContent, styles.pendingModalContent]}>
+            <Text style={styles.modalTitle}>Pending Bookings</Text>
+            <Text style={styles.pendingSubtitle}>
+              Bookings that match your availability:
+            </Text>
+
+            <ScrollView style={styles.pendingBookingsList} showsVerticalScrollIndicator={false}>
+              {loadingBookings ? (
+                <Text style={styles.loadingText}>Loading bookings...</Text>
+              ) : filteredBookings.length === 0 ? (
+                <Text style={styles.noBookingsText}>No pending bookings match your availability.</Text>
+              ) : (
+                filteredBookings.map((booking: PendingBooking, index: number) => (
+                  <View key={booking.id || index} style={styles.bookingCard}>
+                    <View style={styles.bookingHeader}>
+                      <Text style={styles.bookingSubject}>{booking.subject || 'N/A'}</Text>
+                      <Text style={styles.bookingStatus}>PENDING</Text>
+                    </View>
+                    <Text style={styles.bookingStudent}>
+                      Student: {booking.studentName || 'Unknown'}
+                    </Text>
+                    <Text style={styles.bookingTime}>
+                      {formatBookingTime(booking.bookingDateTime)}
+                    </Text>
+                    <Text style={styles.bookingLocation}>
+                      {booking.modality === 'In-Person' && booking.venue ? booking.venue : booking.modality || 'N/A'}
+                    </Text>
+                  </View>
+                ))
+              )}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={[styles.closeModalButton, styles.pendingCloseButton]}
+              onPress={() => setShowPendingModal(false)}
+            >
               <Text style={styles.closeModalText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -449,5 +603,87 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontWeight: '600',
     fontSize: 15,
+  },
+
+  // Pending Bookings Modal Styles
+  pendingModalContent: {
+    maxHeight: '70%',
+    width: '90%',
+  },
+  pendingSubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 15,
+  },
+  pendingBookingsList: {
+    maxHeight: 300,
+    width: '100%',
+    marginBottom: 15,
+  },
+  loadingText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  noBookingsText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+  bookingCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  bookingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bookingSubject: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2B74B4',
+  },
+  bookingStatus: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF9500',
+    backgroundColor: '#FFF5E6',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  bookingStudent: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  bookingTime: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 4,
+  },
+  bookingLocation: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#666',
+  },
+  pendingCloseButton: {
+    marginTop: 0,
   },
 });
