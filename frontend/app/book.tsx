@@ -27,14 +27,14 @@ export default function BookingPage() {
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
   const [showTimeModal, setShowTimeModal] = useState(false);
-  const [timePickerMode, setTimePickerMode] = useState(null); // 'start' or 'end'
+  const [timePickerMode, setTimePickerMode] = useState<'start' | 'end' | null>(null);
   const [tempTime, setTempTime] = useState(new Date());
 
   const [openModality, setOpenModality] = useState(false);
   const [openVenue, setOpenVenue] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [studentId, setStudentId] = useState(null);
-  const [studentEmail, setStudentEmail] = useState(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
+  const [studentEmail, setStudentEmail] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState({
     subject: false,
     modality: false,
@@ -73,7 +73,7 @@ export default function BookingPage() {
   useEffect(() => { if (openModality) setOpenVenue(false); }, [openModality]);
   useEffect(() => { if (openVenue) setOpenModality(false); }, [openVenue]);
 
-  const clearFieldError = (field) => {
+  const clearFieldError = (field: keyof typeof validationErrors) => {
     if (validationErrors[field]) {
       setValidationErrors(prev => {
         const updated = { ...prev, [field]: false };
@@ -101,7 +101,7 @@ export default function BookingPage() {
     setShowDateModal(true);
   };
 
-  const onDateChange = (event, selectedDate) => {
+  const onDateChange = (event: any, selectedDate: Date | undefined) => {
     if (selectedDate) setTempDate(selectedDate);
   };
 
@@ -111,14 +111,14 @@ export default function BookingPage() {
   };
 
   // --- Time Picker Handlers (Fixed Missing Functions) ---
-  const openTimePicker = (mode) => {
+  const openTimePicker = (mode: 'start' | 'end') => {
     setTimePickerMode(mode);
     // Initialize temp time based on which box was clicked
     setTempTime(mode === 'start' ? startTime : endTime);
     setShowTimeModal(true);
   };
 
-  const onTimeChange = (event, selectedTime) => {
+  const onTimeChange = (event: any, selectedTime: Date | undefined) => {
     if (selectedTime) setTempTime(selectedTime);
   };
 
@@ -173,7 +173,7 @@ export default function BookingPage() {
     try {
       await createBooking(bookingData);
       setBookingSuccess(true);
-    } catch (error) {
+    } catch (error: any) {
       const err = error;
       const errorMessage = (err.response?.data)?.error || err.message;
       
