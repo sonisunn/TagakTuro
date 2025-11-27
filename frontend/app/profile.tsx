@@ -1,5 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -56,7 +57,7 @@ export default function ProfilePage() {
   });
 
   // Load user data on component mount
-  useState(() => {
+  useEffect(() => {
     const loadUserData = async () => {
       try {
         const userDataString = await AsyncStorage.getItem('userData');
@@ -96,7 +97,7 @@ export default function ProfilePage() {
     };
 
     loadUserData();
-  });
+  }, []);
 
   const [tempPhone, setTempPhone] = useState('');
   const [tempImage, setTempImage] = useState(null);
@@ -112,27 +113,33 @@ export default function ProfilePage() {
   };
 
   const handleSave = async () => {
-    // Phone Number Validation (11 Digits)
+    // Phone Number Validation (only if user entered something)
     const phoneRegex = /^\d{11}$/;
 
-    if (!tempPhone || !phoneRegex.test(tempPhone)) {
-      Alert.alert("Invalid Input", "Phone number must be exactly 11 digits.");
-      return;
+    // Only validate phone if user actually entered/changed it
+    if (tempPhone && tempPhone.trim() !== '') {
+      if (!phoneRegex.test(tempPhone.trim())) {
+        Alert.alert("Invalid Input", "Phone number must be exactly 11 digits.");
+        return;
+      }
     }
 
     try {
-      // Save profile data to AsyncStorage
-      await AsyncStorage.setItem('profilePhone', tempPhone);
+      // Save profile data to AsyncStorage (only save what was changed)
+      if (tempPhone && tempPhone.trim() !== '') {
+        await AsyncStorage.setItem('profilePhone', tempPhone.trim());
+      }
+
       if (tempImage) {
         await AsyncStorage.setItem('profileImage', tempImage);
       }
 
-      // Update local state
-      setProfileData({
-        ...profileData,
-        phone: tempPhone,
-        imageUri: tempImage,
-      });
+      // Update local state with what was actually changed
+      setProfileData(prev => ({
+        ...prev,
+        phone: tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : prev.phone,
+        imageUri: tempImage || prev.imageUri,
+      }));
 
       setIsEditing(false);
 

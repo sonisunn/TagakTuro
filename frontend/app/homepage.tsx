@@ -72,7 +72,7 @@ export default function TagakTuroHomepage() {
       setUserName(firstName);
     }
 
-    // Load profile image
+    // Load profile image and phone (for any future use)
     const savedImage = await AsyncStorage.getItem('profileImage');
     setProfileImage(savedImage);
   };
