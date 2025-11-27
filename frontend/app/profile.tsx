@@ -74,8 +74,6 @@ export default function ProfilePage() {
 
         if (userDataString) {
           const userData = JSON.parse(userDataString);
-          console.log('🔍 Profile Debug - userData:', JSON.stringify(userData, null, 2));
-          console.log('🔍 Profile Debug - phoneNumber:', userData.phoneNumber);
           setProfileData(prev => ({
             ...prev,
             name: userData.name || '',
@@ -83,7 +81,7 @@ export default function ProfilePage() {
             email: userData.email || '',
             course: userData.courseProgram || '',
             // Load phone number from user data (from registration)
-            phone: userData.phoneNumber || 'No phone in userData',
+            phone: userData.phoneNumber || '',
           }));
         }
 
