@@ -243,7 +243,7 @@ export default function TagakTuroHomepage() {
         setDisplayUserName(firstName); // Use first name for display
         setUserId(userData.id); // Assuming userData contains the tutor's ID
       } else {
-        console.log('No user data found in AsyncStorage');
+        // No user data found
       }
     };
  
@@ -501,7 +501,6 @@ export default function TagakTuroHomepage() {
                   }),
                 ]).start();
               } else {
-                console.log('No bookings available');
                 alert('There are no bookings yet');
               }
             }}>

@@ -39,21 +39,17 @@ export default function TagakTuroLogin() {
           // Handle studentId
           if (loginResponse?.studentId) {
             await AsyncStorage.setItem('studentId', loginResponse.studentId.toString());
-            console.log('Stored studentId:', loginResponse.studentId.toString());
           } else {
             // If no studentId is returned for a student, ensure it's cleared from storage
             await AsyncStorage.removeItem('studentId');
-            console.log('No studentId received, cleared from storage.');
           }
 
           // Handle tutorId
           if (loginResponse?.tutorId) {
             await AsyncStorage.setItem('tutorId', loginResponse.tutorId.toString());
-            console.log('Stored tutorId:', loginResponse.tutorId.toString());
           } else {
             // If no tutorId is returned for a tutor, ensure it's cleared from storage
             await AsyncStorage.removeItem('tutorId');
-            console.log('No tutorId received, cleared from storage.');
           }
           // basic success flow - navigate to homepage
           alert('Login successful!');
