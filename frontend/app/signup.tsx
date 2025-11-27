@@ -194,23 +194,25 @@ export default function TagakTuroSignUp() {
       }
 
       console.warn('Extracted error message:', errorMessage);
+      console.warn('Checking for Student ID error patterns...');
 
-      if (errorMessage.includes('Email is already in use')) {
-        showAlert('This email address is already registered. Please use a different email address or try logging in instead.');
+      if (errorMessage.includes('Email is already in use') || errorMessage.includes('email is already')) {
+        showAlert('This email address is already registered. Please use a different email address.');
         // Also mark the email field as invalid
         setFieldErrors(prev => ({ ...prev, email: true }));
-      } else if (errorMessage.includes('Only @umak.edu.ph email addresses are allowed')) {
+      } else if (errorMessage.includes('Only @umak.edu.ph email addresses are allowed') || errorMessage.includes('@umak.edu.ph')) {
         showAlert('Only @umak.edu.ph email addresses are allowed!');
         setFieldErrors(prev => ({ ...prev, email: true }));
-      } else if (errorMessage.includes('Student ID is already in use')) {
+      } else if (errorMessage.includes('Student ID is already in use') || errorMessage.includes('Student ID') || errorMessage.includes('studentId')) {
         showAlert('This Student ID is already registered. Please use a different Student ID.');
         setFieldErrors(prev => ({ ...prev, studentId: true }));
-      } else if (errorMessage.includes('Tutor ID is already in use')) {
+      } else if (errorMessage.includes('Tutor ID is already in use') || errorMessage.includes('Tutor ID')) {
         showAlert('This Tutor ID is already registered. Please use a different ID.');
-      } else if (errorMessage.includes('Invalid role specified')) {
+      } else if (errorMessage.includes('Invalid role specified') || errorMessage.includes('role')) {
         showAlert('Invalid user role specified.');
       } else {
         // For any other unexpected errors, show a generic message
+        console.warn('Unhandled error:', errorMessage);
         showAlert('Registration failed. Please check your information and try again.');
       }
     }
