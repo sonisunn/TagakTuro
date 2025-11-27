@@ -1,5 +1,27 @@
--- Create a test student user (minimal required fields)
-INSERT INTO `users` (name, email, password, studentId, courseProgram, phone_number)
+-- =====================================================================================
+-- DATABASE CLEARING STATEMENTS
+-- Use these SQL statements to delete all records before adding fresh data:
+--
+-- USE tagakturo;
+-- SET FOREIGN_KEY_CHECKS = 0;
+-- DELETE FROM bookings;
+-- DELETE FROM user_roles;
+-- DELETE FROM tutor_applications;
+-- DELETE FROM students;
+-- DELETE FROM tutors;
+-- DELETE FROM users;
+-- SET FOREIGN_KEY_CHECKS = 1;
+--
+-- Optional: Reset auto-increment counters
+-- ALTER TABLE users AUTO_INCREMENT = 1;
+-- ALTER TABLE students AUTO_INCREMENT = 1;
+-- ALTER TABLE tutors AUTO_INCREMENT = 1;
+-- ALTER TABLE bookings AUTO_INCREMENT = 1;
+-- ALTER TABLE tutor_applications AUTO_INCREMENT = 1;
+-- =====================================================================================
+
+-- Create a test student user (let database auto-assign ID)
+INSERT INTO `users` (name, email, password, studentId, courseProgram, phoneNumber)
 VALUES ('Test Student', 'student@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'S123456', 'Computer Science', '1234567890');
 
 -- Get the auto-generated user ID and assign STUDENT role
@@ -11,7 +33,7 @@ INSERT INTO `students` (name, student_id, email, course_program, phone_number)
 VALUES ('Test Student', 'S123456', 'student@example.com', 'Computer Science', '1234567890');
 
 -- Create a test tutor user
-INSERT INTO `users` (name, email, password, studentId, courseProgram, phone_number)
+INSERT INTO `users` (name, email, password, studentId, courseProgram, phoneNumber)
 VALUES ('Test Tutor', 'tutor@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'TUTOR001', 'N/A', '1234567890');
 
 -- Assign TUTOR role
@@ -21,10 +43,3 @@ SELECT id, 'TUTOR' FROM `users` WHERE email = 'tutor@example.com';
 -- Create a corresponding tutor profile
 INSERT INTO `tutors` (name, tutor_id, email, phone_number)
 VALUES ('Test Tutor', 'TUTOR001', 'tutor@example.com', '1234567890');
-
--- Create test bookings (pending) - times in Philippine timezone
-INSERT INTO `bookings` (student_id, subject, booking_date_time, status, tutor_name, notes, duration_minutes, modality)
-VALUES (1, 'Mathematics', '2025-11-26T10:00:00', 'PENDING', NULL, 'Need help with calculus', 60, 'Online');
-
-INSERT INTO `bookings` (student_id, subject, booking_date_time, status, tutor_name, notes, duration_minutes, modality)
-VALUES (1, 'Physics', '2025-11-26T14:00:00', 'PENDING', NULL, 'Quantum mechanics assistance', 120, 'In-person');

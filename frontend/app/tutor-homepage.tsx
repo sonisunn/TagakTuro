@@ -158,7 +158,7 @@ export default function TagakTuroHomepage() {
         tutorName: booking.tutorName || '',
         studentName: booking.student?.name || 'Unknown Student',
         subject: booking.subject || '',
-        location: booking.modality || '',
+        location: (booking.modality === 'In-Person' && booking.venue) ? booking.venue : booking.modality || '',
         date: dateStr,
         time: sessionTimeStr,
         startTime: startTimeStr,
@@ -303,7 +303,6 @@ export default function TagakTuroHomepage() {
       }),
     ]).start(() => {
       setShowStudents(false);
-      setSelectedBooking(null);
     });
   };
  
@@ -645,7 +644,7 @@ export default function TagakTuroHomepage() {
         visible={modalVisible}
         onRequestClose={closeBookingDetailsModal}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView intensity={10} tint="light" style={styles.absolute}>
           <View style={styles.modalContent}>
 
             {/* VIEW 1: Session Details */}
@@ -904,21 +903,22 @@ const styles = StyleSheet.create({
     color: "#2B74B4",
   },
   tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
+    flexDirection: 'row',
+    backgroundColor: '#fff',
     borderRadius: 25,
     height: 35,
-    width: 170, // Adjusted width
-    alignItems: "center",
-    borderColor: "#2B74B4",
+    width: 175,
+    alignItems: 'center',
+    borderColor: '#2B74B4',
     borderWidth: 1,
-    overflow: 'hidden',
   },
   tab: {
-    flex: 1, // Equal width
     height: 35,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 16.5,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   activeTab: {
     backgroundColor: "#2B74B4",

@@ -288,9 +288,9 @@ export default function ApplyTutorPage() {
               <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
                 <Text style={styles.submitButtonText}>Next</Text>
               </TouchableOpacity>
-              {/* <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/tutor-homepage')}>
+              <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/session-availability')}>
                 <Text style={styles.submitButtonText}>skip</Text>
-              </TouchableOpacity> */}
+              </TouchableOpacity>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>

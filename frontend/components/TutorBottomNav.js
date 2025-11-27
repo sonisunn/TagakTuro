@@ -10,7 +10,7 @@ export default function TutorBottomNav() {
 
   const navItems = [
     { name: 'Home', icon: 'home', route: '/tutor-homepage' },
-    { name: 'Book', icon: 'calendar', route: '/availability' },
+    { name: 'Availability', icon: 'calendar', route: '/session-availability' },
     { name: 'Messages', icon: 'chatbubbles', route: '/tutor-messages' },
     { name: 'Feedback', icon: 'star', route: '/feedback' },
   ];
