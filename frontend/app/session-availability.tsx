@@ -70,9 +70,13 @@ export default function AvailabilityPage() {
     const defaultEnd = new Date();
     defaultEnd.setHours(12, 0, 0, 0);
 
+    // Store just the time in minutes from midnight, not full timestamp
+    const startMinutes = 9 * 60; // 9:00 AM = 540 minutes
+    const endMinutes = 12 * 60; // 12:00 PM = 720 minutes
+
     newSchedule[dayIndex].slots.push({
-      start: defaultStart.getTime(),
-      end: defaultEnd.getTime(),
+      start: startMinutes,
+      end: endMinutes,
     });
     setSchedule(newSchedule);
     setErrorMessage(false);
@@ -87,8 +91,14 @@ export default function AvailabilityPage() {
   };
 
   const openTimePicker = (dayIndex: number, slotIndex: number, type: 'start' | 'end') => {
-    const currentTimestamp = schedule[dayIndex].slots[slotIndex][type];
-    setTempDate(new Date(currentTimestamp));
+    const currentMinutes = schedule[dayIndex].slots[slotIndex][type];
+    const hours = Math.floor(currentMinutes / 60);
+    const minutes = currentMinutes % 60;
+
+    const tempDateTime = new Date();
+    tempDateTime.setHours(hours, minutes, 0, 0);
+    setTempDate(tempDateTime);
+
     setActiveDayIndex(dayIndex);
     setActiveSlotIndex(slotIndex);
     setPickerMode(type);
@@ -104,15 +114,21 @@ export default function AvailabilityPage() {
   const saveTimeSelection = () => {
     if (activeDayIndex !== null && activeSlotIndex !== null && pickerMode) {
       const newSchedule = [...schedule];
-      newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = tempDate.getTime();
+      // Convert selected time to minutes from midnight
+      const minutesFromMidnight = tempDate.getHours() * 60 + tempDate.getMinutes();
+      newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = minutesFromMidnight;
       setSchedule(newSchedule);
       setShowModal(false);
     }
   };
 
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+  const formatTime = (minutesFromMidnight: number) => {
+    const hours = Math.floor(minutesFromMidnight / 60);
+    const minutes = minutesFromMidnight % 60;
+    const period = hours >= 12 ? 'pm' : 'am';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    const displayMinutes = minutes.toString().padStart(2, '0');
+    return `${displayHours}:${displayMinutes} ${period}`;
   };
 
   const formatBookingTime = (dateTimeString: string) => {
@@ -158,6 +174,7 @@ export default function AvailabilityPage() {
       const pendingBookingsResponse = await getPendingBookings();
       const pendingBookings = pendingBookingsResponse || [];
 
+
       // Filter bookings that match tutor's availability
       const filtered = pendingBookings.filter((booking: any) => {
         if (!booking.bookingDateTime) return false;
@@ -165,6 +182,7 @@ export default function AvailabilityPage() {
         try {
           const bookingDate = new Date(booking.bookingDateTime);
           const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
           // Find availability slots for this day
           const dayAvailability = schedule.find(day => day.id === dayOfWeek);
@@ -176,9 +194,11 @@ export default function AvailabilityPage() {
           const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes(); // Convert to minutes
 
           return dayAvailability.slots.some(slot => {
-            const startTime = new Date(slot.start).getHours() * 60 + new Date(slot.start).getMinutes();
-            const endTime = new Date(slot.end).getHours() * 60 + new Date(slot.end).getMinutes();
+            // slot.start and slot.end are now stored as minutes from midnight
+            const startTime = slot.start;
+            const endTime = slot.end;
 
+            // Check if booking time is within the slot
             return bookingTime >= startTime && bookingTime <= endTime;
           });
         } catch (error) {
