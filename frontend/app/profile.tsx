@@ -112,6 +112,34 @@ export default function ProfilePage() {
   const [tempPhone, setTempPhone] = useState('');
   const [tempImage, setTempImage] = useState<string | null>(null);
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('authToken');
+              await AsyncStorage.removeItem('userData');
+              await AsyncStorage.removeItem('studentId');
+              await AsyncStorage.removeItem('tutorId');
+              await AsyncStorage.removeItem('profileImage');
+              await AsyncStorage.removeItem('profilePhone');
+              router.replace('/login');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleUpdateClick = () => {
     setTempPhone(profileData.phone);
     setTempImage(profileData.imageUri);
@@ -297,7 +325,7 @@ export default function ProfilePage() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={[styles.btn, styles.btnRed, styles.btnLogout]} onPress={() => router.replace('/login')}>
+          <TouchableOpacity style={[styles.btn, styles.btnRed, styles.btnLogout]} onPress={handleLogout}>
             <Text style={[styles.btnText, styles.textWhite]}>Log out</Text>
           </TouchableOpacity>
         </View>
