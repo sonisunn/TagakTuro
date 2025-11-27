@@ -51,6 +51,7 @@ export default function AvailabilityPage() {
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialDays);
   const [successMessage, setSuccessMessage] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<boolean>(false);
+  const [resetSuccessMessage, setResetSuccessMessage] = useState<boolean>(false);
 
   const [showModal, setShowModal] = useState<boolean>(false);
   const [pickerMode, setPickerMode] = useState<'start' | 'end' | null>(null);
@@ -118,8 +119,20 @@ export default function AvailabilityPage() {
       const minutesFromMidnight = tempDate.getHours() * 60 + tempDate.getMinutes();
       newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = minutesFromMidnight;
       setSchedule(newSchedule);
-      setShowModal(false);
     }
+    // Always close the modal, even if conditions aren't met
+    setShowModal(false);
+    setActiveDayIndex(null);
+    setActiveSlotIndex(null);
+    setPickerMode(null);
+  };
+
+  const cancelTimeSelection = () => {
+    // Close modal and reset state without saving
+    setShowModal(false);
+    setActiveDayIndex(null);
+    setActiveSlotIndex(null);
+    setPickerMode(null);
   };
 
   const formatTime = (minutesFromMidnight: number) => {
@@ -162,9 +175,16 @@ export default function AvailabilityPage() {
 
         setSuccessMessage(true);
         setErrorMessage(false);
+        setResetSuccessMessage(false);
+        
+        // Auto-hide success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage(false);
+        }, 3000);
     } else {
         setSuccessMessage(false);
         setErrorMessage(true);
+        setResetSuccessMessage(false);
     }
   };
 
@@ -220,11 +240,25 @@ export default function AvailabilityPage() {
     }
   };
 
-  const handleReset = () => {
-      const clearedSchedule = schedule.map(day => ({ ...day, slots: [] }));
+  const handleReset = async () => {
+      // Reset schedule to initial empty state (create new array to avoid reference issues)
+      const clearedSchedule = initialDays.map(day => ({ ...day, slots: [] }));
       setSchedule(clearedSchedule);
+      
+      // Clear availability from AsyncStorage
+      await AsyncStorage.removeItem('tutorAvailability');
+      
+      // Clear other messages and show reset success message
       setSuccessMessage(false);
       setErrorMessage(false);
+      setResetSuccessMessage(true);
+      
+      // Auto-hide reset success message after 3 seconds
+      setTimeout(() => {
+        setResetSuccessMessage(false);
+      }, 3000);
+      
+      console.log('✅ Availability reset - all time slots cleared');
   };
 
   // Load saved availability on component mount
@@ -328,6 +362,14 @@ export default function AvailabilityPage() {
             </View>
         )}
 
+        {resetSuccessMessage && (
+            <View style={[styles.notificationBox, styles.successBox]}>
+                <Text style={styles.successText}>
+                    Your availability has been reset successfully
+                </Text>
+            </View>
+        )}
+
         <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
                 <Text style={styles.resetButtonText}>Reset</Text>
@@ -343,29 +385,55 @@ export default function AvailabilityPage() {
         animationType="fade"
         transparent={true}
         visible={showModal}
-        onRequestClose={() => setShowModal(false)}
+        onRequestClose={cancelTimeSelection}
       >
-        <BlurView intensity={10} style={styles.blurContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Select {pickerMode === 'start' ? 'Start' : 'End'} Time
-            </Text>
+        <TouchableOpacity 
+          style={styles.blurContainer} 
+          activeOpacity={1}
+          onPress={cancelTimeSelection}
+        >
+          <BlurView intensity={10} style={styles.blurContainer}>
+            <View 
+              style={styles.modalContent}
+              pointerEvents="box-none"
+            >
+              <View 
+                style={{ width: '100%' }}
+                pointerEvents="auto"
+              >
+                <Text style={styles.modalTitle}>
+                  Select {pickerMode === 'start' ? 'Start' : 'End'} Time
+                </Text>
 
-            <DateTimePicker
-              value={tempDate}
-              mode="time"
-              display="spinner"
-              is24Hour={false}
-              onChange={onTimeChange}
-              textColor="#000"
-              style={styles.picker}
-            />
+                <DateTimePicker
+                  value={tempDate}
+                  mode="time"
+                  display="spinner"
+                  is24Hour={false}
+                  onChange={onTimeChange}
+                  textColor="#000"
+                  style={styles.picker}
+                />
 
-            <TouchableOpacity style={styles.closeModalButton} onPress={saveTimeSelection}>
-              <Text style={styles.closeModalText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </BlurView>
+                <View style={styles.modalButtonRow}>
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.cancelButton]} 
+                    onPress={cancelTimeSelection}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.modalButton, styles.saveButton]} 
+                    onPress={saveTimeSelection}
+                  >
+                    <Text style={styles.saveButtonText}>Save</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </BlurView>
+        </TouchableOpacity>
       </Modal>
 
       {/* Pending Bookings Modal */}
@@ -636,6 +704,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   closeModalText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: 10,
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+  },
+  cancelButtonText: {
+    color: '#2B74B4',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  saveButton: {
+    backgroundColor: '#2B74B4',
+  },
+  saveButtonText: {
     color: '#fff',
     fontFamily: 'Poppins',
     fontWeight: '600',

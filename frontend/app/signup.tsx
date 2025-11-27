@@ -175,9 +175,6 @@ export default function TagakTuroSignUp() {
       router.push('/');
     } catch (err: any) {
       setSubmitting(false);
-      console.warn('Signup error details:', err);
-      console.warn('Error response:', err.response);
-      console.warn('Error response data:', err.response?.data);
 
       // Check for specific error messages from backend response
       let errorMessage = '';

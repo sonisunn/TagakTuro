@@ -1,4 +1,4 @@
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, useFocusEffect } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   Platform,
+  Image,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -50,6 +51,7 @@ export default function TagakTuroHomepage() {
   const [userName, setUserName] = useState("");
   const [displayUserName, setDisplayUserName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showStudents, setShowStudents] = useState(false);
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
@@ -181,50 +183,75 @@ export default function TagakTuroHomepage() {
     );
 
     if (!availability || availability.length === 0 || !hasAnyAvailability) {
-      console.log('🔍 No availability set, showing all bookings');
-      return bookings; // If no availability set, show all bookings
+      console.log('🔍 No availability set, hiding all pending bookings');
+      return []; // If no availability set, show no bookings
     }
 
     return bookings.filter((booking: any) => {
-      if (!booking.bookingDateTime) {
+      // Use rawDate from transformed booking, or bookingDateTime from raw booking
+      const dateTimeString = booking.rawDate || booking.bookingDateTime;
+      
+      if (!dateTimeString) {
         console.log('🔍 Booking missing dateTime:', booking.id);
         return false;
       }
 
       try {
-        const bookingDate = new Date(booking.bookingDateTime);
+        // Parse the booking date/time
+        const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
+        const bookingDate = new Date(utcDateTimeString);
+        
+        if (isNaN(bookingDate.getTime())) {
+          console.log('🔍 Invalid date for booking:', booking.id, dateTimeString);
+          return false;
+        }
+
         const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+        const bookingStartTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+        
+        // Get booking duration (default to 60 minutes if not specified)
+        const durationMinutes = booking.durationMinutes || 60;
+        const bookingEndTime = bookingStartTime + durationMinutes;
 
         console.log(`🔍 Checking booking ${booking.id}:`);
-        console.log(`   Raw dateTime: ${booking.bookingDateTime}`);
+        console.log(`   Raw dateTime: ${dateTimeString}`);
         console.log(`   Parsed date: ${bookingDate.toISOString()}`);
-        console.log(`   Local string: ${bookingDate.toLocaleString()}`);
-        console.log(`   Day of week: ${dayOfWeek}, Time: ${bookingTime} minutes`);
+        console.log(`   Day of week: ${dayOfWeek} (0=Sun, 1=Mon, etc.)`);
+        console.log(`   Booking time range: ${bookingStartTime} to ${bookingEndTime} minutes (${Math.floor(bookingStartTime/60)}:${String(bookingStartTime%60).padStart(2,'0')} - ${Math.floor(bookingEndTime/60)}:${String(bookingEndTime%60).padStart(2,'0')})`);
+        console.log(`   Duration: ${durationMinutes} minutes`);
 
         // Find availability slots for this day
         const dayAvailability = availability.find((day: any) => day.id === dayOfWeek);
-        console.log(`🔍 Day ${dayOfWeek} availability:`, dayAvailability);
+        console.log(`🔍 Looking for day ${dayOfWeek} in availability:`, availability.map((d: any) => ({ id: d.id, label: d.label, slotsCount: d.slots?.length || 0 })));
 
-        if (!dayAvailability || dayAvailability.slots.length === 0) {
+        if (!dayAvailability || !dayAvailability.slots || dayAvailability.slots.length === 0) {
           console.log(`🔍 No availability for day ${dayOfWeek}`);
           return false; // No availability for this day
         }
 
+        // Check if booking time range overlaps with any availability slot
         const matches = dayAvailability.slots.some((slot: any) => {
-          const startTime = slot.start;
-          const endTime = slot.end;
-          const slotMatches = bookingTime >= startTime && bookingTime <= endTime;
+          const slotStartTime = slot.start;
+          const slotEndTime = slot.end;
+          
+          // Check if booking overlaps with slot
+          // Booking overlaps if: booking starts before slot ends AND booking ends after slot starts
+          const overlaps = bookingStartTime < slotEndTime && bookingEndTime > slotStartTime;
+          
+          // Also check if booking is completely within slot (optional, but more strict)
+          const withinSlot = bookingStartTime >= slotStartTime && bookingEndTime <= slotEndTime;
 
-          console.log(`🔍 Checking slot ${startTime}-${endTime} vs booking ${bookingTime}: ${slotMatches}`);
-          return slotMatches;
+          console.log(`🔍 Checking slot ${slotStartTime}-${slotEndTime} (${Math.floor(slotStartTime/60)}:${String(slotStartTime%60).padStart(2,'0')} - ${Math.floor(slotEndTime/60)}:${String(slotEndTime%60).padStart(2,'0')})`);
+          console.log(`   Overlaps: ${overlaps}, Within: ${withinSlot}`);
+          
+          return overlaps;
         });
 
         console.log(`🔍 Booking ${booking.id} final result: ${matches}`);
         return matches;
 
       } catch (error) {
-        console.log('🔍 Error processing booking:', error);
+        console.log('🔍 Error processing booking:', error, booking);
         return false; // Skip invalid dates
       }
     });
@@ -250,8 +277,12 @@ export default function TagakTuroHomepage() {
       console.log('🔍 All pending bookings before filtering:', allPendingBookings.length);
       console.log('🔍 Sample booking data:', allPendingBookings.slice(0, 2));
 
-      // Transform bookings
-      const transformedPending = allPendingBookings
+      // Filter pending bookings based on tutor's availability (filter raw bookings first)
+      const filteredRawPending = filterBookingsByAvailability(allPendingBookings, parsedAvailability);
+      console.log('🔍 Filtered raw pending bookings:', filteredRawPending.length);
+
+      // Transform bookings after filtering
+      const transformedPending = filteredRawPending
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
 
@@ -261,11 +292,6 @@ export default function TagakTuroHomepage() {
 
       console.log('🔍 Transformed pending bookings:', transformedPending.length);
       console.log('🔍 Sample transformed booking:', transformedPending.slice(0, 2));
-
-      // Filter pending bookings based on tutor's availability
-      const filteredPending = filterBookingsByAvailability(transformedPending, parsedAvailability);
-
-      console.log('🔍 Filtered pending bookings:', filteredPending.length);
 
       // Separate tutor's bookings by status
       const upcoming: Booking[] = [];
@@ -279,7 +305,7 @@ export default function TagakTuroHomepage() {
         }
       });
 
-      setPendingBookings(filteredPending);
+      setPendingBookings(transformedPending);
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
       } catch (error) {
@@ -305,23 +331,36 @@ export default function TagakTuroHomepage() {
     }
   }, [fontsLoaded]);
  
+  const loadUserData = async () => {
+    const userDataString = await AsyncStorage.getItem("userData");
+    if (userDataString) {
+      const userData = JSON.parse(userDataString);
+      const fullName = userData.name || "User";
+      const firstName = fullName.split(' ')[0];
+      setUserName(fullName); // Use full name for filtering
+      setDisplayUserName(firstName); // Use first name for display
+      setUserId(userData.id); // Assuming userData contains the tutor's ID
+    }
+
+    // Load profile image
+    const savedImage = await AsyncStorage.getItem('profileImage');
+    if (savedImage) {
+      setProfileImage(savedImage);
+    } else {
+      setProfileImage(null);
+    }
+  };
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      const userDataString = await AsyncStorage.getItem("userData");
-      if (userDataString) {
-        const userData = JSON.parse(userDataString);
-        const fullName = userData.name || "User";
-        const firstName = fullName.split(' ')[0];
-        setUserName(fullName); // Use full name for filtering
-        setDisplayUserName(firstName); // Use first name for display
-        setUserId(userData.id); // Assuming userData contains the tutor's ID
-      } else {
-        // No user data found
-      }
-    };
- 
-    fetchUserData();
+    loadUserData();
   }, []);
+
+  // Reload profile data when returning to homepage from profile page
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUserData();
+    }, [])
+  );
  
   useEffect(() => {
     if (userId) {
@@ -547,7 +586,11 @@ export default function TagakTuroHomepage() {
                   style={styles.profilePicture}
                   onPress={() => router.push('/profile')}
                 >
-                  <Ionicons name="person-circle" size={48} color="#2B74B4" />
+                  {profileImage ? (
+                    <Image source={{ uri: profileImage }} style={styles.profileImage} />
+                  ) : (
+                    <Ionicons name="person-circle" size={48} color="#2B74B4" />
+                  )}
                 </TouchableOpacity>
             </View>
             </View>
@@ -937,6 +980,11 @@ const styles = StyleSheet.create({
   profilePicture: {
     width: 48,
     height: 48,
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   bookCard: {
     backgroundColor: "#2B74B4",
