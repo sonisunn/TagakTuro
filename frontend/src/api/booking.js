@@ -29,7 +29,6 @@ export async function createBooking(bookingData) {
     const response = await client.post('/api/booking', bookingData);
     return response.data;
   } catch (error) {
-    console.error('Error in createBooking:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -43,7 +42,6 @@ export async function getAllBookings() {
     const response = await client.get('/api/booking');
     return response.data;
   } catch (error) {
-    console.error('Error in getAllBookings:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -57,7 +55,6 @@ export async function getBookingsByStudentId(studentId) {
     const response = await client.get(`/api/booking/student/${studentId}`);
     return response.data;
   } catch (error) {
-    console.error('Error in getBookingsByStudentId:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -71,7 +68,6 @@ export async function getPendingBookings() {
     const response = await client.get('/api/booking/pending');
     return response.data;
   } catch (error) {
-    console.error('Error in getPendingBookings:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -85,7 +81,6 @@ export async function getBookingsByTutorName(tutorName) {
     const response = await client.get(`/api/booking/tutor/${encodeURIComponent(tutorName)}`);
     return response.data;
   } catch (error) {
-    console.error('Error in getBookingsByTutorName:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -99,7 +94,6 @@ export async function updateBooking(id, bookingData) {
     const response = await client.put(`/api/booking/${id}`, bookingData);
     return response.data;
   } catch (error) {
-    console.error('Error in updateBooking:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -113,7 +107,6 @@ export async function updateBookingStatus(id, status) {
     const response = await client.patch(`/api/booking/${id}/status`, { status });
     return response.data;
   } catch (error) {
-    console.error('Error in updateBookingStatus:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -127,7 +120,6 @@ export async function deleteBooking(id) {
     const response = await client.delete(`/api/booking/${id}`);
     return response.data;
   } catch (error) {
-    console.error('Error in deleteBooking:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }

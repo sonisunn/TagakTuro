@@ -11,7 +11,6 @@ export async function signup(user) {
     const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, user);
     return res.data;
   } catch (error) {
-    console.error('Error in signup:', error.response || error.message);
     throw error;
   }
 }
@@ -32,7 +31,6 @@ export async function login(email, password) {
 
     return data;
   } catch (error) {
-    console.error('Error in login:', error.response || error.message);
     throw error;
   }
 }
@@ -49,7 +47,6 @@ export async function loadTokenToHeader() {
       delete axios.defaults.headers.common['Authorization'];
     }
   } catch (error) {
-    console.error('Error loading token:', error.message);
   }
 }
 

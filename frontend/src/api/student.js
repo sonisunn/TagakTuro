@@ -23,7 +23,6 @@ export async function getAllStudents() {
     const response = await client.get('/api/student');
     return response.data;
   } catch (error) {
-    console.error('Error in getAllStudents:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
@@ -34,7 +33,6 @@ export async function getStudentById(id) {
     const response = await client.get(`/api/student/${id}`);
     return response.data;
   } catch (error) {
-    console.error('Error in getStudentById:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }
