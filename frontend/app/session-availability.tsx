@@ -49,6 +49,23 @@ export default function AvailabilityPage() {
   ];
 
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialDays);
+
+  // Load saved availability on component mount
+  useEffect(() => {
+    const loadSavedAvailability = async () => {
+      try {
+        const savedAvailability = await AsyncStorage.getItem('tutorAvailability');
+        if (savedAvailability) {
+          const parsedSchedule = JSON.parse(savedAvailability);
+          setSchedule(parsedSchedule);
+        }
+      } catch (error) {
+        console.warn('Error loading saved availability:', error);
+      }
+    };
+
+    loadSavedAvailability();
+  }, []);
   const [successMessage, setSuccessMessage] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<boolean>(false);
 

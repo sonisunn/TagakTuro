@@ -173,35 +173,49 @@ export default function TagakTuroHomepage() {
   };
  
   const filterBookingsByAvailability = (bookings: any[], availability: any[]) => {
+    console.log('🔍 Filtering function called with:', { bookingsCount: bookings.length, availability });
+
     if (!availability || availability.length === 0) {
+      console.log('🔍 No availability set, showing all bookings');
       return bookings; // If no availability set, show all bookings
     }
 
     return bookings.filter((booking: any) => {
-      if (!booking.bookingDateTime) return false;
+      if (!booking.bookingDateTime) {
+        console.log('🔍 Booking missing dateTime:', booking.id);
+        return false;
+      }
 
       try {
         const bookingDate = new Date(booking.bookingDateTime);
         const dayOfWeek = bookingDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+
+        console.log(`🔍 Checking booking ${booking.id}: ${bookingDate.toLocaleString()} (day ${dayOfWeek}, ${bookingTime} minutes)`);
 
         // Find availability slots for this day
         const dayAvailability = availability.find((day: any) => day.id === dayOfWeek);
+        console.log(`🔍 Day ${dayOfWeek} availability:`, dayAvailability);
+
         if (!dayAvailability || dayAvailability.slots.length === 0) {
+          console.log(`🔍 No availability for day ${dayOfWeek}`);
           return false; // No availability for this day
         }
 
-        // Check if booking time falls within any available slot
-        const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes(); // Convert to minutes
-
-        return dayAvailability.slots.some((slot: any) => {
-          // slot.start and slot.end are stored as minutes from midnight
+        const matches = dayAvailability.slots.some((slot: any) => {
           const startTime = slot.start;
           const endTime = slot.end;
+          const slotMatches = bookingTime >= startTime && bookingTime <= endTime;
 
-          // Check if booking time is within the slot
-          return bookingTime >= startTime && bookingTime <= endTime;
+          console.log(`🔍 Checking slot ${startTime}-${endTime} vs booking ${bookingTime}: ${slotMatches}`);
+          return slotMatches;
         });
+
+        console.log(`🔍 Booking ${booking.id} final result: ${matches}`);
+        return matches;
+
       } catch (error) {
+        console.log('🔍 Error processing booking:', error);
         return false; // Skip invalid dates
       }
     });
@@ -222,6 +236,10 @@ export default function TagakTuroHomepage() {
       const availabilitySchedule = await AsyncStorage.getItem('tutorAvailability');
       const parsedAvailability = availabilitySchedule ? JSON.parse(availabilitySchedule) : [];
 
+      // Debug logging
+      console.log('🔍 Tutor availability loaded:', parsedAvailability);
+      console.log('🔍 All pending bookings before filtering:', allPendingBookings.length);
+
       // Transform bookings
       const transformedPending = allPendingBookings
         .map(transformBooking)
@@ -231,8 +249,12 @@ export default function TagakTuroHomepage() {
         .map(transformBooking)
         .filter((b): b is Booking => b !== null);
 
+      console.log('🔍 Transformed pending bookings:', transformedPending.length);
+
       // Filter pending bookings based on tutor's availability
       const filteredPending = filterBookingsByAvailability(transformedPending, parsedAvailability);
+
+      console.log('🔍 Filtered pending bookings:', filteredPending.length);
 
       // Separate tutor's bookings by status
       const upcoming: Booking[] = [];
