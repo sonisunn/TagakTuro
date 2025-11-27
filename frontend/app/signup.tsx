@@ -32,6 +32,8 @@ export default function TagakTuroSignUp() {
 
   // Progress bar animation for filling the submit button
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
     return /^[a-zA-Z\s]+$/.test(name.trim());
   };
@@ -633,9 +635,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     fontWeight: '600',
   },
-  submitButtonDisabled: {
-    opacity: 0.5,
-  },
   submitButtonProgress: {
     position: 'absolute',
     top: 0,
@@ -756,5 +755,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#2B74B4",
     fontWeight: '600',
+  },
+  eyeIcon: {
+    padding: 10,
   },
 });
