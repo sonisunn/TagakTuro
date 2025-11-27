@@ -51,6 +51,7 @@ public class AuthService {
         newUser.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
         newUser.setStudentId(signupRequest.getStudentId());
         newUser.setCourseProgram(signupRequest.getCourseProgram());
+        newUser.setPhoneNumber(signupRequest.getPhoneNumber());
 
         Set<String> roles = new HashSet<>();
         if (role.equals("STUDENT")) {
