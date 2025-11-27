@@ -16,6 +16,7 @@ export default function BookingPage() {
 
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
+  const [venue, setVenue] = useState('');
   const [date, setDate] = useState(new Date());
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
@@ -23,9 +24,16 @@ export default function BookingPage() {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [openModality, setOpenModality] = useState(false);
+  const [openVenue, setOpenVenue] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState({
+    subject: false,
+    modality: false,
+    venue: false,
+  });
+  const [showValidationError, setShowValidationError] = useState(false);
 
   useEffect(() => {
             const loadUserData = async () => {
@@ -45,14 +53,73 @@ export default function BookingPage() {
             };    loadUserData();
   }, []);
 
+  // Reset venue when modality changes
+  useEffect(() => {
+    if (modality !== 'In-Person') {
+      setVenue('');
+      setValidationErrors(prev => ({ ...prev, venue: false }));
+    }
+  }, [modality]);
+
+  // Clear validation errors when fields change
+  useEffect(() => {
+    if (modality && validationErrors.modality) {
+      clearFieldError('modality');
+    }
+  }, [modality]);
+
+  useEffect(() => {
+    if (venue && validationErrors.venue) {
+      clearFieldError('venue');
+    }
+  }, [venue]);
+
+  // Close other dropdown when one opens
+  useEffect(() => {
+    if (openModality) {
+      setOpenVenue(false);
+    }
+  }, [openModality]);
+
+  useEffect(() => {
+    if (openVenue) {
+      setOpenModality(false);
+    }
+  }, [openVenue]);
+
+  // Clear validation errors when fields are filled
+  const clearFieldError = (field: keyof typeof validationErrors) => {
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const updated = { ...prev, [field]: false };
+        // Check if all errors are now cleared
+        const hasErrors = Object.values(updated).some(error => error);
+        setShowValidationError(hasErrors);
+        return updated;
+      });
+    }
+  };
+
+  const validateFields = () => {
+    const errors = {
+      subject: !subject.trim(),
+      modality: !modality,
+      venue: modality === 'In-Person' && !venue,
+    };
+
+    setValidationErrors(errors);
+    setShowValidationError(Object.values(errors).some(error => error));
+
+    return !Object.values(errors).some(error => error);
+  };
+
   const handleSubmit = async () => {
     if (!studentId || !studentEmail) {
       Alert.alert('Error', 'Student not logged in. Please log in to book a session.');
       return;
     }
 
-    if (!subject || !modality) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!validateFields()) {
       return;
     }
 
@@ -83,6 +150,7 @@ export default function BookingPage() {
       subject: subject,
       bookingDateTime: bookingStart.toISOString(),
       modality,
+      venue: modality === 'In-Person' ? venue : null,
       notes: null,
       status: 'PENDING',
       durationMinutes,
@@ -133,12 +201,15 @@ export default function BookingPage() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Subject</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, validationErrors.subject && styles.inputError]}
               placeholder="e.g., Calculus, Web Development"
               value={subject}
-              onChangeText={setSubject}
+              onChangeText={(text) => {
+                setSubject(text);
+                if (text.trim()) clearFieldError('subject');
+              }}
               placeholderTextColor="#95CDF2"
-              
+
             />
           </View>
 
@@ -154,15 +225,43 @@ export default function BookingPage() {
               ]}
               setOpen={setOpenModality}
               setValue={setModality}
-              style={styles.dropdown}
+              style={[styles.dropdown, validationErrors.modality && styles.dropdownError]}
               placeholder="Select a modality"
               placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12, fontWeight: '700',}}
               textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4', fontWeight:'700',}}
               dropDownContainerStyle={{
-                borderColor: '#2B74B4',
+                borderColor: validationErrors.modality ? '#FF0000' : '#2B74B4',
               }}
+              zIndex={2000}
+              zIndexInverse={1000}
             />
           </View>
+
+          {modality === 'In-Person' && (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Venue</Text>
+              <DropDownPicker
+                listMode="SCROLLVIEW"
+                open={openVenue}
+                value={venue}
+                items={[
+                  { label: 'OPVSSCD Conference Room', value: 'OPVSSCD Conference Room' },
+                  { label: 'Library', value: 'Library' },
+                ]}
+                setOpen={setOpenVenue}
+                setValue={setVenue}
+                style={[styles.dropdown, validationErrors.venue && styles.dropdownError]}
+                placeholder="Select a venue"
+                placeholderStyle={{ color: '#95CDF2', fontFamily: 'Poppins', fontSize: 12, fontWeight: '700',}}
+                textStyle={{ fontFamily: 'Poppins', fontSize: 12, color: '#2B74B4', fontWeight:'700',}}
+                dropDownContainerStyle={{
+                  borderColor: validationErrors.venue ? '#FF0000' : '#2B74B4',
+                }}
+                zIndex={1000}
+                zIndexInverse={2000}
+              />
+            </View>
+          )}
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Date</Text>
@@ -215,6 +314,12 @@ export default function BookingPage() {
             </View>
           </View>
         </View>
+
+        {showValidationError && (
+          <Text style={styles.errorMessage}>
+            Some information is missing. Please review the form and provide the required details.
+          </Text>
+        )}
 
         {bookingSuccess && (
           <View style={styles.successCard}>
@@ -313,6 +418,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     width: '100%',
   },
+  inputError: {
+    borderColor: '#FF0000',
+  },
+  dropdownError: {
+    borderColor: '#FF0000',
+  },
   timeInputContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -346,18 +457,26 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: '#2B74B4',
-    marginBottom: 8,
+    marginBottom: 3,
   },
   successText: {
     fontFamily: 'Poppins',
-    fontSize: 17,
+    fontSize: 12,
     fontWeight: '700',
     color: '#95CDF2',
-    lineHeight: 20,
+  },
+  errorMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FF0000',
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginTop: 10,
   },
   submitContainer: {
     paddingHorizontal: 20,
-    marginTop: 20,
+    marginTop: 10,
   },
   submitButton: {
     backgroundColor: '#2B74B4',

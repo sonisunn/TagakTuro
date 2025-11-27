@@ -19,7 +19,7 @@ import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../s
 
 // TypeScript interfaces
 interface ClassItem {
-  id: number;
+  id: string;
   tutor: string;
   subject: string;
   location: string;
@@ -44,6 +44,8 @@ export default function TagakTuroHomepage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [showMatchNotification, setShowMatchNotification] = useState<boolean>(false);
   const [matchBooking, setMatchBooking] = useState<ClassItem | null>(null);
+  const [showRescheduleNotification, setShowRescheduleNotification] = useState<boolean>(false);
+  const [rescheduledBooking, setRescheduledBooking] = useState<ClassItem | null>(null);
   const previousBookingsRef = useRef<ClassItem[]>([]);
 
   // --- Modal State Management ---
@@ -81,14 +83,15 @@ export default function TagakTuroHomepage() {
         const past: ClassItem[] = [];
 
         const previousBookings = previousBookingsRef.current;
-        let newlyConfirmedBooking = null;
+        let newlyConfirmedBooking: ClassItem | null = null;
+        let newlyRescheduledBooking: ClassItem | null = null;
 
         bookings.forEach((booking: any) => {
           const bookingItem = {
-            id: booking.id,
+            id: String(booking.id),
             tutor: booking.tutorName || 'Unassigned',
             subject: booking.subject || 'N/A',
-            location: booking.modality || 'N/A',
+            location: (booking.modality === 'In-Person' && booking.venue) ? booking.venue : booking.modality || 'N/A',
             dateTime: formatBookingDateTime(booking.bookingDateTime),
             rawDate: booking.bookingDateTime,
             status: booking.status || 'PENDING',
@@ -99,6 +102,10 @@ export default function TagakTuroHomepage() {
           const previousBooking = previousBookings.find(b => b.id === booking.id);
           if (previousBooking && previousBooking.rawStatus === 'PENDING' && booking.status === 'CONFIRMED') {
             newlyConfirmedBooking = bookingItem;
+          }
+          // Check for rescheduled bookings (same status but different date/time)
+          else if (previousBooking && previousBooking.rawDate !== booking.bookingDateTime) {
+            newlyRescheduledBooking = bookingItem;
           }
 
           if (booking.status === 'CONFIRMED') {
@@ -112,9 +119,14 @@ export default function TagakTuroHomepage() {
         setUpcomingClasses(upcoming);
         setPastClasses(past);
 
-        if (newlyConfirmedBooking && !loading) {
+        if (newlyConfirmedBooking !== null && !loading) {
           setMatchBooking(newlyConfirmedBooking);
           setShowMatchNotification(true);
+        }
+
+        if (newlyRescheduledBooking && !loading) {
+          setRescheduledBooking(newlyRescheduledBooking);
+          setShowRescheduleNotification(true);
         }
       }
     } catch {
@@ -128,7 +140,7 @@ export default function TagakTuroHomepage() {
     fetchBookings();
     const interval = setInterval(fetchBookings, 5000);
     return () => clearInterval(interval);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // Dependencies omitted to prevent re-creation of interval
 
   const formatBookingDateTime = (dateTimeString: string) => {
     try {
@@ -443,7 +455,7 @@ export default function TagakTuroHomepage() {
         visible={modalVisible}
         onRequestClose={handleCloseModal}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView intensity={10} tint="light" style={styles.absolute}>
           <View style={styles.modalContent}>
 
             {/* VIEW 1: Session Details */}
@@ -622,6 +634,25 @@ export default function TagakTuroHomepage() {
             {matchBooking.subject} with {matchBooking.tutor} - {matchBooking.dateTime}
           </Text>
           <Text style={styles.matchDetails}>Tap to dismiss</Text>
+        </TouchableOpacity>
+      )}
+
+      {showRescheduleNotification && rescheduledBooking && (
+        <TouchableOpacity
+          style={styles.rescheduleCardOverlay}
+          onPress={() => setShowRescheduleNotification(false)}
+        >
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowRescheduleNotification(false)}
+          >
+            <Ionicons name="close" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.rescheduleTitle}>Session Rescheduled!</Text>
+          <Text style={styles.rescheduleSubtitle}>
+            {rescheduledBooking.subject} with {rescheduledBooking.tutor} - {rescheduledBooking.dateTime}
+          </Text>
+          <Text style={styles.rescheduleDetails}>Tap to dismiss</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -887,6 +918,41 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 10,
     color: '#95CDF2',
+    fontStyle: 'italic',
+  },
+  rescheduleCardOverlay: {
+    position: 'absolute',
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: '#FCC419', // Yellow color for reschedule
+    padding: 15,
+    borderRadius: 15,
+    height: 100,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  rescheduleTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 2,
+  },
+  rescheduleSubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#fff',
+    marginBottom: 2,
+  },
+  rescheduleDetails: {
+    fontFamily: 'Poppins',
+    fontSize: 10,
+    color: '#2B74B4',
     fontStyle: 'italic',
   },
   bottomSpacing: {
