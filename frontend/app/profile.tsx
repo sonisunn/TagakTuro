@@ -81,7 +81,7 @@ export default function ProfilePage() {
             email: userData.email || '',
             course: userData.courseProgram || '',
             // Load phone number from user data (from registration)
-            phone: userData.phoneNumber || '',
+            phone: userData.phoneNumber || 'Not provided',
           }));
         }
 
@@ -134,7 +134,8 @@ export default function ProfilePage() {
   };
 
   const handleUpdateClick = () => {
-    setTempPhone(profileData.phone);
+    // Pre-populate with current phone number, or empty if "Not provided"
+    setTempPhone(profileData.phone === 'Not provided' ? '' : profileData.phone);
     setTempImage(profileData.imageUri);
     setIsEditing(true);
   };
@@ -166,9 +167,10 @@ export default function ProfilePage() {
       }
 
       // Update local state with what was actually changed
+      const newPhone = tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : 'Not provided';
       setProfileData(prev => ({
         ...prev,
-        phone: tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : prev.phone,
+        phone: newPhone,
         imageUri: tempImage || prev.imageUri,
       }));
 
