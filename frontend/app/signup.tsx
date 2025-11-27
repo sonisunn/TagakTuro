@@ -34,6 +34,16 @@ export default function TagakTuroSignUp() {
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
 
+  // Field validation states
+  const [fieldErrors, setFieldErrors] = useState({
+    name: false,
+    studentId: false,
+    courseProgram: false,
+    email: false,
+    phoneNumber: false,
+    password: false,
+  });
+
   // Progress bar animation for filling the submit button
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -69,56 +79,79 @@ export default function TagakTuroSignUp() {
 
   const handleSubmit = async () => {
     const errors: string[] = [];
+    const newFieldErrors = {
+      name: false,
+      studentId: false,
+      courseProgram: false,
+      email: false,
+      phoneNumber: false,
+      password: false,
+    };
 
     // Check for missing required fields
     if (!name.trim()) {
       errors.push('• Name is required');
+      newFieldErrors.name = true;
     }
     if (!studentId.trim()) {
       errors.push('• Student ID is required');
+      newFieldErrors.studentId = true;
     }
     if (!courseProgram.trim()) {
       errors.push('• Course and Program is required');
+      newFieldErrors.courseProgram = true;
     }
     if (!email.trim()) {
       errors.push('• Email is required');
+      newFieldErrors.email = true;
     }
     if (!phoneNumber.trim()) {
       errors.push('• Phone number is required');
+      newFieldErrors.phoneNumber = true;
     }
     if (!password) {
       errors.push('• Password is required');
+      newFieldErrors.password = true;
     }
 
     // Name validation - alphabetic characters only
     if (name.trim() && !validateName(name)) {
       errors.push('• Name must contain only alphabetic characters and spaces');
+      newFieldErrors.name = true;
     }
 
     // Email validation - comprehensive checks
     if (email.trim()) {
       if (!email.includes('@')) {
         errors.push('• Please enter a valid email address');
+        newFieldErrors.email = true;
       } else if (!email.endsWith('@umak.edu.ph')) {
         errors.push('• Only @umak.edu.ph email addresses are allowed');
+        newFieldErrors.email = true;
       } else if (email === '@umak.edu.ph') {
         errors.push('• Please enter your full email address before @umak.edu.ph');
+        newFieldErrors.email = true;
       }
     }
 
     // Phone number validation - must be 11 digits
     if (phoneNumber.trim() && !validatePhoneNumber(phoneNumber)) {
       errors.push('• Phone Number must be 11 digits only');
+      newFieldErrors.phoneNumber = true;
     }
 
     // Password validation - 12-16 chars, mix of upper/lower, number, special char
     if (password && !validatePassword(password)) {
       errors.push('• Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
+      newFieldErrors.password = true;
     }
 
     if (!agreedToTerms) {
       errors.push('• Please agree to the User Agreement and Privacy Policy to continue');
     }
+
+    // Update field error states
+    setFieldErrors(newFieldErrors);
 
     // If there are any errors, show them all at once
     if (errors.length > 0) {
@@ -210,10 +243,19 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Name</Text>
             <TextInput
-              style={[styles.input, error && !name && styles.inputError]}
+              style={[
+                styles.input,
+                (fieldErrors.name) && styles.inputError
+              ]}
               placeholder="Jayson Partido"
               value={name}
-              onChangeText={setName}
+              onChangeText={(text) => {
+                setName(text);
+                // Clear error when user starts typing
+                if (fieldErrors.name) {
+                  setFieldErrors(prev => ({ ...prev, name: false }));
+                }
+              }}
               placeholderTextColor="#95CDF2"
             />
           </View>
@@ -221,10 +263,19 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Student ID</Text>
             <TextInput
-              style={[styles.input, error && !studentId && styles.inputError]}
+              style={[
+                styles.input,
+                (fieldErrors.studentId) && styles.inputError
+              ]}
               placeholder="K12148008"
               value={studentId}
-              onChangeText={setStudentId}
+              onChangeText={(text) => {
+                setStudentId(text);
+                // Clear error when user starts typing
+                if (fieldErrors.studentId) {
+                  setFieldErrors(prev => ({ ...prev, studentId: false }));
+                }
+              }}
               placeholderTextColor="#95CDF2"
             />
           </View>
@@ -232,10 +283,19 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Course and Program</Text>
             <TextInput
-              style={[styles.input, error && !courseProgram && styles.inputError]}
+              style={[
+                styles.input,
+                (fieldErrors.courseProgram) && styles.inputError
+              ]}
               placeholder="CCIS - BS COMPUTER SCIENCE"
               value={courseProgram}
-              onChangeText={setCourseProgram}
+              onChangeText={(text) => {
+                setCourseProgram(text);
+                // Clear error when user starts typing
+                if (fieldErrors.courseProgram) {
+                  setFieldErrors(prev => ({ ...prev, courseProgram: false }));
+                }
+              }}
               placeholderTextColor="#95CDF2"
             />
           </View>
@@ -243,10 +303,19 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={[styles.input, error && !email && styles.inputError]}
+              style={[
+                styles.input,
+                (fieldErrors.email) && styles.inputError
+              ]}
               placeholder="jpartido.k12148008@umak.edu.ph"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                // Clear error when user starts typing
+                if (fieldErrors.email) {
+                  setFieldErrors(prev => ({ ...prev, email: false }));
+                }
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               placeholderTextColor="#95CDF2"
@@ -256,10 +325,19 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone Number</Text>
             <TextInput
-              style={[styles.input, error && !phoneNumber && styles.inputError]}
+              style={[
+                styles.input,
+                (fieldErrors.phoneNumber) && styles.inputError
+              ]}
               placeholder="09672411911"
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              onChangeText={(text) => {
+                setPhoneNumber(text);
+                // Clear error when user starts typing
+                if (fieldErrors.phoneNumber) {
+                  setFieldErrors(prev => ({ ...prev, phoneNumber: false }));
+                }
+              }}
               keyboardType="phone-pad"
               placeholderTextColor="#95CDF2"
             />
@@ -272,11 +350,17 @@ export default function TagakTuroSignUp() {
               <TextInput
                 style={[
                   styles.passwordInput,
-                  error && !password && styles.inputError
+                  (fieldErrors.password) && styles.inputError
                 ]}
                 placeholder="ILOVEyou_123"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  // Clear error when user starts typing
+                  if (fieldErrors.password) {
+                    setFieldErrors(prev => ({ ...prev, password: false }));
+                  }
+                }}
                 secureTextEntry={!showPassword}
                 placeholderTextColor="#95CDF2"
               />
