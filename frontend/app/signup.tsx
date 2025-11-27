@@ -30,8 +30,18 @@ export default function TagakTuroSignUp() {
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Custom alert modal state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
   // Progress bar animation for filling the submit button
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Custom alert function
+  const showAlert = (message: string) => {
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
 
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
@@ -60,76 +70,76 @@ export default function TagakTuroSignUp() {
   const handleSubmit = async () => {
     // Check for missing required fields
     if (!name.trim()) {
-      alert('Name is required');
+      showAlert('Name is required');
       setError(true);
       return;
     }
     if (!studentId.trim()) {
-      alert('Student ID is required');
+      showAlert('Student ID is required');
       setError(true);
       return;
     }
     if (!courseProgram.trim()) {
-      alert('Course and Program is required');
+      showAlert('Course and Program is required');
       setError(true);
       return;
     }
     if (!email.trim()) {
-      alert('Email is required');
+      showAlert('Email is required');
       setError(true);
       return;
     }
     if (!phoneNumber.trim()) {
-      alert('Phone number is required');
+      showAlert('Phone number is required');
       setError(true);
       return;
     }
     if (!password) {
-      alert('Password is required');
+      showAlert('Password is required');
       setError(true);
       return;
     }
 
     // Name validation - alphabetic characters only
     if (!validateName(name)) {
-      alert('Name must contain only alphabetic characters and spaces');
+      showAlert('Name must contain only alphabetic characters and spaces');
       setError(true);
       return;
     }
 
     // Email validation - comprehensive checks
     if (!email.includes('@')) {
-      alert('Please enter a valid email address');
+      showAlert('Please enter a valid email address');
       setError(true);
       return;
     }
     if (!email.endsWith('@umak.edu.ph')) {
-      alert('Only @umak.edu.ph email addresses are allowed');
+      showAlert('Only @umak.edu.ph email addresses are allowed');
       setError(true);
       return;
     }
     if (email === '@umak.edu.ph') {
-      alert('Please enter your full email address before @umak.edu.ph');
+      showAlert('Please enter your full email address before @umak.edu.ph');
       setError(true);
       return;
     }
 
     // Phone number validation - must be 11 digits
     if (!validatePhoneNumber(phoneNumber)) {
-      alert('Phone number must be exactly 11 digits');
+      showAlert('Phone number must be exactly 11 digits');
       setError(true);
       return;
     }
 
     // Password validation - 12-16 chars, mix of upper/lower, number, special char
     if (!validatePassword(password)) {
-      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
+      showAlert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
       setError(true);
       return;
     }
 
     if (!agreedToTerms) {
-      alert('Please agree to the User Agreement and Privacy Policy to continue');
+      showAlert('Please agree to the User Agreement and Privacy Policy to continue');
       return;
     }
 
@@ -141,7 +151,7 @@ export default function TagakTuroSignUp() {
       const userData = { name, studentId, courseProgram, email, phoneNumber, password, role: 'STUDENT' };
       await signup(userData);
       setSubmitting(false);
-      alert('Registration successful! You can now log in.');
+      showAlert('Registration successful! You can now log in.');
       router.push('/');
     } catch (err: any) {
       setSubmitting(false);
@@ -151,15 +161,15 @@ export default function TagakTuroSignUp() {
       const errorMessage = err.message || '';
 
       if (errorMessage.includes('Email is already in use')) {
-        alert('This email address is already registered. Please use a different email address or try logging in instead.');
+        showAlert('This email address is already registered. Please use a different email address or try logging in instead.');
       } else if (errorMessage.includes('Only @umak.edu.ph email addresses are allowed')) {
-        alert('Only @umak.edu.ph email addresses are allowed!');
+        showAlert('Only @umak.edu.ph email addresses are allowed!');
       } else if (errorMessage.includes('Student ID is already in use')) {
-        alert('This Student ID is already registered. Please use a different Student ID.');
+        showAlert('This Student ID is already registered. Please use a different Student ID.');
       } else if (errorMessage.includes('Tutor ID is already in use')) {
-        alert('This Tutor ID is already registered. Please use a different ID.');
+        showAlert('This Tutor ID is already registered. Please use a different ID.');
       } else if (errorMessage.includes('Invalid role specified')) {
-        alert('Invalid user role specified.');
+        showAlert('Invalid user role specified.');
       }
       // Remove generic error handling - only specific validation messages will be shown
     }
@@ -497,6 +507,27 @@ export default function TagakTuroSignUp() {
             </BlurView>
           </Modal>
 
+          {/* Custom Alert Modal */}
+          <Modal
+            visible={alertVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setAlertVisible(false)}
+          >
+            <BlurView intensity={10} style={styles.alertBlurBackground}>
+              <View style={styles.alertModalContainer}>
+                <Text style={styles.alertTitle}>Notice</Text>
+                <Text style={styles.alertMessage}>{alertMessage}</Text>
+                <TouchableOpacity
+                  style={styles.alertButton}
+                  onPress={() => setAlertVisible(false)}
+                >
+                  <Text style={styles.alertButtonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </Modal>
+
           {error && (
             <Text style={styles.errorText}>
               Missing Detail/s is required!
@@ -810,5 +841,57 @@ const styles = StyleSheet.create({
   },
   eyeIcon: {
     padding: 10,
+  },
+
+  // Custom Alert Modal Styles
+  alertBlurBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  alertModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#2B74B4',
+    padding: 25,
+    width: '90%',
+    maxWidth: 350,
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  alertMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
 });
