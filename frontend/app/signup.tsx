@@ -58,41 +58,78 @@ export default function TagakTuroSignUp() {
   };
 
   const handleSubmit = async () => {
-    if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
+    // Check for missing required fields
+    if (!name.trim()) {
+      alert('Name is required');
+      setError(true);
+      return;
+    }
+    if (!studentId.trim()) {
+      alert('Student ID is required');
+      setError(true);
+      return;
+    }
+    if (!courseProgram.trim()) {
+      alert('Course and Program is required');
+      setError(true);
+      return;
+    }
+    if (!email.trim()) {
+      alert('Email is required');
+      setError(true);
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      alert('Phone number is required');
+      setError(true);
+      return;
+    }
+    if (!password) {
+      alert('Password is required');
       setError(true);
       return;
     }
 
     // Name validation - alphabetic characters only
     if (!validateName(name)) {
-      alert('Name must contain only alphabetic characters');
+      alert('Name must contain only alphabetic characters and spaces');
       setError(true);
       return;
     }
 
-    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
-    if (!validateEmail(email)) {
-      alert('Error: Only @umak.edu.ph email addresses are allowed!');
+    // Email validation - comprehensive checks
+    if (!email.includes('@')) {
+      alert('Please enter a valid email address');
+      setError(true);
+      return;
+    }
+    if (!email.endsWith('@umak.edu.ph')) {
+      alert('Only @umak.edu.ph email addresses are allowed');
+      setError(true);
+      return;
+    }
+    if (email === '@umak.edu.ph') {
+      alert('Please enter your full email address before @umak.edu.ph');
       setError(true);
       return;
     }
 
     // Phone number validation - must be 11 digits
     if (!validatePhoneNumber(phoneNumber)) {
-      alert('Must be 11 digits');
+      alert('Phone number must be exactly 11 digits');
       setError(true);
       return;
     }
 
     // Password validation - 12-16 chars, mix of upper/lower, number, special char
     if (!validatePassword(password)) {
-      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
       setError(true);
       return;
     }
 
     if (!agreedToTerms) {
-      alert('Please agree to the User Agreement and Privacy Policy');
+      alert('Please agree to the User Agreement and Privacy Policy to continue');
       return;
     }
 
