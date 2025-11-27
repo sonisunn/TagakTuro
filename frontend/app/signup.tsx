@@ -98,7 +98,7 @@ export default function TagakTuroSignUp() {
       newFieldErrors.studentId = true;
     }
     if (!courseProgram.trim()) {
-      errors.push('• Course and Program is required');
+      errors.push('• College and Program is required');
       newFieldErrors.courseProgram = true;
     }
     if (!email.trim()) {
@@ -346,12 +346,12 @@ export default function TagakTuroSignUp() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
 
-            <View style={styles.passwordContainer}>
+            <View style={[
+              styles.passwordContainer,
+              (fieldErrors.password) && styles.inputError
+            ]}>
               <TextInput
-                style={[
-                  styles.passwordInput,
-                  (fieldErrors.password) && styles.inputError
-                ]}
+                style={styles.passwordInput}
                 placeholder="ILOVEyou_123"
                 value={password}
                 onChangeText={(text) => {
@@ -947,7 +947,7 @@ const styles = StyleSheet.create({
   alertMessage: {
     fontFamily: 'Poppins',
     fontSize: 16,
-    color: '#666',
+    color: '#95CDF2',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 25,
