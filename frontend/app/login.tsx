@@ -21,7 +21,7 @@ export default function TagakTuroLogin() {
   const [error, setError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Progress bar animation for submit button
+  // Progress bar animation for filling the submit button
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const handleSubmit = () => {
@@ -73,25 +73,23 @@ export default function TagakTuroLogin() {
 
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Progress bar animation effect for submit button
+  // Progress bar animation effect for filling the submit button
   useEffect(() => {
     if (submitting) {
-      // Start the progress animation
-      Animated.loop(
-        Animated.timing(progressAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: false,
-        })
-      ).start();
+      // Start the progress animation - fill from 0% to 100%
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 2000, // 2 seconds to fill completely
+        useNativeDriver: false,
+      }).start();
     } else {
       // Reset progress when not submitting
-      progressAnim.setValue(0);
+      Animated.timing(progressAnim, {
+        toValue: 0,
+        duration: 300, // Quick reset
+        useNativeDriver: false,
+      }).start();
     }
-
-    return () => {
-      progressAnim.setValue(0);
-    };
   }, [submitting, progressAnim]);
 
   const handleSkip = () => {
@@ -162,33 +160,11 @@ export default function TagakTuroLogin() {
             </Text>
           )}
 
-          <Animated.View
-            style={[
-              styles.submitButtonContainer,
-              submitting && {
-                borderWidth: 2,
-                borderColor: '#2B74B4',
-                borderRadius: 12,
-                shadowColor: '#2B74B4',
-                shadowOffset: { width: 0, height: 0 },
-                shadowOpacity: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.4, 0.9],
-                }),
-                shadowRadius: progressAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [3, 8],
-                }),
-                elevation: 8,
-              }
-            ]}
-          >
+          <View style={styles.submitButtonContainer}>
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                submitting && {
-                  backgroundColor: '#1a5a8a', // Slightly darker blue when loading
-                }
+                submitting && styles.submitButtonDisabled
               ]}
               onPress={handleSubmit}
               disabled={submitting}
@@ -197,7 +173,20 @@ export default function TagakTuroLogin() {
                 {submitting ? 'Signing in...' : 'Submit'}
               </Text>
             </TouchableOpacity>
-          </Animated.View>
+
+            {/* Animated progress bar that fills the button */}
+            <Animated.View
+              style={[
+                styles.submitButtonProgress,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0%', '100%'],
+                  }),
+                },
+              ]}
+            />
+          </View>
           
           <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
             <Text style={styles.submitButtonText}>Skip</Text>
@@ -308,6 +297,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButtonContainer: {
+    position: 'relative',
     marginBottom: 20,
   },
   submitButton: {
@@ -317,6 +307,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: 'center',
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#1a5a8a', // Slightly darker when disabled
+  },
+  submitButtonProgress: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Semi-transparent white overlay
+    borderRadius: 8,
   },
   submitButtonText: {
     color: '#fff',
