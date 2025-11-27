@@ -154,7 +154,6 @@ export default function ApplyTutorPage() {
     } catch (error) {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
-      console.error('Error submitting application:', errorMessage);
       alert('Application failed: ' + errorMessage);
     }
   };

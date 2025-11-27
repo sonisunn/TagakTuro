@@ -103,7 +103,6 @@ export default function ProfilePage() {
           }));
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
       }
     };
 
@@ -127,7 +126,6 @@ export default function ProfilePage() {
       await AsyncStorage.removeItem('profilePhone');
       router.replace('/login');
     } catch (error) {
-      console.error('Error during logout:', error);
       Alert.alert('Error', 'Failed to logout. Please try again.');
     }
     setShowLogoutModal(false);
@@ -177,7 +175,6 @@ export default function ProfilePage() {
       // Show success message
       Alert.alert("Success", "Profile updated successfully!");
     } catch (error) {
-      console.error('Error saving profile:', error);
       Alert.alert("Error", "Failed to save profile changes.");
     }
   };

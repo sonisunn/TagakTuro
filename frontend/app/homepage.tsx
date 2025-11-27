@@ -144,7 +144,6 @@ export default function TagakTuroHomepage() {
         }
       }
     } catch {
-      console.error('Error fetching bookings');
     } finally {
       setLoading(false);
     }
@@ -288,7 +287,6 @@ export default function TagakTuroHomepage() {
 
       setModalView('success');
     } catch (error) {
-      console.error('Error rescheduling booking:', error);
       Alert.alert('Error', 'Failed to reschedule booking. Please try again.');
     } finally {
       setModalLoading(false);
@@ -307,7 +305,6 @@ export default function TagakTuroHomepage() {
 
       setModalView('cancelSuccess');
     } catch (error) {
-      console.error('Error canceling booking:', error);
       Alert.alert('Error', 'Failed to cancel booking. Please try again.');
     } finally {
       setModalLoading(false);

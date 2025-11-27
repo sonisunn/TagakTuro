@@ -55,7 +55,6 @@ export default function BookingPage() {
           setStudentId(storedStudentId);
         }
       } catch (error) {
-        console.error('Failed to load user data', error);
       }
     };    
     loadUserData();
@@ -142,7 +141,6 @@ export default function BookingPage() {
     try {
       await getStudentById(studentId);
     } catch (error) {
-      console.error('Student validation failed:', error);
       await AsyncStorage.removeItem('studentId');
       Alert.alert('Session Expired', 'Your student session is invalid. Please log in again.');
       return;

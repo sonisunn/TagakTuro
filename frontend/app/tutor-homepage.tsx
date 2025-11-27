@@ -168,7 +168,6 @@ export default function TagakTuroHomepage() {
         rawDate: booking.bookingDateTime, // Store raw date for modal operations
       };
     } catch (error) {
-      console.error('Error transforming booking:', error);
       return null;
     }
   };
@@ -209,7 +208,6 @@ export default function TagakTuroHomepage() {
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
       } catch (error) {
-          console.error("Failed to fetch bookings:", error);
       }
     };
  
@@ -311,7 +309,6 @@ export default function TagakTuroHomepage() {
       // Find the booking from pendingBookings
       const bookingToAccept = pendingBookings.find(b => b.id === bookingId);
       if (!bookingToAccept) {
-        console.error("Booking not found in pending bookings.");
         return;
       }
  
@@ -328,7 +325,6 @@ export default function TagakTuroHomepage() {
       }
       Alert.alert('Success', 'Booking accepted successfully!');
     } catch (error) {
-      console.error("Failed to accept booking:", error);
       Alert.alert('Error', 'Failed to accept booking. Please try again.');
     }
   };
@@ -341,7 +337,6 @@ export default function TagakTuroHomepage() {
         fetchBookings(userId, userName); // Re-fetch bookings to update the lists
       }
     } catch (error) {
-      console.error("Failed to decline booking:", error);
     }
   };
  
@@ -401,7 +396,6 @@ export default function TagakTuroHomepage() {
 
       setModalView('success');
     } catch (error) {
-      console.error('Error rescheduling booking:', error);
       Alert.alert('Error', 'Failed to reschedule booking. Please try again.');
     } finally {
       setModalLoading(false);
@@ -422,7 +416,6 @@ export default function TagakTuroHomepage() {
 
       setModalView('cancelSuccess');
     } catch (error) {
-      console.error('Error canceling booking:', error);
       Alert.alert('Error', 'Failed to cancel booking. Please try again.');
     } finally {
       setModalLoading(false);
