@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +20,9 @@ export default function TagakTuroLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Progress bar animation
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   const handleSubmit = () => {
     setError(false);
@@ -69,6 +73,30 @@ export default function TagakTuroLogin() {
 
   const [submitting, setSubmitting] = React.useState(false);
 
+  // Progress bar animation effect
+  useEffect(() => {
+    if (submitting) {
+      // Start the progress animation
+      const startProgressAnimation = () => {
+        Animated.loop(
+          Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: false,
+          })
+        ).start();
+      };
+      startProgressAnimation();
+    } else {
+      // Reset progress when not submitting
+      progressAnim.setValue(0);
+    }
+
+    return () => {
+      progressAnim.setValue(0);
+    };
+  }, [submitting, progressAnim]);
+
   const handleSkip = () => {
     router.push('/homepage');
   }
@@ -84,7 +112,30 @@ export default function TagakTuroLogin() {
           <Text style={styles.subtitle}>an Online Tutoring Service</Text>
         </View>
 
-        <View style={styles.formContainer}>
+        <Animated.View
+          style={[
+            styles.formContainer,
+            submitting && {
+              borderWidth: 3,
+              borderColor: '#2B74B4',
+              borderRadius: 23,
+              shadowColor: '#2B74B4',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: progressAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.3, 0.8],
+              }),
+              shadowRadius: 8,
+              elevation: 10,
+              transform: [{
+                scale: progressAnim.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 1.02, 1],
+                }),
+              }],
+            }
+          ]}
+        >
           <Text style={styles.formTitle}>Log in now!</Text>
           <Text style={styles.formSubtitle}>Log in to access TagakTuro</Text>
 
@@ -159,7 +210,7 @@ export default function TagakTuroLogin() {
               </Text>
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
