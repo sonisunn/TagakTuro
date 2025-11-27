@@ -17,7 +17,15 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
 // --- FIXED: InputGroup moved OUTSIDE the main component ---
-const InputGroup = ({ label, value, editable, onChangeText, keyboardType }) => {
+interface InputGroupProps {
+  label: string;
+  value: string;
+  editable: boolean;
+  onChangeText?: (text: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'numeric';
+}
+
+const InputGroup = ({ label, value, editable, onChangeText, keyboardType = 'default' }: InputGroupProps) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -53,7 +61,7 @@ export default function ProfilePage() {
     email: '',
     course: '',
     phone: '', // Will be loaded from user data
-    imageUri: null,
+    imageUri: null as string | null,
   });
 
   // Load user data on component mount
@@ -102,7 +110,7 @@ export default function ProfilePage() {
   }, []);
 
   const [tempPhone, setTempPhone] = useState('');
-  const [tempImage, setTempImage] = useState(null);
+  const [tempImage, setTempImage] = useState<string | null>(null);
 
   const handleUpdateClick = () => {
     setTempPhone(profileData.phone);
@@ -174,7 +182,7 @@ export default function ProfilePage() {
   };
 
   // Reusable Component for Image vs Icon logic
-  const ProfileAvatar = ({ uri, opacity = 1 }) => {
+  const ProfileAvatar = ({ uri, opacity = 1 }: { uri?: string | null; opacity?: number }) => {
     if (uri) {
       return <Image source={{ uri: uri }} style={[styles.avatar, { opacity }]} />;
     }
@@ -251,10 +259,34 @@ export default function ProfilePage() {
           <Text style={styles.h2Title}>Account information</Text>
           <View style={styles.divider} />
 
-          <InputGroup label="Name" value={profileData.fullName} editable={false} />
-          <InputGroup label="Email" value={profileData.email} editable={false} />
-          <InputGroup label="Course & Program" value={profileData.course} editable={false} />
-          <InputGroup label="Phone Number" value={profileData.phone} editable={false} />
+          <InputGroup
+            label="Name"
+            value={profileData.fullName}
+            editable={false}
+            onChangeText={() => {}}
+            keyboardType="default"
+          />
+          <InputGroup
+            label="Email"
+            value={profileData.email}
+            editable={false}
+            onChangeText={() => {}}
+            keyboardType="email-address"
+          />
+          <InputGroup
+            label="College & Program"
+            value={profileData.course}
+            editable={false}
+            onChangeText={() => {}}
+            keyboardType="default"
+          />
+          <InputGroup
+            label="Phone Number"
+            value={profileData.phone}
+            editable={false}
+            onChangeText={() => {}}
+            keyboardType="phone-pad"
+          />
 
           <View style={[styles.buttonRow,]}>
             <TouchableOpacity style={[styles.btn, styles.btnOutline]} onPress={() => router.back()}>
