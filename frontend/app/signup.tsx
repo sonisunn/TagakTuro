@@ -110,14 +110,21 @@ export default function TagakTuroSignUp() {
       setSubmitting(false);
       console.warn('Signup error', err);
 
-      // Check for specific error messages
-      const errorMessage = err.message || 'An unexpected error occurred.';
+      // Check for specific error messages and only show those
+      const errorMessage = err.message || '';
 
       if (errorMessage.includes('Email is already in use')) {
         alert('This email address is already registered. Please use a different email address or try logging in instead.');
-      } else {
-        alert('Registration failed: ' + errorMessage);
+      } else if (errorMessage.includes('Only @umak.edu.ph email addresses are allowed')) {
+        alert('Only @umak.edu.ph email addresses are allowed!');
+      } else if (errorMessage.includes('Student ID is already in use')) {
+        alert('This Student ID is already registered. Please use a different Student ID.');
+      } else if (errorMessage.includes('Tutor ID is already in use')) {
+        alert('This Tutor ID is already registered. Please use a different ID.');
+      } else if (errorMessage.includes('Invalid role specified')) {
+        alert('Invalid user role specified.');
       }
+      // Remove generic error handling - only specific validation messages will be shown
     }
   };
 
