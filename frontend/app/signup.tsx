@@ -175,23 +175,44 @@ export default function TagakTuroSignUp() {
       router.push('/');
     } catch (err: any) {
       setSubmitting(false);
-      console.warn('Signup error', err);
+      console.warn('Signup error details:', err);
+      console.warn('Error response:', err.response);
+      console.warn('Error response data:', err.response?.data);
 
-      // Check for specific error messages and only show those
-      const errorMessage = err.message || '';
+      // Check for specific error messages from backend response
+      let errorMessage = '';
+
+      // Try different ways to get the error message
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = 'An unexpected error occurred.';
+      }
+
+      console.warn('Extracted error message:', errorMessage);
 
       if (errorMessage.includes('Email is already in use')) {
         showAlert('This email address is already registered. Please use a different email address or try logging in instead.');
+        // Also mark the email field as invalid
+        setFieldErrors(prev => ({ ...prev, email: true }));
       } else if (errorMessage.includes('Only @umak.edu.ph email addresses are allowed')) {
         showAlert('Only @umak.edu.ph email addresses are allowed!');
+        setFieldErrors(prev => ({ ...prev, email: true }));
       } else if (errorMessage.includes('Student ID is already in use')) {
         showAlert('This Student ID is already registered. Please use a different Student ID.');
+        setFieldErrors(prev => ({ ...prev, studentId: true }));
       } else if (errorMessage.includes('Tutor ID is already in use')) {
         showAlert('This Tutor ID is already registered. Please use a different ID.');
       } else if (errorMessage.includes('Invalid role specified')) {
         showAlert('Invalid user role specified.');
+      } else {
+        // For any other unexpected errors, show a generic message
+        showAlert('Registration failed. Please check your information and try again.');
       }
-      // Remove generic error handling - only specific validation messages will be shown
     }
   };
 
@@ -771,7 +792,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
     marginBottom: 15,
     fontWeight: '600',
@@ -946,7 +967,7 @@ const styles = StyleSheet.create({
   },
   alertMessage: {
     fontFamily: 'Poppins',
-    fontSize: 16,
+    fontSize: 15,
     color: '#95CDF2',
     textAlign: 'center',
     lineHeight: 22,
@@ -956,7 +977,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#2B74B4',
     borderRadius: 10,
     paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingHorizontal: 115,
     alignItems: 'center',
   },
   alertButtonText: {
