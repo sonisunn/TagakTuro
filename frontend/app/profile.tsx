@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: '',
@@ -113,31 +114,23 @@ export default function ProfilePage() {
   const [tempImage, setTempImage] = useState<string | null>(null);
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('userData');
-              await AsyncStorage.removeItem('studentId');
-              await AsyncStorage.removeItem('tutorId');
-              await AsyncStorage.removeItem('profileImage');
-              await AsyncStorage.removeItem('profilePhone');
-              router.replace('/login');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('authToken');
+      await AsyncStorage.removeItem('userData');
+      await AsyncStorage.removeItem('studentId');
+      await AsyncStorage.removeItem('tutorId');
+      await AsyncStorage.removeItem('profileImage');
+      await AsyncStorage.removeItem('profilePhone');
+      router.replace('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      Alert.alert('Error', 'Failed to logout. Please try again.');
+    }
+    setShowLogoutModal(false);
   };
 
   const handleUpdateClick = () => {
@@ -332,6 +325,32 @@ export default function ProfilePage() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Custom Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <View style={styles.logoutModalOverlay}>
+          <View style={styles.logoutModalContent}>
+            <Text style={styles.logoutModalTitle}>Logout</Text>
+            <Text style={styles.logoutModalMessage}>
+              Are you sure you want to logout?
+            </Text>
+            <View style={styles.logoutModalButtons}>
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutCancelButton]}
+                onPress={() => setShowLogoutModal(false)}
+              >
+                <Text style={styles.logoutCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.logoutModalButton, styles.logoutConfirmButton]}
+                onPress={confirmLogout}
+              >
+                <Text style={styles.logoutConfirmText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -469,6 +488,80 @@ const styles = StyleSheet.create({
     color: '#2B74B4',
   },
   textWhite: {
+    color: '#fff',
+  },
+
+  // Custom Logout Modal Styles
+  logoutModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  logoutModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 25,
+    width: '80%',
+    maxWidth: 320,
+    alignItems: 'center',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  logoutModalTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  logoutModalMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  logoutModalButtons: {
+    flexDirection: 'row',
+    gap: 15,
+    width: '100%',
+  },
+  logoutModalButton: {
+    flex: 1,
+    height: 45,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutCancelButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+  },
+  logoutCancelText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2B74B4',
+  },
+  logoutConfirmButton: {
+    backgroundColor: '#FF0000',
+  },
+  logoutConfirmText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
     color: '#fff',
   },
 });
