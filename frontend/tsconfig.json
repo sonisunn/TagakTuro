@@ -1,17 +1,20 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",
+    "allowJs": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": [ "./*" ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "components/BottomNav.js"  ]
+  ]
 }
+

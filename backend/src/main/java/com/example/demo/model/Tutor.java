@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import jakarta.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "tutors")
@@ -20,55 +21,66 @@ public class Tutor {
 
     private String phoneNumber;
 
-    // Constructors
-    public Tutor() {
-    }
+    @Column(name = "specialization")
+    private String specialization;
+
+    @Column(name = "availability_hours")
+    private Integer availabilityHours;
+
+    @Column(nullable = false)
+    private boolean active = true;
+
+    @Column(nullable = false)
+    private boolean approved = false;
+
+    @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PAMAPreference> pamaPreferences;
+
+    @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<PAMAAssignment> pamaAssignments;
+
+    public Tutor() {}
 
     public Tutor(String name, String tutorId, String email, String phoneNumber) {
         this.name = name;
         this.tutorId = tutorId;
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.active = true;
+        this.approved = false;
     }
 
-    // Getters and Setters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getTutorId() { return tutorId; }
+    public void setTutorId(String tutorId) { this.tutorId = tutorId; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public String getTutorId() {
-        return tutorId;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public void setTutorId(String tutorId) {
-        this.tutorId = tutorId;
-    }
+    public String getSpecialization() { return specialization; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
 
-    public String getEmail() {
-        return email;
-    }
+    public Integer getAvailabilityHours() { return availabilityHours; }
+    public void setAvailabilityHours(Integer availabilityHours) { this.availabilityHours = availabilityHours; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public List<PAMAPreference> getPamaPreferences() { return pamaPreferences; }
+    public void setPamaPreferences(List<PAMAPreference> pamaPreferences) { this.pamaPreferences = pamaPreferences; }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public List<PAMAAssignment> getPamaAssignments() { return pamaAssignments; }
+    public void setPamaAssignments(List<PAMAAssignment> pamaAssignments) { this.pamaAssignments = pamaAssignments; }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+    // THESE METHODS ARE CRITICAL FOR FIXING THE ERROR
+    public boolean isActive() { return active; }
+    public void setActive(boolean active) { this.active = active; }
+
+    public boolean getApproved() { return approved; }
+    public void setApproved(boolean approved) { this.approved = approved; }
 }
