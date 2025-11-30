@@ -46,6 +46,22 @@ export default function ApplyTutorPage() {
   
   const [error, setError] = useState(false);
 
+  // Custom alert modal state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  // Field validation states
+  const [fieldErrors, setFieldErrors] = useState({
+    name: false,
+    studentId: false,
+    courseProgram: false,
+    email: false,
+    phoneNumber: false,
+    password: false,
+    reportOfGrades: false,
+    experience: false,
+  });
+
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
     return /^[a-zA-Z\s]+$/.test(name.trim());
@@ -70,36 +86,92 @@ export default function ApplyTutorPage() {
     return passwordRegex.test(password);
   };
 
+  // Custom alert function
+  const showAlert = (message: string) => {
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
+
   const handleNext = () => {
-    if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
-      setError(true);
-      return;
+    const errors: string[] = [];
+    const newFieldErrors = {
+      name: false,
+      studentId: false,
+      courseProgram: false,
+      email: false,
+      phoneNumber: false,
+      password: false,
+      reportOfGrades: false,
+      experience: false,
+    };
+
+    // Check for missing required fields
+    if (!name.trim()) {
+      errors.push('• Name is required');
+      newFieldErrors.name = true;
+    }
+    if (!studentId.trim()) {
+      errors.push('• Student ID is required');
+      newFieldErrors.studentId = true;
+    }
+    if (!courseProgram.trim()) {
+      errors.push('• Course and Program is required');
+      newFieldErrors.courseProgram = true;
+    }
+    if (!email.trim()) {
+      errors.push('• Email is required');
+      newFieldErrors.email = true;
+    }
+    if (!phoneNumber.trim()) {
+      errors.push('• Phone number is required');
+      newFieldErrors.phoneNumber = true;
+    }
+    if (!password) {
+      errors.push('• Password is required');
+      newFieldErrors.password = true;
     }
 
     // Name validation - alphabetic characters only
-    if (!validateName(name)) {
-      alert('Name must contain only alphabetic characters');
-      setError(true);
-      return;
+    if (name.trim() && !validateName(name)) {
+      errors.push('• Name must contain only alphabetic characters and spaces');
+      newFieldErrors.name = true;
     }
 
-    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
-    if (!validateEmail(email)) {
-      alert('Error: Only @umak.edu.ph email addresses are allowed!');
-      setError(true);
-      return;
+    // Email validation - comprehensive checks
+    if (email.trim()) {
+      if (!email.includes('@')) {
+        errors.push('• Please enter a valid email address');
+        newFieldErrors.email = true;
+      } else if (!email.endsWith('@umak.edu.ph')) {
+        errors.push('• Only @umak.edu.ph email addresses are allowed');
+        newFieldErrors.email = true;
+      } else if (email === '@umak.edu.ph') {
+        errors.push('• Please enter your full email address before @umak.edu.ph');
+        newFieldErrors.email = true;
+      }
     }
 
     // Phone number validation - must be 11 digits
-    if (!validatePhoneNumber(phoneNumber)) {
-      alert('Must be 11 digits');
-      setError(true);
-      return;
+    if (phoneNumber.trim() && !validatePhoneNumber(phoneNumber)) {
+      errors.push('• Phone Number must be 11 digits only');
+      newFieldErrors.phoneNumber = true;
     }
 
     // Password validation - 12-16 chars, mix of upper/lower, number, special char
-    if (!validatePassword(password)) {
-      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+    if (password && !validatePassword(password)) {
+      errors.push('• Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, or *)');
+      newFieldErrors.password = true;
+    }
+
+    // Update field error states
+    setFieldErrors(newFieldErrors);
+
+    // If there are any errors, show them all at once
+    if (errors.length > 0) {
+      const errorMessage = errors.length === 1
+        ? errors[0].substring(2) // Remove bullet point for single error
+        : 'Please fix the following issues:\n\n' + errors.join('\n');
+      showAlert(errorMessage);
       setError(true);
       return;
     }
@@ -109,13 +181,42 @@ export default function ApplyTutorPage() {
   };
 
   const handleSubmit = async () => {
-    if (!timeAvailableStart || !timeAvailableEnd || !reportOfGrades || !experience) {
-      setError(true);
-      return;
+    const errors: string[] = [];
+    const newFieldErrors = {
+      name: false,
+      studentId: false,
+      courseProgram: false,
+      email: false,
+      phoneNumber: false,
+      password: false,
+      reportOfGrades: false,
+      experience: false,
+    };
+
+    // Check for missing required fields in step 2
+    if (!reportOfGrades) {
+      errors.push('• Report of Grades is required');
+      newFieldErrors.reportOfGrades = true;
+    }
+    if (!experience.trim()) {
+      errors.push('• Experience is required');
+      newFieldErrors.experience = true;
     }
 
     if (!agreedToTerms) {
-      alert('Please agree to the User Agreement and Privacy Policy');
+      errors.push('• Please agree to the User Agreement and Privacy Policy to continue');
+    }
+
+    // Update field error states
+    setFieldErrors(newFieldErrors);
+
+    // If there are any errors, show them all at once
+    if (errors.length > 0) {
+      const errorMessage = errors.length === 1
+        ? errors[0].substring(2) // Remove bullet point for single error
+        : 'Please fix the following issues:\n\n' + errors.join('\n');
+      showAlert(errorMessage);
+      setError(true);
       return;
     }
 
@@ -129,8 +230,8 @@ export default function ApplyTutorPage() {
     formData.append('phoneNumber', phoneNumber);
     formData.append('password', password);
     formData.append('experience', experience);
-    formData.append('timeAvailableStart', timeAvailableStart.toTimeString().split(' ')[0]); // HH:mm:ss
-    formData.append('timeAvailableEnd', timeAvailableEnd.toTimeString().split(' ')[0]); // HH:mm:ss
+    // formData.append('timeAvailableStart', timeAvailableStart.toTimeString().split(' ')[0]); // HH:mm:ss
+    // formData.append('timeAvailableEnd', timeAvailableEnd.toTimeString().split(' ')[0]); // HH:mm:ss
 
     if (reportOfGrades) {
       formData.append('reportOfGrades', {
@@ -149,20 +250,25 @@ export default function ApplyTutorPage() {
 
     try {
       await applyAsTutor(formData);
-      alert('Application submitted successfully! You will be notified upon approval.');
+      showAlert('Application submitted successfully! You will be notified upon approval.');
       router.push('/login');
     } catch (error) {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
-      alert('Application failed: ' + errorMessage);
+      showAlert('Application failed: ' + errorMessage);
     }
   };
 
-  const pickDocument = async (setter: React.Dispatch<React.SetStateAction<DocumentPicker.DocumentPickerAsset | null>>) => {
+  const pickDocument = async (setter: React.Dispatch<React.SetStateAction<DocumentPicker.DocumentPickerAsset | null>>, isPdfOnly: boolean) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({});
+      const result = await DocumentPicker.getDocumentAsync({ type: isPdfOnly ? 'application/pdf' : '*/*' });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setter(result.assets[0]);
+        const asset = result.assets[0];
+        if (isPdfOnly && asset.mimeType !== 'application/pdf') {
+          showAlert('Please select a PDF file.');
+          return;
+        }
+        setter(asset);
       }
     } catch (err) {
       console.warn('Error picking document:', err);
@@ -190,81 +296,132 @@ export default function ApplyTutorPage() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Name</Text>
                 <TextInput
-                  style={[styles.input, error && !name && styles.inputError]}
+                  style={[ 
+                    styles.input,
+                    fieldErrors.name && styles.inputError
+                  ]}
                   placeholder="Jayson Partido"
                   value={name}
-                  onChangeText={setName}
-                  placeholderTextColor="#95BADA"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Student ID</Text>
-                <TextInput
-                  style={[styles.input, error && !studentId && styles.inputError]}
-                  placeholder="K12148008"
-                  value={studentId}
-                  onChangeText={setStudentId}
-                  placeholderTextColor="#95BADA"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Course and Program</Text>
-                <TextInput
-                  style={[styles.input, error && !courseProgram && styles.inputError]}
-                  placeholder="CCIS - BS COMPUTER SCIENCE"
-                  value={courseProgram}
-                  onChangeText={setCourseProgram}
-                  placeholderTextColor="#95BADA"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={[styles.input, error && !email && styles.inputError]}
-                  placeholder="jpartido.k12148008@umak.edu.ph"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholderTextColor="#95BADA"
-                />
-                {/* <Text style={styles.helperText}>Must end with @umak.edu.ph</Text> */}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone Number</Text>
-                <TextInput
-                  style={[styles.input, error && !phoneNumber && styles.inputError]}
-                  placeholder="09672411911"
-                  value={phoneNumber}
                   onChangeText={(text) => {
-                    // Only allow numbers and limit to 11 digits
-                    const numbers = text.replace(/[^0-9]/g, '');
-                    if (numbers.length <= 11) {
-                      setPhoneNumber(numbers);
+                    setName(text);
+                    // Clear error when user starts typing
+                    if (fieldErrors.name) {
+                      setFieldErrors(prev => ({ ...prev, name: false }));
                     }
                   }}
-                  keyboardType="phone-pad"
-                  placeholderTextColor="#95BADA"
-                  maxLength={11}
-                />
-                {/* <Text style={styles.helperText}>Must be 11 digits</Text> */}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    style={[styles.passwordInput, error && !password && styles.inputError]}
-                    placeholder="ILOVEYOU123"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor="#95BADA"
-                  />
+                  placeholderTextColor="#95CDF2"
+                                  />
+                                </View>
+                  
+                                <View style={styles.inputGroup}>
+                                  <Text style={styles.label}>Student ID</Text>
+                                  <TextInput
+                                    style={[
+                                      styles.input,
+                                      fieldErrors.studentId && styles.inputError
+                                    ]}
+                                    placeholder="K12148008"
+                                    value={studentId}
+                                    onChangeText={(text) => {
+                                      setStudentId(text);
+                                      // Clear error when user starts typing
+                                      if (fieldErrors.studentId) {
+                                        setFieldErrors(prev => ({ ...prev, studentId: false }));
+                                      }
+                                    }}
+                                    placeholderTextColor="#95CDF2"
+                                  />
+                                </View>
+                  
+                                <View style={styles.inputGroup}>
+                                  <Text style={styles.label}>Course and Program</Text>
+                                  <TextInput
+                                    style={[
+                                      styles.input,
+                                      fieldErrors.courseProgram && styles.inputError
+                                    ]}
+                                    placeholder="CCIS - BS COMPUTER SCIENCE"
+                                    value={courseProgram}
+                                    onChangeText={(text) => {
+                                      setCourseProgram(text);
+                                      // Clear error when user starts typing
+                                      if (fieldErrors.courseProgram) {
+                                        setFieldErrors(prev => ({ ...prev, courseProgram: false }));
+                                      }
+                                    }}
+                                    placeholderTextColor="#95CDF2"
+                                  />
+                                </View>
+                  
+                                <View style={styles.inputGroup}>
+                                  <Text style={styles.label}>Email</Text>
+                                  <TextInput
+                                    style={[
+                                      styles.input,
+                                      fieldErrors.email && styles.inputError
+                                    ]}
+                                    placeholder="jpartido.k12148008@umak.edu.ph"
+                                    value={email}
+                                    onChangeText={(text) => {
+                                      setEmail(text);
+                                      // Clear error when user starts typing
+                                      if (fieldErrors.email) {
+                                        setFieldErrors(prev => ({ ...prev, email: false }));
+                                      }
+                                    }}
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    placeholderTextColor="#95CDF2"
+                                  />
+                                  {/* <Text style={styles.helperText}>Must end with @umak.edu.ph</Text> */}
+                                </View>
+                  
+                                <View style={styles.inputGroup}>
+                                  <Text style={styles.label}>Phone Number</Text>
+                                  <TextInput
+                                    style={[
+                                      styles.input,
+                                      fieldErrors.phoneNumber && styles.inputError
+                                    ]}
+                                    placeholder="09672411911"
+                                    value={phoneNumber}
+                                    onChangeText={(text) => {
+                                      // Only allow numbers and limit to 11 digits
+                                      const numbers = text.replace(/[^0-9]/g, '');
+                                      if (numbers.length <= 11) {
+                                        setPhoneNumber(numbers);
+                                      }
+                                      // Clear error when user starts typing
+                                      if (fieldErrors.phoneNumber) {
+                                        setFieldErrors(prev => ({ ...prev, phoneNumber: false }));
+                                      }
+                                    }}
+                                    keyboardType="phone-pad"
+                                    maxLength={11}
+                                    placeholderTextColor="#95CDF2"
+                                  />
+                                  {/* <Text style={styles.helperText}>Must be 11 digits</Text> */}
+                                </View>
+                  
+                                <View style={styles.inputGroup}>
+                                  <Text style={styles.label}>Password</Text>
+                                  <View style={[
+                                    styles.passwordContainer,
+                                    fieldErrors.password && styles.inputError
+                                  ]}>
+                                    <TextInput
+                                      style={styles.passwordInput}
+                                      placeholder="ILOVEYOU123"
+                                      value={password}
+                                      onChangeText={(text) => {
+                                        setPassword(text);
+                                        // Clear error when user starts typing
+                                        if (fieldErrors.password) {
+                                          setFieldErrors(prev => ({ ...prev, password: false }));
+                                        }
+                                      }}
+                                      secureTextEntry={!showPassword}
+                                      placeholderTextColor="#95CDF2"                                    />
                   <TouchableOpacity 
                     style={styles.eyeIcon}
                     onPress={() => setShowPassword(!showPassword)}
@@ -287,9 +444,6 @@ export default function ApplyTutorPage() {
               <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
                 <Text style={styles.submitButtonText}>Next</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/session-availability')}>
-                <Text style={styles.submitButtonText}>skip</Text>
-              </TouchableOpacity>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
@@ -305,108 +459,108 @@ export default function ApplyTutorPage() {
               <Text style={styles.formTitle}>Upload your documents</Text>
               <Text style={styles.formSubtitle}>To ensure and verify your credibility</Text>
 
-              {/* <View style={styles.inputGroup}>
-                <Text style={styles.label}>Time Available</Text>
-                <View style={styles.timeInputContainer}>
-                  <TouchableOpacity
-                    style={[styles.timeInput, error && !timeAvailableStart && styles.inputError]}
-                    onPress={() => setShowStartTimePicker(true)}
-                  >
-                    <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
-                      {timeAvailableStart ? timeAvailableStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start Time'}
-                    </Text>
-                  </TouchableOpacity>
+              {/* <View style={styles.inputGroup}> */}
+              {/*   <Text style={styles.label}>Time Available</Text> */}
+              {/*   <View style={styles.timeInputContainer}> */}
+              {/*     <TouchableOpacity */}
+              {/*       style={[styles.timeInput, error && !timeAvailableStart && styles.inputError]} */}
+              {/*       onPress={() => setShowStartTimePicker(true)}
+              {/*     > */}
+              {/*       <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95BADA', fontSize: 12 }}> */}
+              {/*         {timeAvailableStart ? timeAvailableStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start Time'} */}
+              {/*       </Text> */}
+              {/*     </TouchableOpacity> */}
 
-                  <TouchableOpacity
-                    style={[styles.timeInput, error && !timeAvailableEnd && styles.inputError]}
-                    onPress={() => setShowEndTimePicker(true)}
-                  >
-                    <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
-                      {timeAvailableEnd ? timeAvailableEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End Time'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+              {/*     <TouchableOpacity */}
+              {/*       style={[styles.timeInput, error && !timeAvailableEnd && styles.inputError]} */}
+              {/*       onPress={() => setShowEndTimePicker(true)}
+              {/*     > */}
+              {/*       <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95BADA', fontSize: 12 }}> */}
+              {/*         {timeAvailableEnd ? timeAvailableEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End Time'} */}
+              {/*       </Text> */}
+              {/*     </TouchableOpacity> */}
+              {/*   </View> */}
 
-                {showStartTimePicker && (
-                  Platform.OS === 'ios' ? (
-                    <Modal transparent={true} animationType="fade">
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                          <DateTimePicker
-                            value={timeAvailableStart || new Date()}
-                            mode="time"
-                            display="spinner"
-                            onChange={(event, selected) => {
-                              setShowStartTimePicker(false);
-                              if (event.type === 'set' && selected) setTimeAvailableStart(selected);
-                            }}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowStartTimePicker(false)}
-                            style={styles.modalClose}
-                          >
-                            <Text style={styles.modalCloseText}>Done</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-                  ) : (
-                    <DateTimePicker
-                      value={timeAvailableStart || new Date()}
-                      mode="time"
-                      display="default"
-                      onChange={(event, selected) => {
-                        setShowStartTimePicker(false);
-                        if (event.type === 'set' && selected) setTimeAvailableStart(selected);
-                      }}
-                    />
-                  )
-                )}
+              {/*   {showStartTimePicker && ( */}
+              {/*     Platform.OS === 'ios' ? ( */}
+              {/*       <Modal transparent={true} animationType="fade">
+              {/*         <View style={styles.modalOverlay}>
+              {/*           <View style={styles.modalContainer}>
+              {/*             <DateTimePicker */}
+              {/*               value={timeAvailableStart || new Date()}
+              {/*               mode="time"
+              {/*               display="spinner"
+              {/*               onChange={(event, selected) => {
+              {/*                 setShowStartTimePicker(false);
+              {/*                 if (event.type === 'set' && selected) setTimeAvailableStart(selected);
+              {/*               }}
+              {/*             />
+              {/*             <TouchableOpacity */}
+              {/*               onPress={() => setShowStartTimePicker(false)}
+              {/*               style={styles.modalClose}
+              {/*             >
+              {/*               <Text style={styles.modalCloseText}>Done</Text>
+              {/*             </TouchableOpacity>
+              {/*           </View>
+              {/*         </View>
+              {/*       </Modal>
+              {/*     ) : ( */}
+              {/*       <DateTimePicker */}
+              {/*         value={timeAvailableStart || new Date()}
+              {/*         mode="time"
+              {/*         display="default"
+              {/*         onChange={(event, selected) => {
+              {/*           setShowStartTimePicker(false);
+              {/*           if (event.type === 'set' && selected) setTimeAvailableStart(selected);
+              {/*         }}
+              {/*       />
+              {/*     ) */}
+              {/*   ) */}
 
-                {showEndTimePicker && (
-                  Platform.OS === 'ios' ? (
-                    <Modal transparent={true} animationType="fade">
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                          <DateTimePicker
-                            value={timeAvailableEnd || new Date()}
-                            mode="time"
-                            display="spinner"
-                            onChange={(event, selected) => {
-                              setShowEndTimePicker(false);
-                              if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
-                            }}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowEndTimePicker(false)}
-                            style={styles.modalClose}
-                          >
-                            <Text style={styles.modalCloseText}>Done</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-                  ) : (
-                    <DateTimePicker
-                      value={timeAvailableEnd || new Date()}
-                      mode="time"
-                      display="default"
-                      onChange={(event, selected) => {
-                        setShowEndTimePicker(false);
-                        if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
-                      }}
-                    />
-                  )
-                )}
-              </View> */}
+              {/*   {showEndTimePicker && ( */}
+              {/*     Platform.OS === 'ios' ? ( */}
+              {/*       <Modal transparent={true} animationType="fade">
+              {/*         <View style={styles.modalOverlay}>
+              {/*           <View style={styles.modalContainer}>
+              {/*             <DateTimePicker */}
+              {/*               value={timeAvailableEnd || new Date()}
+              {/*               mode="time"
+              {/*               display="spinner"
+              {/*               onChange={(event, selected) => {
+              {/*                 setShowEndTimePicker(false);
+              {/*                 if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
+              {/*               }}
+              {/*             />
+              {/*             <TouchableOpacity */}
+              {/*               onPress={() => setShowEndTimePicker(false)}
+              {/*               style={styles.modalClose}
+              {/*             >
+              {/*               <Text style={styles.modalCloseText}>Done</Text>
+              {/*             </TouchableOpacity>
+              {/*           </View>
+              {/*         </View>
+              {/*       </Modal>
+              {/*     ) : ( */}
+              {/*       <DateTimePicker */}
+              {/*         value={timeAvailableEnd || new Date()}
+              {/*         mode="time"
+              {/*         display="default"
+              {/*         onChange={(event, selected) => {
+              {/*           setShowEndTimePicker(false);
+              {/*           if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
+              {/*         }}
+              {/*       />
+              {/*     ) */}
+              {/*   ) */}
+              {/* </View> */}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
-                  Report of Grades (Last A.Y) <Text style={styles.pdfLabel}>(PDF)</Text>
+                  Report of Grades (Last A.Y) <Text style={styles.pdfLabel}>(PDF only)</Text>
                 </Text>
                 <TouchableOpacity
-                  style={[styles.uploadButton, error && !reportOfGrades && styles.inputError]}
-                  onPress={() => pickDocument(setReportOfGrades)}
+                  style={[styles.uploadButton, fieldErrors.reportOfGrades && styles.inputError]}
+                  onPress={() => pickDocument(setReportOfGrades, true)}
                 >
                   <Text style={styles.uploadButtonText}>
                     {reportOfGrades ? reportOfGrades.name : 'UPLOAD DOCUMENT'}
@@ -418,7 +572,7 @@ export default function ApplyTutorPage() {
                 <Text style={styles.label}>Certificates (if any)</Text>
                 <TouchableOpacity
                   style={styles.uploadButton}
-                  onPress={() => pickDocument(setCertificates)}
+                  onPress={() => pickDocument(setCertificates, false)}
                 >
                   <Text style={styles.uploadButtonText}>
                     {certificates ? certificates.name : 'UPLOAD DOCUMENT (OPTIONAL)'}
@@ -429,14 +583,15 @@ export default function ApplyTutorPage() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Experience</Text>
                 <TextInput
-                  style={[styles.textArea, error && !experience && styles.inputError]}
+                  style={[styles.textArea, fieldErrors.experience && styles.inputError]}
                   placeholder="Experience Description"
                   value={experience}
                   onChangeText={setExperience}
-                  placeholderTextColor="#95BADA"
+                  placeholderTextColor="#95CDF2"
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                  maxLength={50}
                 />
               </View>
 
@@ -609,7 +764,7 @@ export default function ApplyTutorPage() {
                     • To improve the app and keep it secure.
                   </Text>
                   <Text style={styles.sectionTitle}>Who We Share With</Text>
-                  <Text style={styles.sectionText}>
+                  <Text style="styles.sectionText">
                     • Tutors (only session‑related info).{'\n'}
                     • Service providers (like hosting and payments).{'\n'}
                     • Government if legally required.{'\n\n'}
@@ -656,6 +811,27 @@ export default function ApplyTutorPage() {
           )}
         </View>
       </ScrollView>
+      
+      {/* Custom Alert Modal */}
+      <Modal
+        visible={alertVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAlertVisible(false)}
+      >
+        <BlurView intensity={10} style={styles.alertBlurBackground}>
+          <View style={styles.alertModalContainer}>
+            <Text style={styles.alertTitle}>Notice</Text>
+            <Text style={styles.alertMessage}>{alertMessage}</Text>
+            <TouchableOpacity
+              style={styles.alertButton}
+              onPress={() => setAlertVisible(false)}
+            >
+              <Text style={styles.alertButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -685,20 +861,20 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
-    fontWeight: '600',
     color: '#fff',
     opacity: 0.9,
   },
   formContainer: {
     backgroundColor: '#fff',
+    margin: 20,
     marginTop: -30,
     borderRadius: 20,
     padding: 30,
     width: '100%',
+    height: '78%',
     alignSelf: 'center',
     alignContent: 'center',
     justifyContent: 'center',
-    height: '80%',
   },
   formTitle: {
     fontFamily: 'Poppins',
@@ -710,10 +886,10 @@ const styles = StyleSheet.create({
   formSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    fontWeight: '600',
-    color: '#95BADA',
+    color: '#95CDF2',
     textAlign: 'center',
     marginBottom: 20,
+    fontWeight: '600',
   },
   inputGroup: {
     marginBottom: 12,
@@ -724,12 +900,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 6,
-  },
-  pdfLabel: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#95BADA',
   },
   input: {
     fontFamily: 'Poppins',
@@ -744,110 +914,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#FF0000',
-  },
-  timeInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 15,
-  },
-  timeInput: {
-    fontFamily: 'Poppins',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2B74B4',
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  passwordContainer: {
-    position: 'relative',
-  },
-  passwordInput: {
-    fontFamily: 'Poppins',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    paddingRight: 45,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#2B74B4',
-  },
-  eyeIcon: {
-    position: 'absolute',
-    right: 15,
-    top: 12,
-  },
-  helperText: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#95BADA',
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  // modalContainer: {
-  //   backgroundColor: '#fff',
-  //   borderWidth: 1,
-  //   borderColor: '#2B74B4',
-  //   borderRadius: 15,
-  //   padding: 20,
-  //   width: '80%',
-  //   alignItems: 'center',
-  // },
-  modalClose: {
-    marginTop: 10,
-    borderRadius: 10,
-    width: 300,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor: '#2B74B4',
-    borderWidth: 1,
-  },
-  modalCloseText: {
-    color: '#2B74B4',
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  uploadButton: {
-    fontFamily: 'Poppins',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  uploadButtonText: {
-    fontFamily: 'Poppins',
-    fontSize: 12,
-    color: '#95BADA',
-    fontWeight: '600',
-  },
-  textArea: {
-    fontFamily: 'Poppins',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 12,
-    fontWeight: '400',
-    color: '#2B74B4',
-    height: 100,
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -883,54 +949,53 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     fontFamily: 'Poppins',
     fontSize: 12,
+    fontWeight: '600',
     color: '#2B74B4',
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
     marginBottom: 15,
     fontWeight: '600',
+  },
+  submitButtonContainer: {
+    position: 'relative',
+    marginBottom: 15,
   },
   submitButton: {
     fontFamily: 'Poppins',
     fontSize: 15,
     backgroundColor: '#2B74B4',
     borderRadius: 8,
+    paddingVertical: 15,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-    height: 50,
     fontWeight: '600',
+    marginBottom: 15,
+  },
+  submitButtonProgress: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    height: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)', // Semi-transparent white overlay
+    borderRadius: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.5,
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
   },
-  backButton: {
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2B74B4',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-  back: {
-    fontFamily: 'Poppins',
-    fontSize: 15,
-    color: '#2B74B4',
-    fontWeight: '600',
-  },
   footerText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95BADA',
+    color: '#95CDF2',
     marginBottom: 5,
   },
   link: {
@@ -965,7 +1030,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2B74B4',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
+  },
+  modalCaption: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 5,
   },
   modalIntro: {
     fontFamily: 'Poppins',
@@ -1004,5 +1077,120 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#2B74B4',
+  },
+  passwordContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#2B74B4",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    fontWeight: '600',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 10,
+    fontSize: 12,
+    color: "#2B74B4",
+    fontWeight: '600',
+  },
+  eyeIcon: {
+    padding: 10,
+  },
+
+  // Custom Alert Modal Styles
+  alertBlurBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  alertModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#2B74B4',
+    padding: 25,
+    width: '90%',
+    maxWidth: 350,
+    alignItems: 'center',
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  alertMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: '#95CDF2',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 115,
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  pdfLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#95CDF2',
+  },
+  uploadButton: {
+    fontFamily: 'Poppins',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  uploadButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    fontWeight: '600',
+  },
+  textArea: {
+    fontFamily: 'Poppins',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 12,
+    fontWeight: '400',
+    color: '#2B74B4',
+    height: 100,
+  },
+  backButton: {
+    height: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  back: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: '#2B74B4',
+    fontWeight: '600',
   },
 });

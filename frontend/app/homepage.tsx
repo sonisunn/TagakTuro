@@ -456,8 +456,11 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{formatStartTime(selectedClass.rawDate)}</Text>
                 <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{color: '#95CDF2', fontWeight: '400'}}>{selectedClass.status}</Text></Text>
 
-                <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity style={styles.modalChatButton}>
+                <View style={styles.modalButtonContainer} >
+                  <TouchableOpacity style={styles.modalChatButton} onPress={() => {
+                    router.push('/messages');
+                    handleCloseModal();
+                  }}>
                     <Text style={styles.modalBtnTextWhite}>Chat with your Tutor</Text>
                   </TouchableOpacity>
 
@@ -786,7 +789,7 @@ const styles = StyleSheet.create({
   tab: {
     height: 35,
     paddingVertical: 6,
-    paddingHorizontal: 16.5,
+    paddingHorizontal: 17,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -830,6 +833,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
+    fontWeight: '600',
+    marginBottom: 2,
   },
   location: {
     fontFamily: 'Poppins',
@@ -847,10 +852,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   statusOnGoing: {
-    color: '#FCC419',
+    color: '#FFC107',
   },
   statusUpcoming: {
-    color: '#FCC419',
+    color: '#FFC107',
   },
   statusCompleted: {
     color: '#0FE40F',
@@ -880,11 +885,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     height: 100,
     zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   closeButton: {
     position: 'absolute',
@@ -916,21 +916,16 @@ const styles = StyleSheet.create({
     bottom: 100,
     left: 20,
     right: 20,
-    backgroundColor: '#FCC419', // Yellow color for reschedule
+    backgroundColor: '#FFC107', // Yellow color for reschedule
     padding: 15,
     borderRadius: 15,
     height: 100,
     zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
   },
   rescheduleTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#fff',
     marginBottom: 2,
   },
@@ -968,11 +963,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#2B74B4',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   // Typography updates
   modalHeadline: {
@@ -1024,13 +1014,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalRescheduleButton: {
-    backgroundColor: '#FCC419',
+    backgroundColor: '#FFC107',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
   },
   modalCancelButton: {
-    backgroundColor: '#FF0000',
+    backgroundColor: '#DC3545',
     borderRadius: 10,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1079,7 +1069,8 @@ const styles = StyleSheet.create({
   },
   pickerText: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '600',
     color: '#2B74B4',
   },
 
@@ -1095,6 +1086,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontSize: 12, // Updated
     color: '#95CDF2',
+    fontWeight: '700',
     textAlign: 'center',
   },
 

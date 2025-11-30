@@ -9,10 +9,11 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -112,6 +113,16 @@ export default function ProfilePage() {
   const [tempPhone, setTempPhone] = useState('');
   const [tempImage, setTempImage] = useState<string | null>(null);
 
+  // Custom alert modal state
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
+
+  // Custom alert function
+  const showAlert = (message: string) => {
+    setAlertMessage(message);
+    setAlertVisible(true);
+  };
+
   const handleLogout = () => {
     setShowLogoutModal(true);
   };
@@ -144,38 +155,57 @@ export default function ProfilePage() {
   const handleSave = async () => {
     // Phone Number Validation (only if user entered something)
     const phoneRegex = /^\d{11}$/;
+    let phoneChanged = false;
+    let imageChanged = false;
 
     // Only validate phone if user actually entered/changed it
-    if (tempPhone && tempPhone.trim() !== '') {
+    if (tempPhone && tempPhone.trim() !== '' && tempPhone.trim() !== profileData.phone) {
       if (!phoneRegex.test(tempPhone.trim())) {
-        Alert.alert("Invalid Input", "Phone number must be exactly 11 digits.");
+        showAlert("Invalid Input, Phone number must be exactly 11 digits.");
         return;
       }
+      phoneChanged = true;
+    }
+
+    if (tempImage && tempImage !== profileData.imageUri) {
+      imageChanged = true;
+    }
+
+    if (!phoneChanged && !imageChanged) {
+        setIsEditing(false);
+        return;
     }
 
     try {
       // Save profile data to AsyncStorage (only save what was changed)
-      if (tempPhone && tempPhone.trim() !== '') {
+      if (phoneChanged) {
         await AsyncStorage.setItem('profilePhone', tempPhone.trim());
       }
 
-      if (tempImage) {
-        await AsyncStorage.setItem('profileImage', tempImage);
+      if (imageChanged) {
+        await AsyncStorage.setItem('profileImage', tempImage!);
       }
 
       // Update local state with what was actually changed
       setProfileData(prev => ({
         ...prev,
-        phone: tempPhone && tempPhone.trim() !== '' ? tempPhone.trim() : prev.phone,
-        imageUri: tempImage || prev.imageUri,
+        phone: phoneChanged ? tempPhone.trim() : prev.phone,
+        imageUri: imageChanged ? tempImage : prev.imageUri,
       }));
 
       setIsEditing(false);
 
       // Show success message
-      Alert.alert("Success", "Profile updated successfully!");
+      if (imageChanged && phoneChanged) {
+        showAlert("Successfully updated your profile!");
+      } else if (imageChanged) {
+        showAlert("Successfully changed your profile picture!");
+      } else if (phoneChanged) {
+        showAlert("Successfully changed your phone number!");
+      }
+      
     } catch (error) {
-      Alert.alert("Error", "Failed to save profile changes.");
+      showAlert("Error, Failed to save profile changes.");
     }
   };
 
@@ -183,7 +213,7 @@ export default function ProfilePage() {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (permissionResult.granted === false) {
-      Alert.alert("Permission Required", "You need to grant camera roll permissions to change your photo.");
+      showAlert("Permission Required, You need to grant camera roll permissions to change your photo.");
       return;
     }
 
@@ -322,6 +352,27 @@ export default function ProfilePage() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+        {/* Custom Alert Modal */}
+        <Modal
+            visible={alertVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setAlertVisible(false)}
+          >
+            <BlurView intensity={10} style={styles.alertBlurBackground}>
+              <View style={styles.alertModalContainer}>
+                <Text style={styles.alertTitle}>Notice</Text>
+                <Text style={styles.alertMessage}>{alertMessage}</Text>
+                <TouchableOpacity
+                  style={styles.alertButton}
+                  onPress={() => setAlertVisible(false)}
+                >
+                  <Text style={styles.alertButtonText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </Modal>
 
       {/* Custom Logout Confirmation Modal */}
       {showLogoutModal && (
@@ -507,11 +558,6 @@ const styles = StyleSheet.create({
     width: '80%',
     maxWidth: 320,
     alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   logoutModalTitle: {
     fontFamily: 'Poppins',
@@ -558,6 +604,52 @@ const styles = StyleSheet.create({
   logoutConfirmText: {
     fontFamily: 'Poppins',
     fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  // Custom Alert Modal Styles
+  alertBlurBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  alertModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#2B74B4',
+    padding: 25,
+    width: '90%',
+    maxWidth: 350,
+    alignItems: 'center',
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  alertMessage: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    color: '#95CDF2',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 25,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 115,
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
     fontWeight: '600',
     color: '#fff',
   },

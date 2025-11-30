@@ -192,10 +192,6 @@ export default function TagakTuroLogin() {
             />
           </View>
           
-          <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
-            <Text style={styles.submitButtonText}>Skip</Text>
-          </TouchableOpacity>
-
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don&apos;t have an account yet?{' '}
@@ -295,7 +291,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF0000',
-    fontSize: 15,
+    fontSize: 12,
     textAlign: 'center',
     marginBottom: 20,
     fontWeight: '600',
@@ -306,7 +302,7 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     fontFamily: 'Poppins',
-    fontSize: 14,
+    fontSize: 15,
     backgroundColor: '#2B74B4',
     borderRadius: 8,
     paddingVertical: 15,

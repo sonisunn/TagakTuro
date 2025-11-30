@@ -615,7 +615,7 @@ export default function TagakTuroHomepage() {
                 alert('There are no bookings yet');
               }
             }}>
-            <Text style={styles.bookCardTitle}>Student are waiting!</Text>
+            <Text style={styles.bookCardTitle}>Students are waiting!</Text>
             <Text style={styles.bookCardSubtitle}>
                 Click here to view the list of students you can teach
             </Text>
@@ -1333,11 +1333,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: '#2B74B4',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
   },
   // Typography updates
   modalHeadline: {

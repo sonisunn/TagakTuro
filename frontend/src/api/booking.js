@@ -1,4 +1,3 @@
-// src/api/booking.js
 import axios from 'axios';
 import { API_BASE_URL } from './config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -66,6 +65,19 @@ export async function getPendingBookings() {
   try {
     const client = await axiosWithAuth();
     const response = await client.get('/api/booking/pending');
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+/**
+ * Get bookings by status
+ */
+export async function getBookingsByStatus(status) {
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get(`/api/booking/status/${status}`);
     return response.data;
   } catch (error) {
     throw error;

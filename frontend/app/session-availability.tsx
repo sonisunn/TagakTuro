@@ -14,7 +14,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import TutorBottomNav from '../components/TutorBottomNav';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getPendingBookings } from '../src/api/booking';
+import { getPendingBookings, getBookingsByStatus } from '../src/api/booking';
 
 // TypeScript interfaces
 interface TimeSlot {
@@ -50,7 +50,8 @@ export default function AvailabilityPage() {
 
   const [schedule, setSchedule] = useState<DaySchedule[]>(initialDays);
   const [successMessage, setSuccessMessage] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<boolean>(false);
+  const [noSlotsErrorMessage, setNoSlotsErrorMessage] = useState<boolean>(false);
+  const [bookingConflictErrorMessage, setBookingConflictErrorMessage] = useState<boolean>(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<boolean>(false);
 
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -80,7 +81,7 @@ export default function AvailabilityPage() {
       end: endMinutes,
     });
     setSchedule(newSchedule);
-    setErrorMessage(false);
+    setNoSlotsErrorMessage(false);
     setSuccessMessage(false);
   };
 
@@ -129,7 +130,7 @@ export default function AvailabilityPage() {
 
   const cancelTimeSelection = () => {
     // Close modal and reset state without saving
-    setShowModal(false);
+      setShowModal(false);
     setActiveDayIndex(null);
     setActiveSlotIndex(null);
     setPickerMode(null);
@@ -163,29 +164,74 @@ export default function AvailabilityPage() {
     }
   };
 
+  const checkBookingConflicts = async (newSchedule: DaySchedule[]) => {
+    try {
+      const acceptedBookings = await getBookingsByStatus('ACCEPTED');
+
+      for (const day of newSchedule) {
+        for (const slot of day.slots) {
+          const proposedStartTime = slot.start; // minutes from midnight
+          const proposedEndTime = slot.end; // minutes from midnight
+
+          for (const booking of acceptedBookings) {
+            const bookingDate = new Date(booking.bookingDateTime);
+            const bookingDayOfWeek = bookingDate.getDay(); // 0 = Sunday
+
+            // Check if the booking is on the same day as the proposed slot
+            if (bookingDayOfWeek === day.id) {
+              const bookingTime = bookingDate.getHours() * 60 + bookingDate.getMinutes();
+
+              // Check for overlap
+              if (bookingTime >= proposedStartTime && bookingTime <= proposedEndTime) {
+                return true; // Conflict found
+              }
+            }
+          }
+        }
+      }
+      return false; // No conflicts
+    } catch (error) {
+      if (__DEV__) {
+        console.error('Error checking booking conflicts:', error);
+      }
+      return false; // Assume no conflict if API call fails
+    }
+  };
+
   const handleSubmit = async () => {
+    // Clear all previous messages
+    setSuccessMessage(false);
+    setNoSlotsErrorMessage(false);
+    setBookingConflictErrorMessage(false);
+    setResetSuccessMessage(false);
+
     const hasSlots = schedule.some(day => day.slots.length > 0);
 
-    if (hasSlots) {
-        // Save availability schedule to AsyncStorage
-        await AsyncStorage.setItem('tutorAvailability', JSON.stringify(schedule));
-
-        // Filter pending bookings based on availability
-        await filterPendingBookings();
-
-        setSuccessMessage(true);
-        setErrorMessage(false);
-        setResetSuccessMessage(false);
-        
-        // Auto-hide success message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage(false);
-        }, 3000);
-    } else {
-        setSuccessMessage(false);
-        setErrorMessage(true);
-        setResetSuccessMessage(false);
+    if (!hasSlots) {
+      setNoSlotsErrorMessage(true);
+      return; // Stop if no slots are defined
     }
+
+    // Check for conflicts with accepted bookings
+    const conflicts = await checkBookingConflicts(schedule);
+    if (conflicts) {
+      setBookingConflictErrorMessage(true);
+      return; // Stop if conflicts are found
+    }
+
+    // If no conflicts and slots exist, proceed with saving
+    // Save availability schedule to AsyncStorage
+    await AsyncStorage.setItem('tutorAvailability', JSON.stringify(schedule));
+
+    // Filter pending bookings based on availability (this will show the modal if any are found)
+    await filterPendingBookings();
+
+    setSuccessMessage(true);
+    
+    // Auto-hide success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage(false);
+    }, 3000);
   };
 
   const filterPendingBookings = async () => {
@@ -258,7 +304,9 @@ export default function AvailabilityPage() {
         setResetSuccessMessage(false);
       }, 3000);
       
-      console.log('✅ Availability reset - all time slots cleared');
+      if (__DEV__) {
+        console.log('✅ Availability reset - all time slots cleared');
+      }
   };
 
   // Load saved availability on component mount
@@ -271,7 +319,9 @@ export default function AvailabilityPage() {
           setSchedule(parsedSchedule);
         }
       } catch (error) {
-        console.warn('Error loading saved availability:', error);
+      if (__DEV__) {
+          console.warn('Error loading saved availability:', error);
+        }
       }
     };
 
@@ -346,10 +396,18 @@ export default function AvailabilityPage() {
       </ScrollView>
 
       <View style={styles.fixedFooter}>
-        {errorMessage && (
+        {bookingConflictErrorMessage && (
             <View style={[styles.notificationBox, styles.errorBox]}>
                 <Text style={styles.errorText}>
                     This time slot is already booked. Please manage your time before editing availability
+                </Text>
+            </View>
+        )}
+
+        {noSlotsErrorMessage && (
+            <View style={[styles.notificationBox, styles.errorBox]}>
+                <Text style={styles.errorText}>
+                    No availability slots defined. Please add some time slots before submitting.
                 </Text>
             </View>
         )}
@@ -391,8 +449,8 @@ export default function AvailabilityPage() {
           style={styles.blurContainer} 
           activeOpacity={1}
           onPress={cancelTimeSelection}
-        >
-          <BlurView intensity={10} style={styles.blurContainer}>
+      >
+        <BlurView intensity={10} style={styles.blurContainer}>
             <View 
               style={styles.modalContent}
               pointerEvents="box-none"
@@ -401,19 +459,19 @@ export default function AvailabilityPage() {
                 style={{ width: '100%' }}
                 pointerEvents="auto"
               >
-                <Text style={styles.modalTitle}>
-                  Select {pickerMode === 'start' ? 'Start' : 'End'} Time
-                </Text>
+            <Text style={styles.modalTitle}>
+              Select {pickerMode === 'start' ? 'Start' : 'End'} Time
+            </Text>
 
-                <DateTimePicker
-                  value={tempDate}
-                  mode="time"
-                  display="spinner"
-                  is24Hour={false}
-                  onChange={onTimeChange}
-                  textColor="#000"
-                  style={styles.picker}
-                />
+            <DateTimePicker
+              value={tempDate}
+              mode="time"
+              display="spinner"
+              is24Hour={false}
+              onChange={onTimeChange}
+              textColor="#000"
+              style={styles.picker}
+            />
 
                 <View style={styles.modalButtonRow}>
                   <TouchableOpacity 
@@ -428,11 +486,11 @@ export default function AvailabilityPage() {
                     onPress={saveTimeSelection}
                   >
                     <Text style={styles.saveButtonText}>Save</Text>
-                  </TouchableOpacity>
+            </TouchableOpacity>
                 </View>
               </View>
-            </View>
-          </BlurView>
+          </View>
+        </BlurView>
         </TouchableOpacity>
       </Modal>
 
