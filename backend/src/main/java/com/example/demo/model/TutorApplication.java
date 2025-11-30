@@ -36,12 +36,6 @@ public class TutorApplication {
     @Column(nullable = false)
     private String password; // Hashed password
 
-    @Column(name = "time_available_start", nullable = false)
-    private LocalTime timeAvailableStart;
-
-    @Column(name = "time_available_end", nullable = false)
-    private LocalTime timeAvailableEnd;
-
     @Lob
     @Column(nullable = false)
     private String experience;
@@ -114,22 +108,6 @@ public class TutorApplication {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public LocalTime getTimeAvailableStart() {
-        return timeAvailableStart;
-    }
-
-    public void setTimeAvailableStart(LocalTime timeAvailableStart) {
-        this.timeAvailableStart = timeAvailableStart;
-    }
-
-    public LocalTime getTimeAvailableEnd() {
-        return timeAvailableEnd;
-    }
-
-    public void setTimeAvailableEnd(LocalTime timeAvailableEnd) {
-        this.timeAvailableEnd = timeAvailableEnd;
     }
 
     public String getExperience() {

@@ -28,15 +28,13 @@ public class TutorApplicationController {
             @RequestParam("phoneNumber") String phoneNumber,
             @RequestParam("password") String password,
             @RequestParam("experience") String experience,
-            @RequestParam("timeAvailableStart") String timeAvailableStart,
-            @RequestParam("timeAvailableEnd") String timeAvailableEnd,
             @RequestParam("reportOfGrades") MultipartFile reportOfGrades,
             @RequestParam(value = "certificates", required = false) MultipartFile certificates) {
 
         try {
             TutorApplicationRequest request = new TutorApplicationRequest(
                     name, studentId, courseProgram, email, phoneNumber, password,
-                    experience, timeAvailableStart, timeAvailableEnd
+                    experience
             );
             tutorApplicationService.apply(request, reportOfGrades, certificates);
             return ResponseEntity.ok(Map.of("message", "Application submitted successfully"));

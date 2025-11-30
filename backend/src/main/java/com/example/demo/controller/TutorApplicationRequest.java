@@ -8,10 +8,8 @@ public class TutorApplicationRequest {
     private String phoneNumber;
     private String password;
     private String experience;
-    private String timeAvailableStart;
-    private String timeAvailableEnd;
 
-    public TutorApplicationRequest(String name, String studentId, String courseProgram, String email, String phoneNumber, String password, String experience, String timeAvailableStart, String timeAvailableEnd) {
+    public TutorApplicationRequest(String name, String studentId, String courseProgram, String email, String phoneNumber, String password, String experience) {
         this.name = name;
         this.studentId = studentId;
         this.courseProgram = courseProgram;
@@ -19,8 +17,6 @@ public class TutorApplicationRequest {
         this.phoneNumber = phoneNumber;
         this.password = password;
         this.experience = experience;
-        this.timeAvailableStart = timeAvailableStart;
-        this.timeAvailableEnd = timeAvailableEnd;
     }
 
     // Getters
@@ -31,6 +27,4 @@ public class TutorApplicationRequest {
     public String getPhoneNumber() { return phoneNumber; }
     public String getPassword() { return password; }
     public String getExperience() { return experience; }
-    public String getTimeAvailableStart() { return timeAvailableStart; }
-    public String getTimeAvailableEnd() { return timeAvailableEnd; }
 }

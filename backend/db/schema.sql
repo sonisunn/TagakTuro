@@ -72,8 +72,6 @@ CREATE TABLE IF NOT EXISTS `tutor_applications` (
   `phone_number` VARCHAR(255) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
   `experience` TEXT,
-  `time_available_start` TIME NOT NULL,
-  `time_available_end` TIME NOT NULL,
   `report_of_grades_path` VARCHAR(255),
   `certificates_path` VARCHAR(255),
   `status` VARCHAR(50) NOT NULL DEFAULT 'PENDING',

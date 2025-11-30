@@ -57,10 +57,6 @@ public class TutorApplicationService {
         application.setPassword(passwordEncoder.encode(request.getPassword()));
         application.setExperience(request.getExperience());
 
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        application.setTimeAvailableStart(LocalTime.parse(request.getTimeAvailableStart(), timeFormatter));
-        application.setTimeAvailableEnd(LocalTime.parse(request.getTimeAvailableEnd(), timeFormatter));
-
         String reportOfGradesPath = fileStorageService.storeFile(reportOfGrades);
         application.setReportOfGradesPath(reportOfGradesPath);
 
