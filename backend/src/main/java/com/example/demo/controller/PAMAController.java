@@ -5,11 +5,9 @@ import com.example.demo.model.PAMAPreference;
 import com.example.demo.model.Module;
 import com.example.demo.service.PAMAService;
 import com.example.demo.service.ModuleService;
-// IMPORT THE NEWLY CREATED DTO CLASSES
 import com.example.demo.dto.PAMAExecuteRequest;
 import com.example.demo.dto.PAMAPreferenceRequest;
 import com.example.demo.dto.ModuleCreateRequest; 
-// ------------------------------------
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

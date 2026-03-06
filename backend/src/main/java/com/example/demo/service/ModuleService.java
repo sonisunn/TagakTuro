@@ -57,7 +57,7 @@ public class ModuleService {
     }
 
     /**
-     * Get all active modules
+     * Get all active modules (for dropdowns, etc.)
      */
     public List<Module> getAllActiveModules() {
         return moduleRepository.findByIsActive(true);
@@ -95,7 +95,7 @@ public class ModuleService {
     }
 
     /**
-     * Deactivate module
+     * Deactivate module (soft delete)
      */
     public Module deactivateModule(Long id) {
         Module module = moduleRepository.findById(id)
@@ -106,7 +106,7 @@ public class ModuleService {
     }
 
     /**
-     * Get module capacity status
+     * Get module capacity status (for dashboard)
      */
     public Map<String, Object> getModuleCapacityStatus(Long id) {
         Module module = moduleRepository.findById(id)

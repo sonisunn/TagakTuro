@@ -38,7 +38,7 @@ public class Module {
     // Constructors
     public Module() {}
 
-    public Module(String moduleName, String description, Integer capacity) {
+    public Module(String moduleName, String description, Integer capacity) {       
         this.moduleName = moduleName;
         this.description = description;
         this.capacity = capacity;

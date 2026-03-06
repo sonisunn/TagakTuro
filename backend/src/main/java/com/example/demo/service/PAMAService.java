@@ -23,7 +23,7 @@ public class PAMAService {
     @Autowired
     private ModuleService moduleService;
 
-    // FIX: Changed to accept List<Long> so it matches the Controller
+    // The Core Loop 
     @Transactional
     public void executePAMA(List<Long> moduleIds) {
         for (Long moduleId : moduleIds) {
@@ -34,7 +34,6 @@ public class PAMAService {
         }
     }
 
-    // FIX: Added this method because Controller calls it
     public PAMAPreference setTutorPreference(Long tutorId, Long moduleId, Integer rank, Double score) {
         Tutor tutor = tutorRepository.findById(tutorId)
             .orElseThrow(() -> new RuntimeException("Tutor not found"));
@@ -45,7 +44,7 @@ public class PAMAService {
         pref.setTutor(tutor);
         pref.setModule(module);
         
-        // --- THIS LINE IS THE FIX ---
+    
         // The correct method from PAMAPreference is setPreferenceRank
         pref.setPreferenceRank(rank); 
         // ----------------------------
@@ -53,6 +52,8 @@ public class PAMAService {
         pref.setScore(score);
         return preferenceRepository.save(pref);
     }
+
+    // The Core Loop ^
 
     public List<PAMAAssignment> getConfirmedAssignments() {
         return pamaAssignmentRepository.findAll();

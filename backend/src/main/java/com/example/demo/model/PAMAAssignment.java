@@ -74,7 +74,7 @@ public class PAMAAssignment {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // THIS METHOD IS CRITICAL FOR FIXING THE ERROR
+    // THIS METHOD IS CRITICAL FOR FIXING THE ERROR!!
     public String getModuleName() {
         return module != null ? module.getModuleName() : "Unknown";
     }
