@@ -24,12 +24,18 @@ CREATE TABLE IF NOT EXISTS `students` (
   `email` VARCHAR(255) NOT NULL,
   `course_program` VARCHAR(255) DEFAULT NULL,
   `phone_number` VARCHAR(255) DEFAULT NULL,
+<<<<<<< HEAD
   `user_id` BIGINT,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_students_student_id` (`student_id`),
   UNIQUE KEY `uk_students_email` (`email`),
   UNIQUE KEY `uk_students_user_id` (`user_id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+=======
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_students_student_id` (`student_id`),
+  UNIQUE KEY `uk_students_email` (`email`)
+>>>>>>> V3.23.2026
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `tutors` (
@@ -38,12 +44,18 @@ CREATE TABLE IF NOT EXISTS `tutors` (
   `tutor_id` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
   `phone_number` VARCHAR(255) DEFAULT NULL,
+<<<<<<< HEAD
   `user_id` BIGINT,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tutors_tutor_id` (`tutor_id`),
   UNIQUE KEY `uk_tutors_email` (`email`),
   UNIQUE KEY `uk_tutors_user_id` (`user_id`),
   FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+=======
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tutors_tutor_id` (`tutor_id`),
+  UNIQUE KEY `uk_tutors_email` (`email`)
+>>>>>>> V3.23.2026
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `bookings` (
@@ -87,6 +99,7 @@ CREATE TABLE IF NOT EXISTS `tutor_applications` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tutor_applications_email` (`email`),
   UNIQUE KEY `uk_tutor_applications_student_id` (`student_id`)
+<<<<<<< HEAD
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Chat System Tables
@@ -125,3 +138,6 @@ CREATE TABLE IF NOT EXISTS `messages` (
 -- Add foreign key for last_message in conversations after messages table exists
 ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_last_message` 
 FOREIGN KEY (`last_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL;
+=======
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+>>>>>>> V3.23.2026

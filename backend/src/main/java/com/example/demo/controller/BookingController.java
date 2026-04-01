@@ -1,10 +1,14 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Booking;
+<<<<<<< HEAD
 import com.example.demo.service.AutomatedMessageService;
 import com.example.demo.service.BookingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+=======
+import com.example.demo.service.BookingService;
+>>>>>>> V3.23.2026
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -12,7 +16,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+<<<<<<< HEAD
 import java.util.HashMap;
+=======
+>>>>>>> V3.23.2026
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +28,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class BookingController {
 
+<<<<<<< HEAD
     private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
 
     @Autowired
@@ -29,6 +37,11 @@ public class BookingController {
     @Autowired
     private AutomatedMessageService automatedMessageService;
 
+=======
+    @Autowired
+    private BookingService bookingService;
+
+>>>>>>> V3.23.2026
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
@@ -85,6 +98,7 @@ public class BookingController {
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
         try {
             Booking created = bookingService.createBooking(booking);
+<<<<<<< HEAD
             
             // Send automated tutor greeting when booking is created
             try {
@@ -101,6 +115,9 @@ public class BookingController {
             response.put("status", "success");
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
+=======
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+>>>>>>> V3.23.2026
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
@@ -124,6 +141,7 @@ public class BookingController {
 
         try {
             Booking.BookingStatus status = Booking.BookingStatus.valueOf(statusStr.toUpperCase());
+<<<<<<< HEAD
             Booking updatedBooking = bookingService.updateBookingStatus(id, status);
             
             // Send automated messages based on status change
@@ -147,6 +165,9 @@ public class BookingController {
             }
             
             return ResponseEntity.ok(response);
+=======
+            return ResponseEntity.ok(bookingService.updateBookingStatus(id, status));
+>>>>>>> V3.23.2026
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "Invalid status: " + statusStr));
@@ -164,6 +185,7 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
+<<<<<<< HEAD
 
     /**
      * Confirm a booking and send automated tutor greeting message to student
@@ -273,4 +295,6 @@ public class BookingController {
                     .body(Map.of("error", "Failed to send readiness message: " + e.getMessage()));
         }
     }
+=======
+>>>>>>> V3.23.2026
 }
