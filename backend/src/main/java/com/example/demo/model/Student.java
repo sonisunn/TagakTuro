@@ -25,6 +25,14 @@ public class Student {
     private String courseProgram;
     private String phoneNumber;
 
+<<<<<<< HEAD
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    @JsonIgnore
+    private User user;
+
+=======
+>>>>>>> V3.23.2026
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
     private List<Booking> bookings;
@@ -97,5 +105,16 @@ public class Student {
     public void setBookings(List<Booking> bookings) {
         this.bookings = bookings;
     }
+<<<<<<< HEAD
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+=======
+>>>>>>> V3.23.2026
 }
 

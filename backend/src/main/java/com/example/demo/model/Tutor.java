@@ -1,5 +1,9 @@
 package com.example.demo.model;
 
+<<<<<<< HEAD
+import com.fasterxml.jackson.annotation.JsonIgnore;
+=======
+>>>>>>> V3.23.2026
 import jakarta.persistence.*;
 
 @Entity
@@ -20,6 +24,14 @@ public class Tutor {
 
     private String phoneNumber;
 
+<<<<<<< HEAD
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", unique = true)
+    @JsonIgnore
+    private User user;
+
+=======
+>>>>>>> V3.23.2026
     // Constructors
     public Tutor() {
     }
@@ -71,4 +83,15 @@ public class Tutor {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
+<<<<<<< HEAD
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+=======
+>>>>>>> V3.23.2026
 }

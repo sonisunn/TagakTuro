@@ -24,9 +24,18 @@ CREATE TABLE IF NOT EXISTS `students` (
   `email` VARCHAR(255) NOT NULL,
   `course_program` VARCHAR(255) DEFAULT NULL,
   `phone_number` VARCHAR(255) DEFAULT NULL,
+<<<<<<< HEAD
+  `user_id` BIGINT,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_students_student_id` (`student_id`),
+  UNIQUE KEY `uk_students_email` (`email`),
+  UNIQUE KEY `uk_students_user_id` (`user_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+=======
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_students_student_id` (`student_id`),
   UNIQUE KEY `uk_students_email` (`email`)
+>>>>>>> V3.23.2026
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `tutors` (
@@ -35,9 +44,18 @@ CREATE TABLE IF NOT EXISTS `tutors` (
   `tutor_id` VARCHAR(255) NOT NULL,
   `email` VARCHAR(255) NOT NULL,
   `phone_number` VARCHAR(255) DEFAULT NULL,
+<<<<<<< HEAD
+  `user_id` BIGINT,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tutors_tutor_id` (`tutor_id`),
+  UNIQUE KEY `uk_tutors_email` (`email`),
+  UNIQUE KEY `uk_tutors_user_id` (`user_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+=======
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tutors_tutor_id` (`tutor_id`),
   UNIQUE KEY `uk_tutors_email` (`email`)
+>>>>>>> V3.23.2026
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `bookings` (
@@ -81,4 +99,45 @@ CREATE TABLE IF NOT EXISTS `tutor_applications` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tutor_applications_email` (`email`),
   UNIQUE KEY `uk_tutor_applications_student_id` (`student_id`)
+<<<<<<< HEAD
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Chat System Tables
+CREATE TABLE IF NOT EXISTS `conversations` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `user1_id` BIGINT NOT NULL,
+  `user2_id` BIGINT NOT NULL,
+  `last_message_id` BIGINT,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_conversations_user_pair` (`user1_id`, `user2_id`),
+  KEY `idx_conversations_user1` (`user1_id`),
+  KEY `idx_conversations_user2` (`user2_id`),
+  FOREIGN KEY (`user1_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user2_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `messages` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `conversation_id` BIGINT NOT NULL,
+  `sender_id` BIGINT NOT NULL,
+  `content` LONGTEXT NOT NULL,
+  `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `read_at` TIMESTAMP NULL,
+  `message_type` VARCHAR(50) NOT NULL DEFAULT 'TEXT',
+  PRIMARY KEY (`id`),
+  KEY `idx_messages_conversation_id` (`conversation_id`),
+  KEY `idx_messages_sender_id` (`sender_id`),
+  KEY `idx_messages_created_at` (`created_at`),
+  FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Add foreign key for last_message in conversations after messages table exists
+ALTER TABLE `conversations` ADD CONSTRAINT `fk_conversations_last_message` 
+FOREIGN KEY (`last_message_id`) REFERENCES `messages` (`id`) ON DELETE SET NULL;
+=======
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+>>>>>>> V3.23.2026
