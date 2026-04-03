@@ -23,10 +23,10 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-
-const AnimatedView = Animated.createAnimatedComponent(View);
 import TutorBottomNav from "../components/TutorBottomNav";
 import { updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
+
+const AnimatedView = Animated.createAnimatedComponent(View);
  
 interface Booking {
   id: string;

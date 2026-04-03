@@ -19,7 +19,8 @@ It's recommended to use the backend API to create users so passwords are hashed 
 
 ```bash
 # Example (use PowerShell or bash). This hits your running backend locally:
-curl -X POST http://localhost:8080/api/auth/register \
+# The API endpoint is `/api/auth/signup`. A compatibility alias `/api/auth/register` is also provided.
+curl -X POST http://localhost:8080/api/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"Test User","email":"test@example.com","password":"secret123"}'
 ```

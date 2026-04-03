@@ -3,18 +3,35 @@ package com.example.demo.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "pama_preferences")
+@Table(
+    name = "pama_preferences",
+    indexes = {
+        // MySQL requires an index on FK columns; Hibernate doesn't always add one for join columns
+        @Index(name = "idx_pama_preferences_tutor_id", columnList = "tutor_id"),
+        @Index(name = "idx_pama_preferences_module_id", columnList = "module_id")
+    }
+)
 public class PAMAPreference {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "tutor_id", nullable = false)
+    @JoinColumn(
+        name = "tutor_id",
+        nullable = false,
+        // Avoid MySQL FK DDL errors on older versions; we still store IDs and can
+        // add FK constraints later if needed.
+        foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT)
+    )
     private Tutor tutor;
 
     @ManyToOne
-    @JoinColumn(name = "module_id", nullable = false)
+    @JoinColumn(
+        name = "module_id",
+        nullable = false,
+        foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT)
+    )
     private Module module;
 
     @Column(name = "preference_rank")

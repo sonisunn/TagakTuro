@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -74,7 +74,7 @@ export default function TagakTuroHomepage() {
     fetchUserData();
   }, []);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const studentId = await AsyncStorage.getItem('studentId');
       if (studentId) {
@@ -134,13 +134,13 @@ export default function TagakTuroHomepage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading]);
 
   useEffect(() => {
     fetchBookings();
     const interval = setInterval(fetchBookings, 5000);
     return () => clearInterval(interval);
-  }, []); // Dependencies omitted to prevent re-creation of interval
+  }, [fetchBookings]);
 
   const formatBookingDateTime = (dateTimeString: string) => {
     try {

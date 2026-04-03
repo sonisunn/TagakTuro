@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { updateUser } from '../src/api/user';
 
 // --- FIXED: InputGroup moved OUTSIDE the main component ---
 const InputGroup = ({ label, value, editable, onChangeText, keyboardType }) => {
@@ -47,12 +49,13 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   
   const [profileData, setProfileData] = useState({
-    name: 'Jayson Partido',
-    fullName: 'Jayson Partido',
-    email: 'jpartido.k12148008@umak.edu.ph',
-    course: 'CCIS - BS COMPUTER SCIENCE',
-    phone: '09672411911',
-    imageUri: null, 
+    id: null,
+    name: '',
+    fullName: '',
+    email: '',
+    course: '',
+    phone: '',
+    imageUri: null,
   });
 
   const [tempPhone, setTempPhone] = useState('');
@@ -82,8 +85,64 @@ export default function ProfilePage() {
       phone: tempPhone,
       imageUri: tempImage,
     });
-    setIsEditing(false);
+    // Persist changes to backend if user is logged in
+    (async () => {
+      try {
+        if (profileData.id) {
+          const payload = {
+            name: profileData.name || profileData.fullName,
+            email: profileData.email,
+            phoneNumber: tempPhone,
+            courseProgram: profileData.course,
+          };
+          const updated = await updateUser(profileData.id, payload);
+          setProfileData(prev => ({
+            ...prev,
+            name: updated.getName ? updated.name : updated.name || prev.name,
+            fullName: updated.name || prev.fullName,
+            email: updated.email || prev.email,
+            phone: updated.phoneNumber || prev.phone,
+            course: updated.courseProgram || prev.course,
+          }));
+          // update stored userData
+          const stored = await AsyncStorage.getItem('userData');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            parsed.name = updated.name || parsed.name;
+            parsed.email = updated.email || parsed.email;
+            await AsyncStorage.setItem('userData', JSON.stringify(parsed));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to save profile to server', err);
+      } finally {
+        setIsEditing(false);
+      }
+    })();
   };
+
+  // Load current user data from AsyncStorage
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('userData');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setProfileData({
+            id: parsed.id || null,
+            name: parsed.name || parsed.fullName || '',
+            fullName: parsed.name || parsed.fullName || '',
+            email: parsed.email || '',
+            course: parsed.courseProgram || '',
+            phone: parsed.phoneNumber || '',
+            imageUri: parsed.imageUri || null,
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load stored user data', err);
+      }
+    })();
+  }, []);
 
   const handlePickImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();

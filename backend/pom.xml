@@ -73,7 +73,6 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
 
 		<!-- Spring WebSocket: for real-time messaging -->
 		<dependency>
@@ -100,9 +99,7 @@
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
-=======
->>>>>>> V3.23.2026
-	
+
  	</dependencies>
 
 	<build>

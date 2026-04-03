@@ -20,12 +20,7 @@
 -- ALTER TABLE tutor_applications AUTO_INCREMENT = 1;
 -- =====================================================================================
 
--- Create a test student user (let database auto-assign ID)
-<<<<<<< HEAD
-INSERT INTO `users` (name, email, password, studentId, courseProgram, phoneNumber)
-=======
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
->>>>>>> V3.23.2026
 VALUES ('Test Student', 'student@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'S123456', 'Computer Science', '1234567890');
 
 -- Get the auto-generated user ID and assign STUDENT role
@@ -36,12 +31,7 @@ SELECT id, 'STUDENT' FROM `users` WHERE email = 'student@example.com';
 INSERT INTO `students` (name, student_id, email, course_program, phone_number)
 VALUES ('Test Student', 'S123456', 'student@example.com', 'Computer Science', '1234567890');
 
--- Create a test tutor user
-<<<<<<< HEAD
-INSERT INTO `users` (name, email, password, studentId, courseProgram, phoneNumber)
-=======
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
->>>>>>> V3.23.2026
 VALUES ('Test Tutor', 'tutor@example.com', '$2a$10$vI/v9WvB6v2o4zB2.4l2A.5p5yJg5j.g5j.g5j.g5j.g5j.g5', 'TUTOR001', 'N/A', '1234567890');
 
 -- Assign TUTOR role
@@ -51,11 +41,7 @@ SELECT id, 'TUTOR' FROM `users` WHERE email = 'tutor@example.com';
 -- Create a corresponding tutor profile
 INSERT INTO `tutors` (name, tutor_id, email, phone_number)
 VALUES ('Test Tutor', 'TUTOR001', 'tutor@example.com', '1234567890');
-<<<<<<< HEAD
-=======
 
--- Create an admin user
--- Password: admin123 (BCrypt encoded)
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
 VALUES ('Admin', 'admin@umak.edu.ph', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN001', 'N/A', '0000000000');
 
@@ -63,13 +49,9 @@ VALUES ('Admin', 'admin@umak.edu.ph', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92
 INSERT INTO `user_roles` (user_id, role)
 SELECT id, 'ROLE_ADMIN' FROM `users` WHERE email = 'admin@umak.edu.ph';
 
--- Create a CCED admin user
--- Password: admin123 (BCrypt encoded)
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
 VALUES ('CCED Admin', 'cced@umak.edu.ph', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'CCED001', 'N/A', '0000000001');
 
 -- Assign CCED role
 INSERT INTO `user_roles` (user_id, role)
 SELECT id, 'ROLE_CCED' FROM `users` WHERE email = 'cced@umak.edu.ph';
-
->>>>>>> V3.23.2026

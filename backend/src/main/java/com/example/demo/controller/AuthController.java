@@ -46,6 +46,12 @@ public class AuthController {
         }
     }
 
+    // compatibility alias for older docs/scripts that use /register
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUserAlias(@RequestBody SignupRequest signUpRequest) {
+        return registerUser(signUpRequest);
+    }
+
     // login endpoint (accepts JSON body: { "email": "..", "password": ".." })
     @PostMapping("/login")
     public LoginResponse loginUser(@RequestBody LoginRequest request) {

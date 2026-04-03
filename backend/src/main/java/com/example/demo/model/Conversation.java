@@ -4,9 +4,18 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "conversations", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user1_id", "user2_id"})
-})
+@Table(
+    name = "conversations",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user1_id", "user2_id"})
+    },
+    indexes = {
+        // MySQL requires an index on FK columns; a composite UNIQUE(index on user1_id,user2_id)
+        // doesn't always satisfy FK indexing for user2_id.
+        @Index(name = "idx_conversations_user1_id", columnList = "user1_id"),
+        @Index(name = "idx_conversations_user2_id", columnList = "user2_id")
+    }
+)
 public class Conversation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

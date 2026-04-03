@@ -37,10 +37,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/tutor/apply").permitAll()
                 .requestMatchers("/api/tutor/applications").permitAll()
                 .requestMatchers("/api/tutor/applications/**").permitAll()
-<<<<<<< HEAD
-=======
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
->>>>>>> V3.23.2026
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/booking").hasRole("STUDENT")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/booking/student/**").hasRole("STUDENT")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/booking/pending").hasRole("TUTOR")
@@ -66,17 +63,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-<<<<<<< HEAD
         configuration.setAllowedOrigins(List.of("*"));
         configuration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(false);
-=======
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:8081"));
-        configuration.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
->>>>>>> V3.23.2026
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

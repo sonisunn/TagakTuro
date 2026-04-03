@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { applyAsTutor } from '../src/api/tutor';
 import { AxiosError } from 'axios'
 import { BlurView } from 'expo-blur';
@@ -33,10 +32,8 @@ export default function ApplyTutorPage() {
   const [showPassword, setShowPassword] = useState(false);
   
   // Step 2 - Documents
-  const [timeAvailableStart, setTimeAvailableStart] = useState<Date | null>(null);
-  const [timeAvailableEnd, setTimeAvailableEnd] = useState<Date | null>(null);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [timeAvailableStart] = useState<Date | null>(null);
+  const [timeAvailableEnd] = useState<Date | null>(null);
   const [reportOfGrades, setReportOfGrades] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [certificates, setCertificates] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [experience, setExperience] = useState('');
