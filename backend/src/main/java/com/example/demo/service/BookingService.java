@@ -47,12 +47,12 @@ public class BookingService {
     public List<Booking> getBookingsByStatus(Booking.BookingStatus status) {
         return bookingRepository.findByStatus(status);
     }
-    
+
     // Get all pending bookings (for tutors to see all available bookings)
     public List<Booking> getPendingBookings() {
         return bookingRepository.findByStatus(Booking.BookingStatus.PENDING);
     }
-    
+
     // Get bookings by tutor name
     public List<Booking> getBookingsByTutorName(String tutorName) {
         if (tutorName == null || tutorName.isEmpty()) {
@@ -77,8 +77,10 @@ public class BookingService {
         }
 
         Long studentId = booking.getStudent().getId();
+        @SuppressWarnings("null")
         Student student = studentRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId + ". Please log in again to refresh your session."));
+                .orElseThrow(() -> new RuntimeException(
+                        "Student not found with id: " + studentId + ". Please log in again to refresh your session."));
 
         booking.setStudent(student);
 
@@ -86,7 +88,7 @@ public class BookingService {
         if (booking.getBookingDateTime() != null && booking.getBookingDateTime().isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Booking date cannot be in the past");
         }
-        
+
         if (booking.getModality() == null || booking.getModality().isEmpty()) {
             throw new IllegalArgumentException("Modality is required for booking");
         }
@@ -100,29 +102,28 @@ public class BookingService {
         if (booking.getBookingDateTime() != null && booking.getDurationMinutes() != null) {
             LocalDateTime bookingStart = booking.getBookingDateTime();
             LocalDateTime bookingEnd = bookingStart.plusMinutes(booking.getDurationMinutes());
-            
+
             // Get all existing bookings for the same date
             LocalDateTime dayStart = bookingStart.toLocalDate().atStartOfDay();
             LocalDateTime dayEnd = bookingStart.toLocalDate().atTime(23, 59, 59);
-            
+
             List<Booking> existingBookings = bookingRepository.findByBookingDateTimeBetween(dayStart, dayEnd);
-            
+
             // Check for overlaps with existing bookings (excluding cancelled ones)
             for (Booking existing : existingBookings) {
                 if (existing.getStatus() == Booking.BookingStatus.CANCELLED) {
                     continue; // Skip cancelled bookings
                 }
-                
+
                 if (existing.getBookingDateTime() != null && existing.getDurationMinutes() != null) {
                     LocalDateTime existingStart = existing.getBookingDateTime();
                     LocalDateTime existingEnd = existingStart.plusMinutes(existing.getDurationMinutes());
-                    
+
                     // Check if time ranges overlap
                     // Overlap occurs if: newStart < existingEnd AND newEnd > existingStart
                     if (bookingStart.isBefore(existingEnd) && bookingEnd.isAfter(existingStart)) {
                         throw new IllegalArgumentException(
-                            "The selected time overlaps with an existing booking. Please choose a different time."
-                        );
+                                "The selected time overlaps with an existing booking. Please choose a different time.");
                     }
                 }
             }
@@ -132,6 +133,7 @@ public class BookingService {
     }
 
     // Update an existing booking
+    @SuppressWarnings("null")
     public Booking updateBooking(Long id, Booking bookingDetails) {
         Booking booking = getBookingById(id);
 
@@ -163,8 +165,9 @@ public class BookingService {
         }
         // Update student if provided and different
         if (bookingDetails.getStudent() != null && bookingDetails.getStudent().getId() != null &&
-            !bookingDetails.getStudent().getId().equals(booking.getStudent().getId())) {
+                !bookingDetails.getStudent().getId().equals(booking.getStudent().getId())) {
             Long newStudentId = bookingDetails.getStudent().getId();
+            @SuppressWarnings("null")
             Student newStudent = studentRepository.findById(newStudentId)
                     .orElseThrow(() -> new IllegalArgumentException("Student not found with id: " + newStudentId));
             booking.setStudent(newStudent);
@@ -174,6 +177,7 @@ public class BookingService {
     }
 
     // Update booking status
+    @SuppressWarnings("null")
     public Booking updateBookingStatus(Long id, Booking.BookingStatus status) {
         if (id == null) {
             throw new IllegalArgumentException("Booking ID cannot be null");
@@ -181,16 +185,19 @@ public class BookingService {
         if (status == null) {
             throw new IllegalArgumentException("Booking status cannot be null");
         }
+        @SuppressWarnings("null")
         Booking booking = getBookingById(id);
         booking.setStatus(status);
         return bookingRepository.save(booking);
     }
 
     // Delete a booking
+    @SuppressWarnings("null")
     public void deleteBooking(Long id) {
         if (id == null) {
             throw new IllegalArgumentException("Booking ID cannot be null");
         }
+        @SuppressWarnings("null")
         Booking booking = getBookingById(id);
         bookingRepository.delete(booking);
     }

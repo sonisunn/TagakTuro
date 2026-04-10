@@ -30,6 +30,7 @@ public class AutomatedMessageController {
     @PostMapping("/tutor-greeting/{bookingId}")
     public ResponseEntity<?> sendTutorGreeting(@PathVariable Long bookingId) {
         try {
+            @SuppressWarnings("null")
             Booking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
 
@@ -58,6 +59,7 @@ public class AutomatedMessageController {
     @PostMapping("/diagnostic-test/{bookingId}")
     public ResponseEntity<?> sendDiagnosticTest(@PathVariable Long bookingId) {
         try {
+            @SuppressWarnings("null")
             Booking booking = bookingRepository.findById(bookingId)
                     .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
 
@@ -80,7 +82,8 @@ public class AutomatedMessageController {
 
     /**
      * Send study readiness message from tutor
-     * POST /api/messages/automated/study-readiness?conversationId=1&tutorUserId=2&subject=Math
+     * POST
+     * /api/messages/automated/study-readiness?conversationId=1&tutorUserId=2&subject=Math
      */
     @PostMapping("/study-readiness")
     public ResponseEntity<?> sendStudyReadiness(
@@ -140,6 +143,7 @@ public class AutomatedMessageController {
      */
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        return ResponseEntity.ok(Map.of("status", "Automated message service is running", "timestamp", System.currentTimeMillis()));
+        return ResponseEntity
+                .ok(Map.of("status", "Automated message service is running", "timestamp", System.currentTimeMillis()));
     }
 }

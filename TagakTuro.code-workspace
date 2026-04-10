@@ -1,0 +1,36 @@
+{
+  "folders": [
+    {
+      "name": "Backend (Spring Boot)",
+      "path": "backend"
+    },
+    {
+      "name": "Frontend (React Native/Expo)",
+      "path": "frontend"
+    },
+    {
+      "name": "Admin Web",
+      "path": "admin-web"
+    },
+    {
+      "name": "CCED Web",
+      "path": "cced-web"
+    },
+    {
+      "name": "Root",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.codeGeneration.useBlocks": true,
+    "[java]": {
+      "editor.defaultFormatter": "redhat.java",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+      }
+    }
+  }
+}

@@ -49,8 +49,10 @@ public class ChatService {
         }
 
         // Create new conversation
+        @SuppressWarnings("null")
         User user1 = userRepository.findById(userId1)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId1));
+        @SuppressWarnings("null")
         User user2 = userRepository.findById(userId2)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId2));
 
@@ -65,6 +67,7 @@ public class ChatService {
     /**
      * Send a message in a conversation
      */
+    @SuppressWarnings("null")
     public MessageDTO sendMessage(Long conversationId, Long senderId, SendMessageRequest request) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found: " + conversationId));
@@ -119,6 +122,7 @@ public class ChatService {
     /**
      * Mark a message as read
      */
+    @SuppressWarnings("null")
     public MessageDTO markMessageAsRead(Long messageId, Long userId) {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new RuntimeException("Message not found: " + messageId));
@@ -164,6 +168,7 @@ public class ChatService {
     /**
      * Get a specific conversation
      */
+    @SuppressWarnings("null")
     public ConversationDTO getConversation(Long conversationId, Long userId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found: " + conversationId));
@@ -175,6 +180,7 @@ public class ChatService {
     /**
      * Get or create a conversation between two users
      */
+    @SuppressWarnings("null")
     public ConversationDTO getOrCreateConversation(Long userId1, Long userId2) {
         Optional<Conversation> existing = conversationRepository.findByUserPair(userId1, userId2);
         if (existing.isPresent()) {
@@ -186,7 +192,9 @@ public class ChatService {
     /**
      * Delete a conversation (soft delete or hard delete)
      */
+    @SuppressWarnings("null")
     public void deleteConversation(Long conversationId, Long userId) {
+        @SuppressWarnings("null")
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found: " + conversationId));
 
@@ -213,6 +221,7 @@ public class ChatService {
     // Helper methods
 
     private void verifyUserInConversation(Long userId, Long conversationId) {
+        @SuppressWarnings("null")
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new RuntimeException("Conversation not found: " + conversationId));
         if (!isUserInConversation(userId, conversation)) {
@@ -239,8 +248,6 @@ public class ChatService {
     }
 
     private ConversationDTO convertToDTO(Conversation conversation, Long currentUserId) {
-        User otherUser = getOtherUser(currentUserId, conversation);
-
         MessageDTO lastMessageDTO = null;
         if (conversation.getLastMessage() != null) {
             lastMessageDTO = convertMessageToDTO(conversation.getLastMessage());
@@ -273,7 +280,6 @@ public class ChatService {
                 message.getCreatedAt(),
                 message.getIsRead(),
                 message.getReadAt(),
-                message.getMessageType().toString()
-        );
+                message.getMessageType().toString());
     }
 }

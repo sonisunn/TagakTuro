@@ -3,7 +3,6 @@ package com.example.demo.controller;
 import com.example.demo.dto.ConversationDTO;
 import com.example.demo.dto.MessageDTO;
 import com.example.demo.dto.SendMessageRequest;
-import com.example.demo.dto.TutorStudentChatRequest;
 import com.example.demo.model.Student;
 import com.example.demo.model.Tutor;
 import com.example.demo.repository.StudentRepository;
@@ -44,9 +43,11 @@ public class TutorStudentChatController {
             @RequestParam Long tutorId) {
         try {
             // Get student and tutor
+            @SuppressWarnings("null")
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> new RuntimeException("Student not found: " + studentId));
-            
+
+            @SuppressWarnings("null")
             Tutor tutor = tutorRepository.findById(tutorId)
                     .orElseThrow(() -> new RuntimeException("Tutor not found: " + tutorId));
 
@@ -62,24 +63,21 @@ public class TutorStudentChatController {
 
             // Start conversation using user IDs
             ConversationDTO conversation = chatService.startConversation(
-                    student.getUser().getId(), 
-                    tutor.getUser().getId()
-            );
+                    student.getUser().getId(),
+                    tutor.getUser().getId());
 
             Map<String, Object> response = new HashMap<>();
             response.put("conversation", conversation);
             response.put("student", Map.of(
-                "id", student.getId(),
-                "name", student.getName(),
-                "studentId", student.getStudentId(),
-                "userId", student.getUser().getId()
-            ));
+                    "id", student.getId(),
+                    "name", student.getName(),
+                    "studentId", student.getStudentId(),
+                    "userId", student.getUser().getId()));
             response.put("tutor", Map.of(
-                "id", tutor.getId(),
-                "name", tutor.getName(),
-                "tutorId", tutor.getTutorId(),
-                "userId", tutor.getUser().getId()
-            ));
+                    "id", tutor.getId(),
+                    "name", tutor.getName(),
+                    "tutorId", tutor.getTutorId(),
+                    "userId", tutor.getUser().getId()));
 
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
@@ -98,6 +96,7 @@ public class TutorStudentChatController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
+            @SuppressWarnings("null")
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> new RuntimeException("Student not found: " + studentId));
 
@@ -138,6 +137,7 @@ public class TutorStudentChatController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
         try {
+            @SuppressWarnings("null")
             Tutor tutor = tutorRepository.findById(tutorId)
                     .orElseThrow(() -> new RuntimeException("Tutor not found: " + tutorId));
 
@@ -179,9 +179,11 @@ public class TutorStudentChatController {
             @RequestParam(required = false) String sender, // "STUDENT" or "TUTOR"
             @RequestBody SendMessageRequest request) {
         try {
+            @SuppressWarnings("null")
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> new RuntimeException("Student not found: " + studentId));
-            
+
+            @SuppressWarnings("null")
             Tutor tutor = tutorRepository.findById(tutorId)
                     .orElseThrow(() -> new RuntimeException("Tutor not found: " + tutorId));
 
@@ -206,16 +208,14 @@ public class TutorStudentChatController {
 
             // Get or create conversation
             ConversationDTO conversation = chatService.getOrCreateConversation(
-                    student.getUser().getId(), 
-                    tutor.getUser().getId()
-            );
+                    student.getUser().getId(),
+                    tutor.getUser().getId());
 
             // Send the message
             MessageDTO message = chatService.sendMessage(
-                    conversation.getId(), 
-                    senderUserId, 
-                    request
-            );
+                    conversation.getId(),
+                    senderUserId,
+                    request);
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", message);
@@ -240,9 +240,11 @@ public class TutorStudentChatController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
         try {
+            @SuppressWarnings("null")
             Student student = studentRepository.findById(studentId)
                     .orElseThrow(() -> new RuntimeException("Student not found: " + studentId));
-            
+
+            @SuppressWarnings("null")
             Tutor tutor = tutorRepository.findById(tutorId)
                     .orElseThrow(() -> new RuntimeException("Tutor not found: " + tutorId));
 
@@ -252,16 +254,14 @@ public class TutorStudentChatController {
             }
 
             ConversationDTO conversation = chatService.getOrCreateConversation(
-                    student.getUser().getId(), 
-                    tutor.getUser().getId()
-            );
+                    student.getUser().getId(),
+                    tutor.getUser().getId());
 
             Page<MessageDTO> messages = chatService.getMessageHistory(
-                    conversation.getId(), 
-                    student.getUser().getId(), 
-                    page, 
-                    size
-            );
+                    conversation.getId(),
+                    student.getUser().getId(),
+                    page,
+                    size);
 
             Map<String, Object> response = new HashMap<>();
             response.put("student", Map.of("id", student.getId(), "name", student.getName()));
@@ -289,14 +289,13 @@ public class TutorStudentChatController {
         // Find the tutor
         Long otherUserId = conv.getUser1Id().equals(conv.getId()) ? conv.getUser2Id() : conv.getUser1Id();
         Tutor tutor = tutorRepository.findByUserId(otherUserId).orElse(null);
-        
+
         if (tutor != null) {
             enriched.put("tutor", Map.of(
-                "id", tutor.getId(),
-                "name", tutor.getName(),
-                "tutorId", tutor.getTutorId(),
-                "email", tutor.getEmail()
-            ));
+                    "id", tutor.getId(),
+                    "name", tutor.getName(),
+                    "tutorId", tutor.getTutorId(),
+                    "email", tutor.getEmail()));
         }
 
         return enriched;
@@ -313,14 +312,13 @@ public class TutorStudentChatController {
         // Find the student
         Long otherUserId = conv.getUser1Id().equals(conv.getId()) ? conv.getUser2Id() : conv.getUser1Id();
         Student student = studentRepository.findByUserId(otherUserId).orElse(null);
-        
+
         if (student != null) {
             enriched.put("student", Map.of(
-                "id", student.getId(),
-                "name", student.getName(),
-                "studentId", student.getStudentId(),
-                "email", student.getEmail()
-            ));
+                    "id", student.getId(),
+                    "name", student.getName(),
+                    "studentId", student.getStudentId(),
+                    "email", student.getEmail()));
         }
 
         return enriched;

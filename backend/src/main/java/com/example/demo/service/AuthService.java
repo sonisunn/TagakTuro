@@ -64,7 +64,7 @@ public class AuthService {
             newStudent.setStudentId(signupRequest.getStudentId());
             newStudent.setCourseProgram(signupRequest.getCourseProgram());
             newStudent.setPhoneNumber(signupRequest.getPhoneNumber());
-            Student savedStudent = studentRepository.save(newStudent);
+            studentRepository.save(newStudent);
         } else { // TUTOR
             if (tutorRepository.existsByTutorId(signupRequest.getStudentId())) { // Assuming studentId is used for tutorId
                 throw new IllegalArgumentException("Error: Tutor ID is already in use!");

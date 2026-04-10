@@ -252,13 +252,36 @@ export default function TagakTuroHomepage() {
  
   useEffect(() => {
     if (userId) {
-      fetchBookings(userId, userName);
-      // Set up polling every 5 seconds to see real-time updates from students
+      let isActive = true;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      const loadBookings = async () => {
+        if (!isActive) return;
+        await fetchBookings(userId, userName);
+        retryCount = 0; // Reset retry count on success
+      };
+      
+      loadBookings();
+      
+      // Handle errors with exponential backoff
+      const handleError = async () => {
+        if (retryCount < maxRetries && isActive) {
+          retryCount++;
+          const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
+          setTimeout(loadBookings, delay);
+        }
+      };
+      
+      // Lighter polling: only every 30 seconds instead of 5
       const interval = setInterval(() => {
-        fetchBookings(userId, userName);
-      }, 5000);
+        if (isActive) loadBookings().catch(handleError);
+      }, 30000);
 
-      return () => clearInterval(interval);
+      return () => {
+        isActive = false;
+        clearInterval(interval);
+      };
     }
   }, [userId, userName]); // eslint-disable-line react-hooks/exhaustive-deps
  

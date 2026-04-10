@@ -25,6 +25,7 @@ public class PAMAService {
 
     // The Core Loop 
     @Transactional
+    @SuppressWarnings("null")
     public void executePAMA(List<Long> moduleIds) {
         for (Long moduleId : moduleIds) {
             Module module = moduleRepository.findById(moduleId).orElse(null);
@@ -35,8 +36,10 @@ public class PAMAService {
     }
 
     public PAMAPreference setTutorPreference(Long tutorId, Long moduleId, Integer rank, Double score) {
+        @SuppressWarnings("null")
         Tutor tutor = tutorRepository.findById(tutorId)
             .orElseThrow(() -> new RuntimeException("Tutor not found"));
+        @SuppressWarnings("null")
         Module module = moduleRepository.findById(moduleId)
             .orElseThrow(() -> new RuntimeException("Module not found"));
 

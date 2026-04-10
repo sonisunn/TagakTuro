@@ -4,7 +4,6 @@ import com.example.demo.model.PAMAAssignment;
 import com.example.demo.model.PAMAPreference;
 import com.example.demo.model.Module;
 import com.example.demo.service.PAMAService;
-import com.example.demo.service.ModuleService;
 import com.example.demo.dto.PAMAExecuteRequest;
 import com.example.demo.dto.PAMAPreferenceRequest;
 import com.example.demo.dto.ModuleCreateRequest; 
@@ -21,9 +20,6 @@ public class PAMAController {
 
     @Autowired
     private PAMAService pamaService;
-
-    @Autowired
-    private ModuleService moduleService;
 
     /**
      * Execute PAMA matching algorithm

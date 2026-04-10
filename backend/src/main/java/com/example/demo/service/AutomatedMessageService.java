@@ -6,7 +6,6 @@ import com.example.demo.dto.SendMessageRequest;
 import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
 import com.example.demo.model.Tutor;
-import com.example.demo.repository.StudentRepository;
 import com.example.demo.repository.TutorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,9 +17,6 @@ public class AutomatedMessageService {
 
     @Autowired
     private ChatService chatService;
-
-    @Autowired
-    private StudentRepository studentRepository;
 
     @Autowired
     private TutorRepository tutorRepository;

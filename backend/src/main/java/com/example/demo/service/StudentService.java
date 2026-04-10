@@ -59,14 +59,14 @@ public class StudentService {
         Student student = getStudentById(id);
 
         // Check if email is being changed and if new email already exists
-        if (!student.getEmail().equals(studentDetails.getEmail()) && 
-            studentRepository.existsByEmail(studentDetails.getEmail())) {
+        if (!student.getEmail().equals(studentDetails.getEmail()) &&
+                studentRepository.existsByEmail(studentDetails.getEmail())) {
             throw new RuntimeException("Email already in use: " + studentDetails.getEmail());
         }
 
         // Check if studentId is being changed and if new studentId already exists
-        if (!student.getStudentId().equals(studentDetails.getStudentId()) && 
-            studentRepository.existsByStudentId(studentDetails.getStudentId())) {
+        if (!student.getStudentId().equals(studentDetails.getStudentId()) &&
+                studentRepository.existsByStudentId(studentDetails.getStudentId())) {
             throw new RuntimeException("Student ID already in use: " + studentDetails.getStudentId());
         }
 
@@ -81,12 +81,13 @@ public class StudentService {
     }
 
     // Delete a student
+    @SuppressWarnings("null")
     public void deleteStudent(Long id) {
         if (id == null) {
             throw new RuntimeException("Student ID cannot be null");
         }
+        @SuppressWarnings("null")
         Student student = getStudentById(id);
         studentRepository.delete(student);
     }
 }
-

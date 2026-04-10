@@ -66,6 +66,7 @@ public class ModuleService {
     /**
      * Get module by ID
      */
+    @SuppressWarnings("null")
     public Optional<Module> getModuleById(Long id) {
         return moduleRepository.findById(id);
     }
@@ -80,6 +81,7 @@ public class ModuleService {
     /**
      * Update module
      */
+    @SuppressWarnings("null")
     public Module updateModule(Long id, String description, Integer capacity) {
         Module module = moduleRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Module not found"));
@@ -97,6 +99,7 @@ public class ModuleService {
     /**
      * Deactivate module (soft delete)
      */
+    @SuppressWarnings("null")
     public Module deactivateModule(Long id) {
         Module module = moduleRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Module not found"));
@@ -108,6 +111,7 @@ public class ModuleService {
     /**
      * Get module capacity status (for dashboard)
      */
+    @SuppressWarnings("null")
     public Map<String, Object> getModuleCapacityStatus(Long id) {
         Module module = moduleRepository.findById(id)
             .orElseThrow(() -> new IllegalArgumentException("Module not found"));

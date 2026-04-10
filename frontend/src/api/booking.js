@@ -10,6 +10,7 @@ const axiosWithAuth = async () => {
   const token = await AsyncStorage.getItem('authToken'); // read JWT from storage
   const instance = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 15000, // 15 second timeout
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -55,10 +56,16 @@ export async function getBookingsByStudentId(studentId) {
   try {
     const client = await axiosWithAuth();
     const response = await client.get(`/api/booking/student/${studentId}`);
-    return response.data;
+    return response.data || [];
   } catch (error) {
-    console.error('Error in getBookingsByStudentId:', (error.response && error.response.data) || error.message);
-    throw error;
+    if (error.code === 'ECONNABORTED') {
+      console.error('Request timeout: Could not fetch bookings (exceeded 15 seconds)');
+    } else if (error.message === 'Network Error') {
+      console.error('Network error: Cannot reach backend server. Ensure server is running at', API_BASE_URL);
+    } else {
+      console.error('Error in getBookingsByStudentId:', (error.response && error.response.data) || error.message);
+    }
+    return []; // Return empty array on error instead of throwing
   }
 }
 

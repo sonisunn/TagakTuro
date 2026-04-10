@@ -7,7 +7,6 @@ import com.example.demo.model.Tutor;
 import com.example.demo.repository.TutorApplicationRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TutorRepository;
-import com.example.demo.service.FileStorageService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,10 +28,10 @@ public class TutorApplicationService {
     private final TutorRepository tutorRepository;
 
     public TutorApplicationService(TutorApplicationRepository tutorApplicationRepository,
-                                   BCryptPasswordEncoder passwordEncoder,
-                                   FileStorageService fileStorageService,
-                                   UserRepository userRepository,
-                                   TutorRepository tutorRepository) {
+            BCryptPasswordEncoder passwordEncoder,
+            FileStorageService fileStorageService,
+            UserRepository userRepository,
+            TutorRepository tutorRepository) {
         this.tutorApplicationRepository = tutorApplicationRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
@@ -40,7 +39,8 @@ public class TutorApplicationService {
         this.tutorRepository = tutorRepository;
     }
 
-    public TutorApplication apply(TutorApplicationRequest request, MultipartFile reportOfGrades, MultipartFile certificates) {
+    public TutorApplication apply(TutorApplicationRequest request, MultipartFile reportOfGrades,
+            MultipartFile certificates) {
         if (tutorApplicationRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalStateException("Email already used for an application.");
         }
@@ -104,6 +104,7 @@ public class TutorApplicationService {
     }
 
     public void acceptApplication(Long applicationId) {
+        @SuppressWarnings("null")
         Optional<TutorApplication> applicationOpt = tutorApplicationRepository.findById(applicationId);
         if (applicationOpt.isPresent()) {
             TutorApplication application = applicationOpt.get();

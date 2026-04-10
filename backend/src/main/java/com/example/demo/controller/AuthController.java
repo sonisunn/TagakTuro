@@ -9,8 +9,6 @@ import com.example.demo.repository.StudentRepository; // Import StudentRepositor
 import com.example.demo.repository.TutorRepository;
 
 // DTOs
-import com.example.demo.controller.LoginRequest;
-import com.example.demo.controller.LoginResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

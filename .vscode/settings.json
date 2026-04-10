@@ -1,8 +1,20 @@
 {
-<<<<<<< HEAD
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
-=======
-    "java.compile.nullAnalysis.mode": "automatic"
->>>>>>> V3.23.2026
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.codeGeneration.useBlocks": true,
+    "java.project.sourceExclusions": [
+        "**/node_modules/**",
+        "**/.git",
+        "**/.expo",
+        "**/admin-web/**",
+        "**/cced-web/**",
+        "**/frontend/node_modules/**"
+    ],
+    "[java]": {
+        "editor.defaultFormatter": "redhat.java",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    }
 }

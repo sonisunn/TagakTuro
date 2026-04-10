@@ -97,17 +97,18 @@ public class ChatWebSocketController {
      * Send message to specific user (private message)
      * Used for read receipts and notifications
      */
+    @SuppressWarnings("null")
     public void sendPrivateMessage(Long recipientUserId, String destination, MessageDTO message) {
         messagingTemplate.convertAndSendToUser(
                 recipientUserId.toString(),
                 destination,
-                message
-        );
+                message);
     }
 
     /**
      * Helper method to extract userId from Principal
-     * This is a basic implementation - adjust based on your authentication mechanism
+     * This is a basic implementation - adjust based on your authentication
+     * mechanism
      */
     private Long extractUserIdFromPrincipal(Principal principal) {
         // This assumes the principal.getName() returns the userId as a string
@@ -129,7 +130,8 @@ public class ChatWebSocketController {
         private Long conversationId;
         private Boolean isTyping;
 
-        public TypingIndicator() {}
+        public TypingIndicator() {
+        }
 
         public TypingIndicator(Long userId, Long conversationId, Boolean isTyping) {
             this.userId = userId;

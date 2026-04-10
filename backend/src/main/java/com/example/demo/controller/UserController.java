@@ -16,6 +16,7 @@ public class UserController {
 
     // Update user profile (partial updates allowed)
     @PutMapping("/{id}")
+    @SuppressWarnings("null")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User incoming) {
         User user = userRepository.findById(id).orElse(null);
         if (user == null) {

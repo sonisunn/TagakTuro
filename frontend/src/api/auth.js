@@ -3,15 +3,24 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
 
+// Set default timeout for all axios requests
+axios.defaults.timeout = 15000; // 15 seconds
+
 /**
  * Sign up a new user
  */
 export async function signup(user) {
   try {
-    const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, user);
+    const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, user, { timeout: 15000 });
     return res.data;
   } catch (error) {
-    console.error('Error in signup:', error.response || error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error('Sign up timeout: Request exceeded 15 seconds');
+    } else if (error.message === 'Network Error') {
+      console.error('Network error: Cannot reach backend server');
+    } else {
+      console.error('Error in signup:', error.response?.data || error.message);
+    }
     throw error;
   }
 }
@@ -22,7 +31,7 @@ export async function signup(user) {
  */
 export async function login(email, password) {
   try {
-    const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
+    const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password }, { timeout: 15000 });
     const data = res.data;
 
     if (data?.token) {
@@ -32,7 +41,13 @@ export async function login(email, password) {
 
     return data;
   } catch (error) {
-    console.error('Error in login:', error.response || error.message);
+    if (error.code === 'ECONNABORTED') {
+      console.error('Login timeout: Request exceeded 15 seconds');
+    } else if (error.message === 'Network Error') {
+      console.error('Network error: Cannot reach backend server');
+    } else {
+      console.error('Error in login:', error.response?.data || error.message);
+    }
     throw error;
   }
 }

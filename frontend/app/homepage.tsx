@@ -79,6 +79,11 @@ export default function TagakTuroHomepage() {
       const studentId = await AsyncStorage.getItem('studentId');
       if (studentId) {
         const bookings = await getBookingsByStudentId(studentId);
+        if (!bookings || !Array.isArray(bookings)) {
+          setLoading(false);
+          return;
+        }
+        
         const upcoming: ClassItem[] = [];
         const past: ClassItem[] = [];
 
@@ -119,27 +124,55 @@ export default function TagakTuroHomepage() {
         setUpcomingClasses(upcoming);
         setPastClasses(past);
 
-        if (newlyConfirmedBooking !== null && !loading) {
+        // Only show notifications on first load
+        if (newlyConfirmedBooking !== null && loading) {
           setMatchBooking(newlyConfirmedBooking);
           setShowMatchNotification(true);
         }
 
-        if (newlyRescheduledBooking && !loading) {
+        if (newlyRescheduledBooking && loading) {
           setRescheduledBooking(newlyRescheduledBooking);
           setShowRescheduleNotification(true);
         }
       }
-    } catch {
-      console.error('Error fetching bookings');
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, []);
 
   useEffect(() => {
-    fetchBookings();
-    const interval = setInterval(fetchBookings, 5000);
-    return () => clearInterval(interval);
+    let isActive = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const loadBookings = async () => {
+      if (!isActive) return;
+      await fetchBookings();
+      retryCount = 0; // Reset retry count on success
+    };
+    
+    loadBookings();
+    
+    // Retry on failure with exponential backoff
+    const handleError = async () => {
+      if (retryCount < maxRetries && isActive) {
+        retryCount++;
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
+        setTimeout(loadBookings, delay);
+      }
+    };
+    
+    // Lighter polling: only every 30 seconds instead of 5
+    const interval = setInterval(() => {
+      if (isActive) loadBookings().catch(handleError);
+    }, 30000);
+    
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
   }, [fetchBookings]);
 
   const formatBookingDateTime = (dateTimeString: string) => {
