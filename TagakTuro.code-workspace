@@ -1,11 +1,15 @@
 {
   "folders": [
     {
-      "name": "Backend (Spring Boot)",
-      "path": "backend"
+      "name": "Backend (Spring Boot Maven)",
+      "path": "backend",
+      "settings": {
+        "java.compile.nullAnalysis.mode": "automatic",
+        "java.configuration.updateBuildConfiguration": "automatic"
+      }
     },
     {
-      "name": "Frontend (React Native/Expo)",
+      "name": "Frontend (React Native)",
       "path": "frontend"
     },
     {
@@ -15,16 +19,29 @@
     {
       "name": "CCED Web",
       "path": "cced-web"
-    },
-    {
-      "name": "Root",
-      "path": "."
     }
   ],
   "settings": {
     "java.compile.nullAnalysis.mode": "automatic",
     "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.gradle.enabled": false,
     "java.codeGeneration.useBlocks": true,
+    "java.project.sourceExclusions": [
+        "**/node_modules/**",
+        "**/.git",
+        "**/.expo",
+        "**/admin-web/**",
+        "**/cced-web/**",
+        "**/frontend/**"
+    ],
+    "java.project.resourceExclusions": [
+        "**/node_modules/**",
+        "**/.git",
+        "**/.expo",
+        "**/admin-web/**",
+        "**/cced-web/**",
+        "**/frontend/**"
+    ],
     "[java]": {
       "editor.defaultFormatter": "redhat.java",
       "editor.formatOnSave": true,

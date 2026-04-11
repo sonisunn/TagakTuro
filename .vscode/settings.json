@@ -1,6 +1,8 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
     "java.configuration.updateBuildConfiguration": "automatic",
+    "java.configuration.maven.userSettings": null,
+    "java.import.gradle.enabled": false,
     "java.codeGeneration.useBlocks": true,
     "java.project.sourceExclusions": [
         "**/node_modules/**",
@@ -8,8 +10,23 @@
         "**/.expo",
         "**/admin-web/**",
         "**/cced-web/**",
-        "**/frontend/node_modules/**"
+        "**/frontend/**"
     ],
+    "java.project.resourceExclusions": [
+        "**/node_modules/**",
+        "**/.git",
+        "**/.expo",
+        "**/admin-web/**",
+        "**/cced-web/**",
+        "**/frontend/**"
+    ],
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/.git": true,
+        "**/admin-web": true,
+        "**/cced-web": true,
+        "**/frontend": true
+    },
     "[java]": {
         "editor.defaultFormatter": "redhat.java",
         "editor.formatOnSave": true,
