@@ -31,3 +31,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+*.log
+*.err
+logs/
+
+### H2 Database runtime files ###
+data/
+*.mv.db
+*.trace.db
+
+### Node (stray) ###
+package-lock.json
+node_modules/
+
+### Uploads (user-generated content) ###
+uploads/

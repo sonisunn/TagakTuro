@@ -38,6 +38,9 @@ yarn-error.*
 
 app-example
 
+# Android stray build artifact files
+com.facebook.*
+
 # generated native folders
 /ios
 /android
