@@ -16,6 +16,8 @@ import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import BottomNav from '../components/BottomNav';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../src/api/booking';
+import axios from 'axios';
+import { API_BASE_URL } from '../src/api/config';
 
 // TypeScript interfaces
 interface ClassItem {
@@ -42,6 +44,7 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
   const [pastClasses, setPastClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [showMatchNotification, setShowMatchNotification] = useState<boolean>(false);
   const [matchBooking, setMatchBooking] = useState<ClassItem | null>(null);
   const [showRescheduleNotification, setShowRescheduleNotification] = useState<boolean>(false);
@@ -83,7 +86,7 @@ export default function TagakTuroHomepage() {
           setLoading(false);
           return;
         }
-        
+
         const upcoming: ClassItem[] = [];
         const past: ClassItem[] = [];
 
@@ -135,6 +138,19 @@ export default function TagakTuroHomepage() {
           setShowRescheduleNotification(true);
         }
       }
+
+      // Also fetch unread notifications count
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (userDataString) {
+        const user = JSON.parse(userDataString);
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
+          const unread = res.data.filter((n: any) => !n.read).length;
+          setUnreadCount(unread);
+        } catch (e) {
+          console.warn("Failed to fetch notification count", e);
+        }
+      }
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {
@@ -146,15 +162,15 @@ export default function TagakTuroHomepage() {
     let isActive = true;
     let retryCount = 0;
     const maxRetries = 3;
-    
+
     const loadBookings = async () => {
       if (!isActive) return;
       await fetchBookings();
       retryCount = 0; // Reset retry count on success
     };
-    
+
     loadBookings();
-    
+
     // Retry on failure with exponential backoff
     const handleError = async () => {
       if (retryCount < maxRetries && isActive) {
@@ -163,12 +179,12 @@ export default function TagakTuroHomepage() {
         setTimeout(loadBookings, delay);
       }
     };
-    
+
     // Lighter polling: only every 30 seconds instead of 5
     const interval = setInterval(() => {
       if (isActive) loadBookings().catch(handleError);
     }, 30000);
-    
+
     return () => {
       isActive = false;
       clearInterval(interval);
@@ -408,9 +424,11 @@ export default function TagakTuroHomepage() {
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.notificationContainer} onPress={() => router.push('/notification')}>
               <Ionicons name="notifications" size={32} color="#95CDF2" />
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>2</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -498,7 +516,7 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{selectedClass.subject}</Text>
                 <Text style={styles.modalCaption}>{selectedClass.location}</Text>
                 <Text style={styles.modalCaption}>{formatStartTime(selectedClass.rawDate)}</Text>
-                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{color: '#95CDF2', fontWeight: '400'}}>{selectedClass.status}</Text></Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedClass.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
                   <TouchableOpacity style={styles.modalChatButton}>
@@ -594,7 +612,7 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 3: Reschedule Success */}
             {modalView === 'success' && (
-              <View style={{alignItems: 'center', paddingVertical: 20}}>
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Text style={styles.successTitle}>Successfully Rescheduled!</Text>
                 <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
 
@@ -606,8 +624,8 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 4: Cancel Confirmation */}
             {modalView === 'cancel' && (
-              <View style={{alignItems: 'center'}}>
-                <Text style={[styles.cancelHeadline, {marginBottom: 20, textAlign: 'center'}]}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[styles.cancelHeadline, { marginBottom: 20, textAlign: 'center' }]}>
                   Are you sure you want to cancel?
                 </Text>
 
@@ -635,7 +653,7 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 5: Cancel Success */}
             {modalView === 'cancelSuccess' && (
-              <View style={{alignItems: 'center', paddingVertical: 20}}>
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Text style={styles.successTitle}>Session Cancelled</Text>
                 <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
 
