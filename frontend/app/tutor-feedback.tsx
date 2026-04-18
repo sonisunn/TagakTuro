@@ -15,13 +15,13 @@ export default function TutorFeedbackPage() {
 
   // The user ID of the tutor we are viewing
   const tutorIdString = params.userId as string;
-  const tutorName = (params.name as string) || 'Tutor';
   // If the student came here directly from a completed class linking to rate
   const bookingIdString = params.bookingId as string;
 
   const [feedbacks, setFeedbacks] = useState<FeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentId, setStudentId] = useState<number | null>(null);
+  const [activeTutorName, setActiveTutorName] = useState('Tutor');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -34,8 +34,20 @@ export default function TutorFeedbackPage() {
         const storedStudentId = await AsyncStorage.getItem('studentId');
         if (storedStudentId) setStudentId(parseInt(storedStudentId));
 
-        if (tutorIdString) {
-          const list = await getFeedbackForUser(parseInt(tutorIdString));
+        const storedUserData = await AsyncStorage.getItem('userData');
+        let currentUserId = null;
+        let currentName = 'Tutor';
+        if (storedUserData) {
+          const parsed = JSON.parse(storedUserData);
+          currentUserId = parsed.id;
+          currentName = parsed.name || 'Tutor';
+        }
+
+        const targetUserId = tutorIdString ? parseInt(tutorIdString) : currentUserId;
+        setActiveTutorName((params.name as string) || currentName);
+
+        if (targetUserId) {
+          const list = await getFeedbackForUser(targetUserId);
           setFeedbacks(list);
         }
       } catch (e) {
@@ -98,7 +110,7 @@ export default function TutorFeedbackPage() {
           <View style={styles.profileImageContainer}>
             <Ionicons name="person-circle" size={150} color="#2B74B4" />
           </View>
-          <Text style={styles.profileName}>{tutorName}</Text>
+          <Text style={styles.profileName}>{activeTutorName}</Text>
 
           <View style={styles.ratingBadge}>
             <Ionicons name="star" size={16} color="#FCC419" />
@@ -165,7 +177,7 @@ export default function TutorFeedbackPage() {
         <BlurView intensity={20} tint="dark" style={styles.absolute}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Rate Your Tutor</Text>
-            <Text style={styles.modalSubTitle}>How was your session with {tutorName}?</Text>
+            <Text style={styles.modalSubTitle}>How was your session with {activeTutorName}?</Text>
 
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => (

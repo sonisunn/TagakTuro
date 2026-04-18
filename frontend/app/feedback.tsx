@@ -15,13 +15,13 @@ export default function StudentFeedbackPage() {
 
   // The user ID of the student we are viewing
   const studentUserIdString = params.userId as string;
-  const studentName = (params.name as string) || 'Student';
   // If the tutor came here directly from a completed class linking to rate
   const bookingIdString = params.bookingId as string;
 
   const [feedbacks, setFeedbacks] = useState<FeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [tutorUserId, setTutorUserId] = useState<number | null>(null);
+  const [activeStudentName, setActiveStudentName] = useState('Student');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -32,13 +32,20 @@ export default function StudentFeedbackPage() {
     const init = async () => {
       try {
         const storedUserData = await AsyncStorage.getItem('userData');
+        let currentUserId = null;
+        let currentName = 'Student';
         if (storedUserData) {
           const parsed = JSON.parse(storedUserData);
           setTutorUserId(parsed.id);
+          currentUserId = parsed.id;
+          currentName = parsed.name || 'Student';
         }
 
-        if (studentUserIdString) {
-          const list = await getFeedbackForUser(parseInt(studentUserIdString));
+        const targetUserId = studentUserIdString ? parseInt(studentUserIdString) : currentUserId;
+        setActiveStudentName((params.name as string) || currentName);
+
+        if (targetUserId) {
+          const list = await getFeedbackForUser(targetUserId);
           setFeedbacks(list);
         }
       } catch (e) {
@@ -101,7 +108,7 @@ export default function StudentFeedbackPage() {
           <View style={styles.profileImageContainer}>
             <Ionicons name="person-circle" size={150} color="#2B74B4" />
           </View>
-          <Text style={styles.profileName}>{studentName}</Text>
+          <Text style={styles.profileName}>{activeStudentName}</Text>
 
           <View style={styles.ratingBadge}>
             <Ionicons name="star" size={16} color="#FCC419" />
@@ -168,7 +175,7 @@ export default function StudentFeedbackPage() {
         <BlurView intensity={20} tint="dark" style={styles.absolute}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Rate Your Student</Text>
-            <Text style={styles.modalSubTitle}>How was {studentName} during the session?</Text>
+            <Text style={styles.modalSubTitle}>How was {activeStudentName} during the session?</Text>
 
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => (

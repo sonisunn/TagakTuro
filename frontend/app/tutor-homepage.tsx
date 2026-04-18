@@ -204,7 +204,7 @@ export default function TagakTuroHomepage() {
       transformedTutor.forEach((booking: Booking) => {
         if (booking.status === "CONFIRMED") {
           upcoming.push(booking);
-        } else if (booking.status === "COMPLETED") {
+        } else if (booking.status === "COMPLETED" || booking.status === "CANCELLED" || booking.status === "DECLINED") {
           completed.push(booking);
         }
       });
