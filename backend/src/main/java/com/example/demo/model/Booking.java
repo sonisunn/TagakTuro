@@ -32,6 +32,14 @@ public class Booking {
     private String modality;
     private String venue;
 
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("tutorUserId")
+    private Long tutorUserId;
+
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("studentUserId")
+    private Long studentUserId;
+
     // Enum for booking status
     public enum BookingStatus {
         PENDING,
@@ -136,5 +144,21 @@ public class Booking {
 
     public void setVenue(String venue) {
         this.venue = venue;
+    }
+
+    public Long getTutorUserId() {
+        return tutorUserId;
+    }
+
+    public void setTutorUserId(Long tutorUserId) {
+        this.tutorUserId = tutorUserId;
+    }
+
+    public Long getStudentUserId() {
+        return studentUserId;
+    }
+
+    public void setStudentUserId(Long studentUserId) {
+        this.studentUserId = studentUserId;
     }
 }
