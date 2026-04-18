@@ -34,6 +34,7 @@ interface Booking {
   tutorId: string;
   tutorName: string;
   studentName: string;
+  studentUserId?: number;
   subject: string;
   location: string;
   date: string;
@@ -159,6 +160,7 @@ export default function TagakTuroHomepage() {
         tutorId: booking.tutorId || '',
         tutorName: booking.tutorName || '',
         studentName: booking.student?.name || 'Unknown Student',
+        studentUserId: booking.studentUserId,
         subject: booking.subject || '',
         location: (booking.modality === 'In-Person' && booking.venue) ? booking.venue : booking.modality || '',
         date: dateStr,
@@ -692,23 +694,39 @@ export default function TagakTuroHomepage() {
                 <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedBookingForModal.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity style={styles.modalChatButton}>
-                    <Text style={styles.modalBtnTextWhite}>Chat with your Student</Text>
-                  </TouchableOpacity>
+                  {selectedBookingForModal.status !== 'COMPLETED' && selectedBookingForModal.status !== 'CANCELLED' && selectedBookingForModal.status !== 'DECLINED' && (
+                    <>
+                      <TouchableOpacity style={styles.modalChatButton}>
+                        <Text style={styles.modalBtnTextWhite}>Chat with your Student</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.modalRescheduleButton}
-                    onPress={() => setModalView('reschedule')}
-                  >
-                    <Text style={styles.modalBtnTextWhite}>Reschedule</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.modalRescheduleButton}
+                        onPress={() => setModalView('reschedule')}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Reschedule</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.modalCancelButton}
-                    onPress={() => setModalView('cancel')}
-                  >
-                    <Text style={styles.modalBtnTextWhite}>Cancel Session</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => setModalView('cancel')}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Cancel Session</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {selectedBookingForModal.status === 'COMPLETED' ? (
+                    <TouchableOpacity
+                      style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
+                      onPress={() => {
+                        closeBookingDetailsModal();
+                        router.push(`/feedback?userId=${selectedBookingForModal.studentUserId}&name=${selectedBookingForModal.studentName}&bookingId=${selectedBookingForModal.id}`);
+                      }}
+                    >
+                      <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
+                    </TouchableOpacity>
+                  ) : null}
 
                   <TouchableOpacity style={styles.modalReturnButton} onPress={closeBookingDetailsModal}>
                     <Text style={styles.modalBtnTextBlue}>Return</Text>
