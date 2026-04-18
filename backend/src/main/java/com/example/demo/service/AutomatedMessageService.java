@@ -25,6 +25,9 @@ public class AutomatedMessageService {
     @Autowired
     private BookingRepository bookingRepository;
 
+    @Autowired
+    private NotificationService notificationService;
+
     /**
      * Send automated greeting message from tutor to student when matched/booked
      * This message introduces the tutor, subject, modality, and diagnostic test
@@ -75,6 +78,13 @@ public class AutomatedMessageService {
                     greetingRequest
             );
 
+            // Also create a persistent Notification for the student
+            notificationService.createNotification(
+                    student.getUser(),
+                    "Welcome to TagakTuro!",
+                    "You have a matched tutor for " + subject + "! Check your messages to start."
+            );
+
             return messageDTO;
         } catch (Exception e) {
             throw new RuntimeException("Failed to send tutor greeting message: " + e.getMessage());
@@ -118,6 +128,12 @@ public class AutomatedMessageService {
 
             String diagnosticMessage = "Please complete the Diagnostic Test to help us assess your current knowledge level in " 
                     + booking.getSubject() + ". This will help me tailor the lessons to your needs.";
+
+            notificationService.createNotification(
+                    student.getUser(),
+                    "Pending Diagnostic Test",
+                    "Your diagnostic test for " + booking.getSubject() + " is ready. Please complete it."
+            );
 
             return sendSystemMessage(
                     conversation.getId(),
