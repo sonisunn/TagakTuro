@@ -348,12 +348,12 @@ export default function TagakTuroHomepage() {
         return;
       }
 
-      // First update the booking status to CONFIRMED
-      await updateBookingStatus(bookingId, "CONFIRMED");
-
-      // Then update the booking with tutor name assignment
-      const updatedBooking = { ...bookingToAccept, status: "CONFIRMED", tutorName: userName };
+      // First update the booking with tutor name assignment
+      const updatedBooking = { ...bookingToAccept, tutorName: userName };
       await updateBooking(bookingId, updatedBooking);
+
+      // Then update the booking status to CONFIRMED (this triggers backend notifications)
+      await updateBookingStatus(bookingId, "CONFIRMED");
 
       closeStudentModal();
       if (userId && userName) {

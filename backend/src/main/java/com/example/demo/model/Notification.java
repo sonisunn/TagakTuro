@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -56,6 +57,11 @@ public class Notification {
 
     public User getUser() {
         return user;
+    }
+
+    @JsonProperty("userId")
+    public Long retrieveUserId() {
+        return user != null ? user.getId() : null;
     }
 
     public void setUser(User user) {
