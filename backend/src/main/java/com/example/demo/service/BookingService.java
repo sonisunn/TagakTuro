@@ -2,9 +2,11 @@ package com.example.demo.service;
 
 import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
+import com.example.demo.model.Tutor;
 import com.example.demo.model.User;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.StudentRepository;
+import com.example.demo.repository.TutorRepository;
 import com.example.demo.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,9 +36,43 @@ public class BookingService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TutorRepository tutorRepository;
+
+    private Booking enrichBookingWithUserIds(Booking booking) {
+        if (booking == null) return null;
+        
+        // Student User ID
+        if (booking.getStudent() != null) {
+            User studentUser = booking.getStudent().getUser();
+            if (studentUser == null) {
+                userRepository.findByEmail(booking.getStudent().getEmail()).ifPresent(user -> booking.setStudentUserId(user.getId()));
+            } else {
+                booking.setStudentUserId(studentUser.getId());
+            }
+        }
+        
+        // Tutor User ID
+        if (booking.getTutorName() != null && !booking.getTutorName().isEmpty()) {
+            tutorRepository.findByName(booking.getTutorName()).ifPresent(tutor -> {
+                if (tutor.getUser() != null) {
+                    booking.setTutorUserId(tutor.getUser().getId());
+                } else {
+                    userRepository.findByEmail(tutor.getEmail()).ifPresent(user -> booking.setTutorUserId(user.getId()));
+                }
+            });
+        }
+        return booking;
+    }
+
+    private List<Booking> enrichBookingsWithUserIds(List<Booking> bookings) {
+        if (bookings == null) return null;
+        return bookings.stream().map(this::enrichBookingWithUserIds).collect(java.util.stream.Collectors.toList());
+    }
+
     // Get all bookings
     public List<Booking> getAllBookings() {
-        return bookingRepository.findAll();
+        return enrichBookingsWithUserIds(bookingRepository.findAll());
     }
 
     // Get booking by ID
@@ -44,8 +80,9 @@ public class BookingService {
         if (id == null) {
             throw new IllegalArgumentException("Booking ID cannot be null");
         }
-        return bookingRepository.findById(id)
+        Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Booking not found with id: " + id));
+        return enrichBookingWithUserIds(booking);
     }
 
     // Get all bookings for a specific student
@@ -55,17 +92,17 @@ public class BookingService {
         }
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found with id: " + studentId));
-        return bookingRepository.findByStudent(student);
+        return enrichBookingsWithUserIds(bookingRepository.findByStudent(student));
     }
 
     // Get bookings by status
     public List<Booking> getBookingsByStatus(Booking.BookingStatus status) {
-        return bookingRepository.findByStatus(status);
+        return enrichBookingsWithUserIds(bookingRepository.findByStatus(status));
     }
 
     // Get all pending bookings (for tutors to see all available bookings)
     public List<Booking> getPendingBookings() {
-        return bookingRepository.findByStatus(Booking.BookingStatus.PENDING);
+        return enrichBookingsWithUserIds(bookingRepository.findByStatus(Booking.BookingStatus.PENDING));
     }
 
     // Get bookings by tutor name
@@ -73,12 +110,12 @@ public class BookingService {
         if (tutorName == null || tutorName.isEmpty()) {
             throw new IllegalArgumentException("Tutor name cannot be null or empty");
         }
-        return bookingRepository.findByTutorName(tutorName);
+        return enrichBookingsWithUserIds(bookingRepository.findByTutorName(tutorName));
     }
 
     // Get bookings within a date range
     public List<Booking> getBookingsByDateRange(LocalDateTime start, LocalDateTime end) {
-        return bookingRepository.findByBookingDateTimeBetween(start, end);
+        return enrichBookingsWithUserIds(bookingRepository.findByBookingDateTimeBetween(start, end));
     }
 
     // Create a new booking
