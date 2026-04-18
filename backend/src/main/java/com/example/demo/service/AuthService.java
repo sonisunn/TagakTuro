@@ -6,7 +6,10 @@ import com.example.demo.model.User;
 import com.example.demo.model.Student;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.StudentRepository;
-import com.example.demo.controller.SignupRequest; // Added import
+import com.example.demo.dto.SignupRequest;
+import com.example.demo.dto.LoginResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -80,5 +83,35 @@ public class AuthService {
 
         newUser.setRoles(roles);
         return userRepository.save(newUser);
+    }
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    public LoginResponse loginUser(LoginRequest request) {
+        User user = userService.loginUser(request.getEmail(), request.getPassword());
+        
+        // generate token
+        String token = jwtUtil.generateToken(user.getEmail());
+
+        Long studentId = null;
+        Long tutorId = null;
+
+        if (user.getRoles() != null && user.getRoles().contains("ROLE_STUDENT")) {
+            studentId = studentRepository.findByEmail(user.getEmail())
+                    .map(Student::getId)
+                    .orElse(null);
+        }
+
+        if (user.getRoles() != null && user.getRoles().contains("ROLE_TUTOR")) {
+            tutorId = tutorRepository.findByEmail(user.getEmail())
+                    .map(Tutor::getId)
+                    .orElse(null);
+        }
+
+        return new LoginResponse(token, user, studentId, tutorId, user.getRoles());
     }
 }

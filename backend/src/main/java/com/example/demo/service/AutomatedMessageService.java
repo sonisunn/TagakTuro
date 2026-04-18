@@ -7,6 +7,7 @@ import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
 import com.example.demo.model.Tutor;
 import com.example.demo.repository.TutorRepository;
+import com.example.demo.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,12 +22,18 @@ public class AutomatedMessageService {
     @Autowired
     private TutorRepository tutorRepository;
 
+    @Autowired
+    private BookingRepository bookingRepository;
+
     /**
      * Send automated greeting message from tutor to student when matched/booked
      * This message introduces the tutor, subject, modality, and diagnostic test
      */
-    public MessageDTO sendTutorGreetingMessage(Booking booking) {
+    public MessageDTO sendTutorGreetingMessage(Long bookingId) {
         try {
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+            
             // Get student and tutor information
             Student student = booking.getStudent();
             if (student == null || student.getUser() == null) {
@@ -89,8 +96,11 @@ public class AutomatedMessageService {
     /**
      * Send diagnostic test instruction message
      */
-    public MessageDTO sendDiagnosticTestMessage(Booking booking) {
+    public MessageDTO sendDiagnosticTestMessage(Long bookingId) {
         try {
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
             Student student = booking.getStudent();
             if (student == null || student.getUser() == null) {
                 throw new RuntimeException("Student not found or not linked to user");

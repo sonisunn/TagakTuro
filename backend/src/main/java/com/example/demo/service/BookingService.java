@@ -4,6 +4,8 @@ import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.StudentRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,11 +15,16 @@ import java.util.List;
 @Service
 public class BookingService {
 
+    private static final Logger logger = LoggerFactory.getLogger(BookingService.class);
+
     @Autowired
     private BookingRepository bookingRepository;
 
     @Autowired
     private StudentRepository studentRepository;
+
+    @Autowired
+    private AutomatedMessageService automatedMessageService;
 
     // Get all bookings
     public List<Booking> getAllBookings() {
@@ -129,7 +136,18 @@ public class BookingService {
             }
         }
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Send automated tutor greeting when booking is created
+        try {
+            automatedMessageService.sendTutorGreetingMessage(savedBooking.getId());
+            logger.info("Automated tutor greeting sent for booking ID: " + savedBooking.getId());
+        } catch (Exception e) {
+            logger.warn("Failed to send automated greeting for booking ID " + savedBooking.getId() + ": " + e.getMessage());
+            // Don't fail the booking creation if message sending fails
+        }
+
+        return savedBooking;
     }
 
     // Update an existing booking
@@ -188,7 +206,19 @@ public class BookingService {
         @SuppressWarnings("null")
         Booking booking = getBookingById(id);
         booking.setStatus(status);
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        // Send automated messages based on status change
+        if (status == Booking.BookingStatus.CONFIRMED) {
+            try {
+                automatedMessageService.sendTutorGreetingMessage(savedBooking.getId());
+                logger.info("Automated tutor greeting sent for confirmed booking ID: " + id);
+            } catch (Exception e) {
+                logger.warn("Failed to send greeting for booking ID " + id + ": " + e.getMessage());
+            }
+        }
+
+        return savedBooking;
     }
 
     // Delete a booking
@@ -200,5 +230,29 @@ public class BookingService {
         @SuppressWarnings("null")
         Booking booking = getBookingById(id);
         bookingRepository.delete(booking);
+    }
+
+    // Confirm booking
+    public Booking confirmBooking(Long id) {
+        return updateBookingStatus(id, Booking.BookingStatus.CONFIRMED);
+    }
+
+    // Send diagnostic test
+    public void sendDiagnosticTest(Long id) {
+        Booking booking = getBookingById(id);
+        automatedMessageService.sendDiagnosticTestMessage(booking.getId());
+    }
+
+    // Send study readiness message
+    public void readyForStudy(Long id, Long conversationId, Long tutorUserId) {
+        Booking booking = getBookingById(id);
+        if (booking.getStudent() == null || booking.getStudent().getUser() == null) {
+            throw new IllegalArgumentException("Student not found or not linked to user");
+        }
+        automatedMessageService.sendStudyReadinessMessage(
+                conversationId != null ? conversationId : 1L,
+                tutorUserId,
+                booking.getSubject()
+        );
     }
 }

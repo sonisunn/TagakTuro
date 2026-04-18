@@ -31,13 +31,27 @@ public class UserService {
 
     // login user
     public User loginUser(String email, String password) {
-        User existingUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
 
-        if (!passwordEncoder.matches(password, existingUser.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
         }
 
-        return existingUser;
+        return user;
+    }
+
+    public User updateUser(Long id, User incoming) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return null;
+        }
+
+        if (incoming.getName() != null) user.setName(incoming.getName());
+        if (incoming.getEmail() != null) user.setEmail(incoming.getEmail());
+        if (incoming.getPhoneNumber() != null) user.setPhoneNumber(incoming.getPhoneNumber());
+        if (incoming.getCourseProgram() != null) user.setCourseProgram(incoming.getCourseProgram());
+
+        return userRepository.save(user);
     }
 }

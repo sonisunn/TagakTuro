@@ -1,6 +1,6 @@
 package com.example.demo.service;
 
-import com.example.demo.controller.TutorApplicationRequest;
+import com.example.demo.dto.TutorApplicationRequest;
 import com.example.demo.model.TutorApplication;
 import com.example.demo.model.User;
 import com.example.demo.model.Tutor;
