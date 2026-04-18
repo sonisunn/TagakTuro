@@ -1,7 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.User;
-import com.example.demo.repository.UserRepository;
+import com.example.demo.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,23 +12,15 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     // Update user profile (partial updates allowed)
     @PutMapping("/{id}")
-    @SuppressWarnings("null")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User incoming) {
-        User user = userRepository.findById(id).orElse(null);
-        if (user == null) {
+        User updatedUser = userService.updateUser(id, incoming);
+        if (updatedUser == null) {
             return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found"));
         }
-
-        if (incoming.getName() != null) user.setName(incoming.getName());
-        if (incoming.getEmail() != null) user.setEmail(incoming.getEmail());
-        if (incoming.getPhoneNumber() != null) user.setPhoneNumber(incoming.getPhoneNumber());
-        if (incoming.getCourseProgram() != null) user.setCourseProgram(incoming.getCourseProgram());
-
-        userRepository.save(user);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(updatedUser);
     }
 }

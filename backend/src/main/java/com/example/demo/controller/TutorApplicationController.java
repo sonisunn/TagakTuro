@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.service.TutorApplicationService;
 import com.example.demo.model.TutorApplication;
+import com.example.demo.dto.TutorApplicationRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

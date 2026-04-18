@@ -5,10 +5,11 @@ import com.example.demo.model.Student;
 import com.example.demo.service.AuthService;
 import com.example.demo.service.UserService;
 import com.example.demo.security.JwtUtil;
-import com.example.demo.repository.StudentRepository; // Import StudentRepository
+import com.example.demo.repository.StudentRepository;
 import com.example.demo.repository.TutorRepository;
-
-// DTOs
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.LoginResponse;
+import com.example.demo.dto.SignupRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,19 +20,7 @@ import com.example.demo.model.Tutor;
 public class AuthController {
 
     @Autowired
-    private UserService userService;
-
-    @Autowired
     private AuthService authService;
-
-    @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private StudentRepository studentRepository; // Inject StudentRepository
-
-    @Autowired
-    private TutorRepository tutorRepository;
 
     // signup endpoint
     @PostMapping("/signup")
@@ -53,25 +42,6 @@ public class AuthController {
     // login endpoint (accepts JSON body: { "email": "..", "password": ".." })
     @PostMapping("/login")
     public LoginResponse loginUser(@RequestBody LoginRequest request) {
-        User user = userService.loginUser(request.getEmail(), request.getPassword());
-        // generate token
-        String token = jwtUtil.generateToken(user.getEmail());
-
-        Long studentId = null;
-        Long tutorId = null;
-
-        if (user.getRoles() != null && user.getRoles().contains("ROLE_STUDENT")) {
-            studentId = studentRepository.findByEmail(user.getEmail())
-                    .map(Student::getId)
-                    .orElse(null);
-        }
-
-        if (user.getRoles() != null && user.getRoles().contains("ROLE_TUTOR")) {
-            tutorId = tutorRepository.findByEmail(user.getEmail())
-                    .map(Tutor::getId)
-                    .orElse(null);
-        }
-
-        return new LoginResponse(token, user, studentId, tutorId, user.getRoles());
+        return authService.loginUser(request);
     }
 }
