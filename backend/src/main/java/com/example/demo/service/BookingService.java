@@ -2,8 +2,10 @@ package com.example.demo.service;
 
 import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
+import com.example.demo.model.User;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.StudentRepository;
+import com.example.demo.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,9 @@ public class BookingService {
 
     @Autowired
     private NotificationService notificationService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // Get all bookings
     public List<Booking> getAllBookings() {
@@ -220,13 +225,23 @@ public class BookingService {
                 logger.warn("Failed to send greeting for booking ID " + id + ": " + e.getMessage());
                 // Fallback: create notification directly for the student
                 try {
-                    if (savedBooking.getStudent() != null && savedBooking.getStudent().getUser() != null) {
-                        notificationService.createNotification(
-                                savedBooking.getStudent().getUser(),
-                                "Booking Confirmed!",
-                                "Your booking for " + (savedBooking.getSubject() != null ? savedBooking.getSubject() : "your subject") + " has been confirmed. Check your messages!"
-                        );
-                        logger.info("Fallback notification sent for booking ID: " + id);
+                    Student student = savedBooking.getStudent();
+                    if (student != null) {
+                        User studentUser = student.getUser();
+                        // Fallback to email lookup for unlinked students
+                        if (studentUser == null && student.getEmail() != null) {
+                            studentUser = userRepository.findByEmail(student.getEmail()).orElse(null);
+                        }
+                        if (studentUser != null) {
+                            notificationService.createNotification(
+                                    studentUser,
+                                    "Booking Confirmed!",
+                                    "Your booking for " + (savedBooking.getSubject() != null ? savedBooking.getSubject() : "your subject") + " has been confirmed. Check your messages!"
+                            );
+                            logger.info("Fallback notification sent for booking ID: " + id);
+                        } else {
+                            logger.warn("Could not find user for student email: " + student.getEmail());
+                        }
                     }
                 } catch (Exception fallbackEx) {
                     logger.error("Failed to send fallback notification for booking ID " + id + ": " + fallbackEx.getMessage());

@@ -61,28 +61,39 @@ public class AuthService {
                 throw new IllegalArgumentException("Error: Student ID is already in use!");
             }
             roles.add("ROLE_STUDENT");
+            newUser.setRoles(roles);
+            // Save User first so it gets an ID
+            User savedUser = userRepository.save(newUser);
+
             Student newStudent = new Student();
             newStudent.setName(signupRequest.getName());
             newStudent.setEmail(signupRequest.getEmail());
             newStudent.setStudentId(signupRequest.getStudentId());
             newStudent.setCourseProgram(signupRequest.getCourseProgram());
             newStudent.setPhoneNumber(signupRequest.getPhoneNumber());
+            newStudent.setUser(savedUser); // Link Student to User
             studentRepository.save(newStudent);
+
+            return savedUser;
         } else { // TUTOR
             if (tutorRepository.existsByTutorId(signupRequest.getStudentId())) { // Assuming studentId is used for tutorId
                 throw new IllegalArgumentException("Error: Tutor ID is already in use!");
             }
             roles.add("ROLE_TUTOR");
+            newUser.setRoles(roles);
+            // Save User first so it gets an ID
+            User savedUser = userRepository.save(newUser);
+
             Tutor newTutor = new Tutor();
             newTutor.setName(signupRequest.getName());
             newTutor.setEmail(signupRequest.getEmail());
             newTutor.setTutorId(signupRequest.getStudentId()); // Use studentId as tutorId
             newTutor.setPhoneNumber(signupRequest.getPhoneNumber());
+            newTutor.setUser(savedUser); // Link Tutor to User
             tutorRepository.save(newTutor);
-        }
 
-        newUser.setRoles(roles);
-        return userRepository.save(newUser);
+            return savedUser;
+        }
     }
 
     @Autowired
