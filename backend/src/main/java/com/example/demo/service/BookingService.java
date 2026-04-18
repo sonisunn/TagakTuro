@@ -26,6 +26,9 @@ public class BookingService {
     @Autowired
     private AutomatedMessageService automatedMessageService;
 
+    @Autowired
+    private NotificationService notificationService;
+
     // Get all bookings
     public List<Booking> getAllBookings() {
         return bookingRepository.findAll();
@@ -215,6 +218,19 @@ public class BookingService {
                 logger.info("Automated tutor greeting sent for confirmed booking ID: " + id);
             } catch (Exception e) {
                 logger.warn("Failed to send greeting for booking ID " + id + ": " + e.getMessage());
+                // Fallback: create notification directly for the student
+                try {
+                    if (savedBooking.getStudent() != null && savedBooking.getStudent().getUser() != null) {
+                        notificationService.createNotification(
+                                savedBooking.getStudent().getUser(),
+                                "Booking Confirmed!",
+                                "Your booking for " + (savedBooking.getSubject() != null ? savedBooking.getSubject() : "your subject") + " has been confirmed. Check your messages!"
+                        );
+                        logger.info("Fallback notification sent for booking ID: " + id);
+                    }
+                } catch (Exception fallbackEx) {
+                    logger.error("Failed to send fallback notification for booking ID " + id + ": " + fallbackEx.getMessage());
+                }
             }
         }
 

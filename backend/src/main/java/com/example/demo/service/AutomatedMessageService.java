@@ -85,6 +85,13 @@ public class AutomatedMessageService {
                     "You have a matched tutor for " + subject + "! Check your messages to start."
             );
 
+            // Create a persistent Notification for the tutor
+            notificationService.createNotification(
+                    tutorEntity.getUser(),
+                    "Booking Accepted!",
+                    "You have successfully matched with " + student.getName() + " for " + subject + "."
+            );
+
             return messageDTO;
         } catch (Exception e) {
             throw new RuntimeException("Failed to send tutor greeting message: " + e.getMessage());

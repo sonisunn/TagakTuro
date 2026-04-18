@@ -4,6 +4,7 @@ import com.example.demo.dto.TutorApplicationRequest;
 import com.example.demo.model.TutorApplication;
 import com.example.demo.model.User;
 import com.example.demo.model.Tutor;
+import com.example.demo.service.NotificationService;
 import com.example.demo.repository.TutorApplicationRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TutorRepository;
@@ -26,17 +27,20 @@ public class TutorApplicationService {
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
     private final TutorRepository tutorRepository;
+    private final NotificationService notificationService;
 
     public TutorApplicationService(TutorApplicationRepository tutorApplicationRepository,
             BCryptPasswordEncoder passwordEncoder,
             FileStorageService fileStorageService,
             UserRepository userRepository,
-            TutorRepository tutorRepository) {
+            TutorRepository tutorRepository,
+            NotificationService notificationService) {
         this.tutorApplicationRepository = tutorApplicationRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
         this.tutorRepository = tutorRepository;
+        this.notificationService = notificationService;
     }
 
     public TutorApplication apply(TutorApplicationRequest request, MultipartFile reportOfGrades,
@@ -110,6 +114,21 @@ public class TutorApplicationService {
             TutorApplication application = applicationOpt.get();
             application.setStatus("APPROVED");
             tutorApplicationRepository.save(application);
+
+            // Send notification to the applicant's User account
+            try {
+                Optional<User> userOpt = userRepository.findByEmail(application.getEmail());
+                if (userOpt.isPresent()) {
+                    notificationService.createNotification(
+                            userOpt.get(),
+                            "Application Approved!",
+                            "Your tutor application has been approved. Welcome to TagakTuro!"
+                    );
+                }
+            } catch (Exception e) {
+                // Don't fail the acceptance if notification fails
+                System.err.println("Failed to send approval notification: " + e.getMessage());
+            }
         } else {
             throw new IllegalArgumentException("Application not found with id: " + applicationId);
         }
@@ -121,6 +140,20 @@ public class TutorApplicationService {
             if (!"APPROVED".equals(application.getStatus())) {
                 application.setStatus("APPROVED");
                 tutorApplicationRepository.save(application);
+
+                // Send notification to each applicant's User account
+                try {
+                    Optional<User> userOpt = userRepository.findByEmail(application.getEmail());
+                    if (userOpt.isPresent()) {
+                        notificationService.createNotification(
+                                userOpt.get(),
+                                "Application Approved!",
+                                "Your tutor application has been approved. Welcome to TagakTuro!"
+                        );
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to send approval notification for " + application.getEmail() + ": " + e.getMessage());
+                }
             }
         }
     }
