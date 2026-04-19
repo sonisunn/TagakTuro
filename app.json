@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "4c2613d7-ef7b-40b7-985f-12824ae9a2e4"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.ychann.tagakturo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

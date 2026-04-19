@@ -3,14 +3,14 @@ package com.example.demo.controller;
 import com.example.demo.model.User;
 import com.example.demo.model.Student;
 import com.example.demo.service.AuthService;
+import com.example.demo.service.AdminAuthService;
 import com.example.demo.service.UserService;
 import com.example.demo.security.JwtUtil;
 import com.example.demo.repository.StudentRepository; // Import StudentRepository
 import com.example.demo.repository.TutorRepository;
+import com.example.demo.dto.AdminLoginRequest;
+import com.example.demo.dto.AdminLoginResponse;
 
-// DTOs
-import com.example.demo.controller.LoginRequest;
-import com.example.demo.controller.LoginResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +25,9 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    @Autowired
+    private AdminAuthService adminAuthService;
 
     @Autowired
     private JwtUtil jwtUtil;
@@ -69,5 +72,18 @@ public class AuthController {
         }
 
         return new LoginResponse(token, user, studentId, tutorId, user.getRoles());
+    }
+
+    // admin-web login endpoint (accepts JSON body: { "email": "..", "password": ".." })
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody AdminLoginRequest request) {
+        try {
+            User user = adminAuthService.loginAdminWebUser(request.getEmail(), request.getPassword());
+            String token = jwtUtil.generateToken(user.getEmail());
+            String portal = adminAuthService.resolvePortal(user.getRoles());
+            return ResponseEntity.ok(new AdminLoginResponse(token, user, user.getRoles(), portal));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+        }
     }
 }
