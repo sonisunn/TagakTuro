@@ -1,3 +1,3 @@
 // Use localhost for the iOS Simulator!
 // Replace with your machine LAN IP for Expo Go on a physical device
-export const API_BASE_URL = 'http://172.20.10.9:8080';
+export const API_BASE_URL = 'http://192.168.100.48:8080';
