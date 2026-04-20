@@ -76,7 +76,8 @@ export default function StudentsPage() {
                     <td>{s.name}</td>
                     <td>{s.email}</td>
                     <td>{s.courseProgram || 'N/A'}</td>
-                    {/* The backend Student model doesn't explicitly store 'active/inactive' status, defaulting to Active */}
+                    {/* The backend Student model doesn't store 'active/inactive' status, let's default to active mune */}
+                    {/* fix later */}
                     <td className="status-green">Active</td>
                     <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
                   </tr>
