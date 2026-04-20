@@ -3,20 +3,20 @@ import { createContext, useContext, useState } from 'react';
 const AuthContext = createContext(null);
 
 const TOKEN_KEY = 'tagakturo_token';
-const USER_KEY  = 'tagakturo_user';
-const ROLE_KEY  = 'tagakturo_role';
+const USER_KEY = 'tagakturo_user';
+const ROLE_KEY = 'tagakturo_role';
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [user, setUser]   = useState(() => {
+  const [user, setUser] = useState(() => {
     const raw = localStorage.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
   });
-  const [role, setRole]   = useState(() => localStorage.getItem(ROLE_KEY));
+  const [role, setRole] = useState(() => localStorage.getItem(ROLE_KEY));
   const [loading, setLoading] = useState(false);
 
   const isAdmin = role === 'ROLE_ADMIN';
-  const isCced  = role === 'ROLE_CCED';
+  const isCced = role === 'ROLE_CCED';
 
   const isAuthenticated = !!token;
 
@@ -36,10 +36,16 @@ export function AuthProvider({ children }) {
       }
 
       const data = await res.json();
+      const userName = data.user?.name || '';
+
+      if (!userName.includes('Admin')) {
+        throw new Error('Access denied. Only those with "Admin" in their name can login.');
+      }
+
       const roles = data.roles || [];
 
       const isAdminUser = roles.includes('ROLE_ADMIN');
-      const isCcedUser  = roles.includes('ROLE_CCED');
+      const isCcedUser = roles.includes('ROLE_CCED');
 
       if (!isAdminUser && !isCcedUser) {
         throw new Error('Access denied. Admin or CCED privileges required.');
