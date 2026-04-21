@@ -20,6 +20,7 @@ public class Tutor {
     private String email;
 
     private String phoneNumber;
+    private String courseProgram;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
@@ -30,11 +31,12 @@ public class Tutor {
     public Tutor() {
     }
 
-    public Tutor(String name, String tutorId, String email, String phoneNumber) {
+    public Tutor(String name, String tutorId, String email, String phoneNumber, String courseProgram) {
         this.name = name;
         this.tutorId = tutorId;
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.courseProgram = courseProgram;
     }
 
     // Getters and Setters
@@ -76,6 +78,14 @@ public class Tutor {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getCourseProgram() {
+        return courseProgram;
+    }
+
+    public void setCourseProgram(String courseProgram) {
+        this.courseProgram = courseProgram;
     }
 
     public User getUser() {
