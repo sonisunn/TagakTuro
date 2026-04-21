@@ -91,6 +91,7 @@ public class TutorApplicationService {
         newTutor.setName(request.getName());
         newTutor.setEmail(request.getEmail());
         newTutor.setPhoneNumber(request.getPhoneNumber());
+        newTutor.setCourseProgram(request.getCourseProgram());
         // Generate a unique tutorId, for example, using UUID
         newTutor.setTutorId(UUID.randomUUID().toString());
         tutorRepository.save(newTutor);
