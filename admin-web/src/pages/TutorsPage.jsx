@@ -55,6 +55,9 @@ export default function TutorsPage() {
                 <th>Tutor ID</th>
                 <th>Name</th>
                 <th>Program / Specialization</th>
+                <th>Sessions Done</th>
+                <th>Total Hours</th>
+                <th>Rating</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
@@ -62,11 +65,11 @@ export default function TutorsPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>Loading tutors...</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>Loading tutors...</td>
                 </tr>
               ) : tutors.length === 0 ? (
                 <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px' }}>No tutors found.</td>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No tutors found.</td>
                 </tr>
               ) : (
                 tutors.map((t, idx) => (
@@ -74,6 +77,9 @@ export default function TutorsPage() {
                     <td>{t.tutorId}</td>
                     <td>{t.name}</td>
                     <td>{t.courseProgram || 'N/A'}</td>
+                    <td>{t.sessionsDone ?? 'N/A'}</td>
+                    <td>{t.totalHours ?? 'N/A'}</td>
+                    <td>{t.rating ?? 'N/A'}</td>
                     {/* The backend Tutor model doesn't store 'active/inactive' status, let's default to active for now */}
                     <td className="status-green">Active</td>
                     <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
