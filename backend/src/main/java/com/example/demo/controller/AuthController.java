@@ -41,7 +41,14 @@ public class AuthController {
 
     // login endpoint (accepts JSON body: { "email": "..", "password": ".." })
     @PostMapping("/login")
-    public LoginResponse loginUser(@RequestBody LoginRequest request) {
-        return authService.loginUser(request);
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
+        try {
+            LoginResponse response = authService.loginUser(request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(java.util.Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(java.util.Map.of("error", "An unexpected error occurred"));
+        }
     }
 }
