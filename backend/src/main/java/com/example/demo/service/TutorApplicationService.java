@@ -28,19 +28,22 @@ public class TutorApplicationService {
     private final UserRepository userRepository;
     private final TutorRepository tutorRepository;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public TutorApplicationService(TutorApplicationRepository tutorApplicationRepository,
             BCryptPasswordEncoder passwordEncoder,
             FileStorageService fileStorageService,
             UserRepository userRepository,
             TutorRepository tutorRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            EmailService emailService) {
         this.tutorApplicationRepository = tutorApplicationRepository;
         this.passwordEncoder = passwordEncoder;
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
         this.tutorRepository = tutorRepository;
         this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     public TutorApplication apply(TutorApplicationRequest request, MultipartFile reportOfGrades,
@@ -73,30 +76,7 @@ public class TutorApplicationService {
             application.setCertificatesPath(certificatesPath);
         }
 
-        TutorApplication savedApplication = tutorApplicationRepository.save(application);
-
-        // Create a new User for the tutor
-        User newUser = new User();
-        newUser.setName(request.getName());
-        newUser.setStudentId(request.getStudentId());
-        newUser.setCourseProgram(request.getCourseProgram());
-        newUser.setEmail(request.getEmail());
-        newUser.setPhoneNumber(request.getPhoneNumber());
-        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-        newUser.setRoles(Collections.singleton("ROLE_TUTOR"));
-        userRepository.save(newUser);
-
-        // Create a new Tutor profile
-        Tutor newTutor = new Tutor();
-        newTutor.setName(request.getName());
-        newTutor.setEmail(request.getEmail());
-        newTutor.setPhoneNumber(request.getPhoneNumber());
-        newTutor.setCourseProgram(request.getCourseProgram());
-        // Generate a unique tutorId, for example, using UUID
-        newTutor.setTutorId(UUID.randomUUID().toString());
-        tutorRepository.save(newTutor);
-
-        return savedApplication;
+        return tutorApplicationRepository.save(application);
     }
 
     public TutorApplication getApplicationByEmail(String email) {
@@ -108,13 +88,52 @@ public class TutorApplicationService {
         return tutorApplicationRepository.findAll();
     }
 
+    private void createTutorAccounts(TutorApplication application) {
+        // Check if user already exists (safety check)
+        if (userRepository.findByEmail(application.getEmail()).isPresent()) {
+            return;
+        }
+
+        // Create a new User for the tutor
+        User newUser = new User();
+        newUser.setName(application.getName());
+        newUser.setStudentId(application.getStudentId());
+        newUser.setCourseProgram(application.getCourseProgram());
+        newUser.setEmail(application.getEmail());
+        newUser.setPhoneNumber(application.getPhoneNumber());
+        newUser.setPassword(application.getPassword()); // Already hashed in apply()
+        newUser.setRoles(Collections.singleton("ROLE_TUTOR"));
+        User savedUser = userRepository.save(newUser);
+
+        // Create a new Tutor profile
+        Tutor newTutor = new Tutor();
+        newTutor.setName(application.getName());
+        newTutor.setEmail(application.getEmail());
+        newTutor.setPhoneNumber(application.getPhoneNumber());
+        newTutor.setCourseProgram(application.getCourseProgram());
+        // Use student ID as tutor ID
+        newTutor.setTutorId(application.getStudentId());
+        newTutor.setUser(savedUser);
+        tutorRepository.save(newTutor);
+    }
+
     public void acceptApplication(Long applicationId) {
         @SuppressWarnings("null")
         Optional<TutorApplication> applicationOpt = tutorApplicationRepository.findById(applicationId);
         if (applicationOpt.isPresent()) {
             TutorApplication application = applicationOpt.get();
+            if ("APPROVED".equals(application.getStatus())) {
+                return;
+            }
+            
             application.setStatus("APPROVED");
             tutorApplicationRepository.save(application);
+
+            // Create User and Tutor accounts only now!
+            createTutorAccounts(application);
+
+            // Send Email Notification
+            emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
 
             // Send notification to the applicant's User account
             try {
@@ -127,7 +146,6 @@ public class TutorApplicationService {
                     );
                 }
             } catch (Exception e) {
-                // Don't fail the acceptance if notification fails
                 System.err.println("Failed to send approval notification: " + e.getMessage());
             }
         } else {
@@ -143,19 +161,11 @@ public class TutorApplicationService {
             application.setStatus("REJECTED");
             tutorApplicationRepository.save(application);
 
-            // Send notification to the applicant's User account
-            try {
-                Optional<User> userOpt = userRepository.findByEmail(application.getEmail());
-                if (userOpt.isPresent()) {
-                    notificationService.createNotification(
-                            userOpt.get(),
-                            "Application Rejected",
-                            "We regret to inform you that your tutor application has been rejected. Thank you for your interest."
-                    );
-                }
-            } catch (Exception e) {
-                System.err.println("Failed to send rejection notification: " + e.getMessage());
-            }
+            // Send Email Notification
+            emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "REJECTED");
+
+            // Send notification logic would fail here because there's no User account yet
+            // But we can record the rejection status for future reference
         } else {
             throw new IllegalArgumentException("Application not found with id: " + applicationId);
         }
@@ -167,8 +177,13 @@ public class TutorApplicationService {
             if (!"APPROVED".equals(application.getStatus())) {
                 application.setStatus("APPROVED");
                 tutorApplicationRepository.save(application);
+                
+                // Create accounts for batch approval
+                createTutorAccounts(application);
 
-                // Send notification to each applicant's User account
+                // Send Email Notification
+                emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
+
                 try {
                     Optional<User> userOpt = userRepository.findByEmail(application.getEmail());
                     if (userOpt.isPresent()) {
