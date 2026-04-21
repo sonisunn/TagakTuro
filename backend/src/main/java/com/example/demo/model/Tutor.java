@@ -1,9 +1,6 @@
 package com.example.demo.model;
 
-<<<<<<< HEAD
 import com.fasterxml.jackson.annotation.JsonIgnore;
-=======
->>>>>>> V3.23.2026
 import jakarta.persistence.*;
 
 @Entity
@@ -23,24 +20,29 @@ public class Tutor {
     private String email;
 
     private String phoneNumber;
+    private String courseProgram;
+    private Integer sessionsDone = 0;
+    private Double totalHours = 0.0;
+    private Double rating = 0.0;
 
-<<<<<<< HEAD
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
     private User user;
 
-=======
->>>>>>> V3.23.2026
     // Constructors
     public Tutor() {
     }
 
-    public Tutor(String name, String tutorId, String email, String phoneNumber) {
+    public Tutor(String name, String tutorId, String email, String phoneNumber, String courseProgram) {
         this.name = name;
         this.tutorId = tutorId;
         this.email = email;
         this.phoneNumber = phoneNumber;
+        this.courseProgram = courseProgram;
+        this.sessionsDone = 0;
+        this.totalHours = 0.0;
+        this.rating = 0.0;
     }
 
     // Getters and Setters
@@ -83,7 +85,38 @@ public class Tutor {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-<<<<<<< HEAD
+
+    public String getCourseProgram() {
+        return courseProgram;
+    }
+
+    public void setCourseProgram(String courseProgram) {
+        this.courseProgram = courseProgram;
+    }
+
+    public Integer getSessionsDone() {
+        return sessionsDone;
+    }
+
+    public void setSessionsDone(Integer sessionsDone) {
+        this.sessionsDone = sessionsDone;
+    }
+
+    public Double getTotalHours() {
+        return totalHours;
+    }
+
+    public void setTotalHours(Double totalHours) {
+        this.totalHours = totalHours;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
 
     public User getUser() {
         return user;
@@ -92,6 +125,4 @@ public class Tutor {
     public void setUser(User user) {
         this.user = user;
     }
-=======
->>>>>>> V3.23.2026
 }

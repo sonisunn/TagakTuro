@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { applyAsTutor } from '../src/api/tutor';
 import { AxiosError } from 'axios'
 import { BlurView } from 'expo-blur';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 
 export default function ApplyTutorPage() {
@@ -35,8 +35,6 @@ export default function ApplyTutorPage() {
   // Step 2 - Documents
   const [timeAvailableStart, setTimeAvailableStart] = useState<Date | null>(null);
   const [timeAvailableEnd, setTimeAvailableEnd] = useState<Date | null>(null);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [reportOfGrades, setReportOfGrades] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [certificates, setCertificates] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
   const [experience, setExperience] = useState('');
@@ -109,7 +107,7 @@ export default function ApplyTutorPage() {
   };
 
   const handleSubmit = async () => {
-    if (!timeAvailableStart || !timeAvailableEnd || !reportOfGrades || !experience) {
+    if (!reportOfGrades || !experience) {
       setError(true);
       return;
     }
@@ -129,8 +127,13 @@ export default function ApplyTutorPage() {
     formData.append('phoneNumber', phoneNumber);
     formData.append('password', password);
     formData.append('experience', experience);
-    formData.append('timeAvailableStart', timeAvailableStart.toTimeString().split(' ')[0]); // HH:mm:ss
-    formData.append('timeAvailableEnd', timeAvailableEnd.toTimeString().split(' ')[0]); // HH:mm:ss
+    
+    // Set default values for backend non-nullable fields
+    const startStr = timeAvailableStart ? timeAvailableStart.toTimeString().split(' ')[0] : "00:00:00";
+    const endStr = timeAvailableEnd ? timeAvailableEnd.toTimeString().split(' ')[0] : "23:59:59";
+    
+    formData.append('timeAvailableStart', startStr);
+    formData.append('timeAvailableEnd', endStr);
 
     if (reportOfGrades) {
       formData.append('reportOfGrades', {
@@ -305,101 +308,6 @@ export default function ApplyTutorPage() {
             <>
               <Text style={styles.formTitle}>Upload your documents</Text>
               <Text style={styles.formSubtitle}>To ensure and verify your credibility</Text>
-
-              {/* <View style={styles.inputGroup}>
-                <Text style={styles.label}>Time Available</Text>
-                <View style={styles.timeInputContainer}>
-                  <TouchableOpacity
-                    style={[styles.timeInput, error && !timeAvailableStart && styles.inputError]}
-                    onPress={() => setShowStartTimePicker(true)}
-                  >
-                    <Text style={{ color: timeAvailableStart ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
-                      {timeAvailableStart ? timeAvailableStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Start Time'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.timeInput, error && !timeAvailableEnd && styles.inputError]}
-                    onPress={() => setShowEndTimePicker(true)}
-                  >
-                    <Text style={{ color: timeAvailableEnd ? '#2B74B4' : '#95BADA', fontSize: 12 }}>
-                      {timeAvailableEnd ? timeAvailableEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'End Time'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {showStartTimePicker && (
-                  Platform.OS === 'ios' ? (
-                    <Modal transparent={true} animationType="fade">
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                          <DateTimePicker
-                            value={timeAvailableStart || new Date()}
-                            mode="time"
-                            display="spinner"
-                            onChange={(event, selected) => {
-                              setShowStartTimePicker(false);
-                              if (event.type === 'set' && selected) setTimeAvailableStart(selected);
-                            }}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowStartTimePicker(false)}
-                            style={styles.modalClose}
-                          >
-                            <Text style={styles.modalCloseText}>Done</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-                  ) : (
-                    <DateTimePicker
-                      value={timeAvailableStart || new Date()}
-                      mode="time"
-                      display="default"
-                      onChange={(event, selected) => {
-                        setShowStartTimePicker(false);
-                        if (event.type === 'set' && selected) setTimeAvailableStart(selected);
-                      }}
-                    />
-                  )
-                )}
-
-                {showEndTimePicker && (
-                  Platform.OS === 'ios' ? (
-                    <Modal transparent={true} animationType="fade">
-                      <View style={styles.modalOverlay}>
-                        <View style={styles.modalContainer}>
-                          <DateTimePicker
-                            value={timeAvailableEnd || new Date()}
-                            mode="time"
-                            display="spinner"
-                            onChange={(event, selected) => {
-                              setShowEndTimePicker(false);
-                              if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
-                            }}
-                          />
-                          <TouchableOpacity
-                            onPress={() => setShowEndTimePicker(false)}
-                            style={styles.modalClose}
-                          >
-                            <Text style={styles.modalCloseText}>Done</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </Modal>
-                  ) : (
-                    <DateTimePicker
-                      value={timeAvailableEnd || new Date()}
-                      mode="time"
-                      display="default"
-                      onChange={(event, selected) => {
-                        setShowEndTimePicker(false);
-                        if (event.type === 'set' && selected) setTimeAvailableEnd(selected);
-                      }}
-                    />
-                  )
-                )}
-              </View> */}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>

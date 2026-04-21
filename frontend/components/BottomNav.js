@@ -24,6 +24,8 @@ export default function BottomNav() {
             key={item.name}
             style={styles.navItem}
             onPress={() => router.push(item.route)}
+            activeOpacity={0.7}
+            disabled={false}
           >
             {isActive && <View style={styles.activeNavBar} />}
             <Ionicons

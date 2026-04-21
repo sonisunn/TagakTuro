@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.service.TutorApplicationService;
 import com.example.demo.model.TutorApplication;
+import com.example.demo.dto.TutorApplicationRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -56,6 +57,16 @@ public class TutorApplicationController {
         try {
             tutorApplicationService.acceptApplication(id);
             return ResponseEntity.ok(Map.of("message", "Application accepted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/applications/{id}/reject")
+    public ResponseEntity<?> rejectApplication(@PathVariable Long id) {
+        try {
+            tutorApplicationService.rejectApplication(id);
+            return ResponseEntity.ok(Map.of("message", "Application rejected successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

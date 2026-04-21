@@ -4,18 +4,33 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "pama_assignments")
+@Table(
+    name = "pama_assignments",
+    indexes = {
+        // MySQL requires an index on FK columns; add them explicitly for join columns.
+        @Index(name = "idx_pama_assignments_tutor_id", columnList = "tutor_id"),
+        @Index(name = "idx_pama_assignments_module_id", columnList = "module_id")
+    }
+)
 public class PAMAAssignment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "tutor_id", nullable = false)
+    @JoinColumn(
+        name = "tutor_id",
+        nullable = false,
+        foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT)
+    )
     private Tutor tutor;
 
     @ManyToOne
-    @JoinColumn(name = "module_id", nullable = false)
+    @JoinColumn(
+        name = "module_id",
+        nullable = false,
+        foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT)
+    )
     private Module module;
 
     @Column(name = "status")

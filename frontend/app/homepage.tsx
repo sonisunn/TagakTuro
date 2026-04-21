@@ -1,5 +1,5 @@
 import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,11 +16,14 @@ import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import BottomNav from '../components/BottomNav';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../src/api/booking';
+import axios from 'axios';
+import { API_BASE_URL } from '../src/api/config';
 
 // TypeScript interfaces
 interface ClassItem {
   id: string;
   tutor: string;
+  tutorUserId?: number;
   subject: string;
   location: string;
   dateTime: string;
@@ -42,6 +45,7 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
   const [pastClasses, setPastClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [showMatchNotification, setShowMatchNotification] = useState<boolean>(false);
   const [matchBooking, setMatchBooking] = useState<ClassItem | null>(null);
   const [showRescheduleNotification, setShowRescheduleNotification] = useState<boolean>(false);
@@ -74,11 +78,16 @@ export default function TagakTuroHomepage() {
     fetchUserData();
   }, []);
 
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       const studentId = await AsyncStorage.getItem('studentId');
       if (studentId) {
         const bookings = await getBookingsByStudentId(studentId);
+        if (!bookings || !Array.isArray(bookings)) {
+          setLoading(false);
+          return;
+        }
+
         const upcoming: ClassItem[] = [];
         const past: ClassItem[] = [];
 
@@ -90,6 +99,7 @@ export default function TagakTuroHomepage() {
           const bookingItem = {
             id: String(booking.id),
             tutor: booking.tutorName || 'Unassigned',
+            tutorUserId: booking.tutorUserId,
             subject: booking.subject || 'N/A',
             location: (booking.modality === 'In-Person' && booking.venue) ? booking.venue : booking.modality || 'N/A',
             dateTime: formatBookingDateTime(booking.bookingDateTime),
@@ -119,28 +129,69 @@ export default function TagakTuroHomepage() {
         setUpcomingClasses(upcoming);
         setPastClasses(past);
 
-        if (newlyConfirmedBooking !== null && !loading) {
+        // Only show notifications on first load
+        if (newlyConfirmedBooking !== null && loading) {
           setMatchBooking(newlyConfirmedBooking);
           setShowMatchNotification(true);
         }
 
-        if (newlyRescheduledBooking && !loading) {
+        if (newlyRescheduledBooking && loading) {
           setRescheduledBooking(newlyRescheduledBooking);
           setShowRescheduleNotification(true);
         }
       }
-    } catch {
-      console.error('Error fetching bookings');
+
+      // Also fetch unread notifications count
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (userDataString) {
+        const user = JSON.parse(userDataString);
+        try {
+          const res = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
+          const unread = res.data.filter((n: any) => !n.read).length;
+          setUnreadCount(unread);
+        } catch (e) {
+          console.warn("Failed to fetch notification count", e);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchBookings();
-    const interval = setInterval(fetchBookings, 5000);
-    return () => clearInterval(interval);
-  }, []); // Dependencies omitted to prevent re-creation of interval
+    let isActive = true;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    const loadBookings = async () => {
+      if (!isActive) return;
+      await fetchBookings();
+      retryCount = 0; // Reset retry count on success
+    };
+
+    loadBookings();
+
+    // Retry on failure with exponential backoff
+    const handleError = async () => {
+      if (retryCount < maxRetries && isActive) {
+        retryCount++;
+        const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
+        setTimeout(loadBookings, delay);
+      }
+    };
+
+    // Lighter polling: only every 30 seconds instead of 5
+    const interval = setInterval(() => {
+      if (isActive) loadBookings().catch(handleError);
+    }, 30000);
+
+    return () => {
+      isActive = false;
+      clearInterval(interval);
+    };
+  }, [fetchBookings]);
 
   const formatBookingDateTime = (dateTimeString: string) => {
     try {
@@ -375,9 +426,11 @@ export default function TagakTuroHomepage() {
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.notificationContainer} onPress={() => router.push('/notification')}>
               <Ionicons name="notifications" size={32} color="#95CDF2" />
-              <View style={styles.notificationBadge}>
-                <Text style={styles.badgeText}>2</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -465,26 +518,42 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{selectedClass.subject}</Text>
                 <Text style={styles.modalCaption}>{selectedClass.location}</Text>
                 <Text style={styles.modalCaption}>{formatStartTime(selectedClass.rawDate)}</Text>
-                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{color: '#95CDF2', fontWeight: '400'}}>{selectedClass.status}</Text></Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedClass.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
-                  <TouchableOpacity style={styles.modalChatButton}>
-                    <Text style={styles.modalBtnTextWhite}>Chat with your Tutor</Text>
-                  </TouchableOpacity>
+                  {selectedClass.status !== 'COMPLETED' && selectedClass.status !== 'CANCELLED' && selectedClass.status !== 'DECLINED' && (
+                    <>
+                      <TouchableOpacity style={styles.modalChatButton}>
+                        <Text style={styles.modalBtnTextWhite}>Chat with your Tutor</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.modalRescheduleButton}
-                    onPress={() => setModalView('reschedule')}
-                  >
-                    <Text style={styles.modalBtnTextWhite}>Reschedule</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.modalRescheduleButton}
+                        onPress={() => setModalView('reschedule')}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Reschedule</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.modalCancelButton}
-                    onPress={() => setModalView('cancel')}
-                  >
-                    <Text style={styles.modalBtnTextWhite}>Cancel Session</Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.modalCancelButton}
+                        onPress={() => setModalView('cancel')}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Cancel Session</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {selectedClass.status === 'COMPLETED' ? (
+                    <TouchableOpacity
+                      style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
+                      onPress={() => {
+                        handleCloseModal();
+                        router.push(`/tutor-feedback?userId=${selectedClass.tutorUserId}&name=${selectedClass.tutor}&bookingId=${selectedClass.id}`);
+                      }}
+                    >
+                      <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
+                    </TouchableOpacity>
+                  ) : null}
 
                   <TouchableOpacity style={styles.modalReturnButton} onPress={handleCloseModal}>
                     <Text style={styles.modalBtnTextBlue}>Return</Text>
@@ -561,7 +630,7 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 3: Reschedule Success */}
             {modalView === 'success' && (
-              <View style={{alignItems: 'center', paddingVertical: 20}}>
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Text style={styles.successTitle}>Successfully Rescheduled!</Text>
                 <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
 
@@ -573,8 +642,8 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 4: Cancel Confirmation */}
             {modalView === 'cancel' && (
-              <View style={{alignItems: 'center'}}>
-                <Text style={[styles.cancelHeadline, {marginBottom: 20, textAlign: 'center'}]}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[styles.cancelHeadline, { marginBottom: 20, textAlign: 'center' }]}>
                   Are you sure you want to cancel?
                 </Text>
 
@@ -602,7 +671,7 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 5: Cancel Success */}
             {modalView === 'cancelSuccess' && (
-              <View style={{alignItems: 'center', paddingVertical: 20}}>
+              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Text style={styles.successTitle}>Session Cancelled</Text>
                 <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
 

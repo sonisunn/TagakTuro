@@ -6,8 +6,10 @@ import com.example.demo.dto.SendMessageRequest;
 import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
 import com.example.demo.model.Tutor;
-import com.example.demo.repository.StudentRepository;
+import com.example.demo.model.User;
 import com.example.demo.repository.TutorRepository;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,56 +22,99 @@ public class AutomatedMessageService {
     private ChatService chatService;
 
     @Autowired
-    private StudentRepository studentRepository;
+    private TutorRepository tutorRepository;
 
     @Autowired
-    private TutorRepository tutorRepository;
+    private BookingRepository bookingRepository;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      * Send automated greeting message from tutor to student when matched/booked
      * This message introduces the tutor, subject, modality, and diagnostic test
      */
-    public MessageDTO sendTutorGreetingMessage(Booking booking) {
+    /**
+     * Resolve User for a Student - falls back to email lookup if not linked
+     */
+    private User resolveUserForStudent(Student student) {
+        if (student == null) return null;
+        if (student.getUser() != null) return student.getUser();
+        // Fallback: find User by email for existing unlinked records
+        return userRepository.findByEmail(student.getEmail()).orElse(null);
+    }
+
+    /**
+     * Resolve User for a Tutor - falls back to email lookup if not linked
+     */
+    private User resolveUserForTutor(Tutor tutor) {
+        if (tutor == null) return null;
+        if (tutor.getUser() != null) return tutor.getUser();
+        // Fallback: find User by email for existing unlinked records
+        return userRepository.findByEmail(tutor.getEmail()).orElse(null);
+    }
+
+    public MessageDTO sendTutorGreetingMessage(Long bookingId) {
         try {
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+            
             // Get student and tutor information
             Student student = booking.getStudent();
-            if (student == null || student.getUser() == null) {
+            User studentUser = resolveUserForStudent(student);
+            if (student == null || studentUser == null) {
                 throw new RuntimeException("Student not found or not linked to user");
             }
 
-            // Get tutor by ID (assuming booking has tutor_name or tutorId)
-            // For now, we'll need to enhance this based on your Booking model
             String tutorName = booking.getTutorName() != null ? booking.getTutorName() : "Your Tutor";
             String subject = booking.getSubject() != null ? booking.getSubject() : "Your Subject";
             String modality = booking.getModality() != null ? booking.getModality() : "Online";
 
-            // Build the automated greeting message
             String greetingMessage = buildTutorGreetingMessage(tutorName, subject, modality);
 
-            // Get or create conversation
-            // We need student and tutor user IDs - we'll try to find tutor by name or from booking
             Tutor tutorEntity = findTutorForBooking(booking);
+            User tutorUser = resolveUserForTutor(tutorEntity);
             
-            if (tutorEntity == null || tutorEntity.getUser() == null) {
-                throw new RuntimeException("Tutor not found or not linked to user");
+            if (tutorEntity == null || tutorUser == null) {
+                // Even if tutor can't be found, still create notification for student
+                notificationService.createNotification(
+                        studentUser,
+                        "Booking Confirmed!",
+                        "Your booking for " + subject + " has been confirmed. A tutor has been assigned!"
+                );
+                throw new RuntimeException("Tutor not found or not linked to user (student notification sent)");
             }
 
             ConversationDTO conversation = chatService.getOrCreateConversation(
-                    student.getUser().getId(),
-                    tutorEntity.getUser().getId()
+                    studentUser.getId(),
+                    tutorUser.getId()
             );
 
-            // Create the greeting message request
             SendMessageRequest greetingRequest = new SendMessageRequest();
             greetingRequest.setConversationId(conversation.getId());
             greetingRequest.setContent(greetingMessage);
             greetingRequest.setMessageType("SYSTEM");
 
-            // Send the message from tutor
             MessageDTO messageDTO = chatService.sendMessage(
                     conversation.getId(),
-                    tutorEntity.getUser().getId(),
+                    tutorUser.getId(),
                     greetingRequest
+            );
+
+            // Create persistent Notifications
+            notificationService.createNotification(
+                    studentUser,
+                    "Welcome to TagakTuro!",
+                    "You have a matched tutor for " + subject + "! Check your messages to start."
+            );
+
+            notificationService.createNotification(
+                    tutorUser,
+                    "Booking Accepted!",
+                    "You have successfully matched with " + student.getName() + " for " + subject + "."
             );
 
             return messageDTO;
@@ -93,29 +138,40 @@ public class AutomatedMessageService {
     /**
      * Send diagnostic test instruction message
      */
-    public MessageDTO sendDiagnosticTestMessage(Booking booking) {
+    public MessageDTO sendDiagnosticTestMessage(Long bookingId) {
         try {
+            Booking booking = bookingRepository.findById(bookingId)
+                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
+
             Student student = booking.getStudent();
-            if (student == null || student.getUser() == null) {
+            User studentUser = resolveUserForStudent(student);
+            if (student == null || studentUser == null) {
                 throw new RuntimeException("Student not found or not linked to user");
             }
 
             Tutor tutorEntity = findTutorForBooking(booking);
-            if (tutorEntity == null || tutorEntity.getUser() == null) {
+            User tutorUser = resolveUserForTutor(tutorEntity);
+            if (tutorEntity == null || tutorUser == null) {
                 throw new RuntimeException("Tutor not found or not linked to user");
             }
 
             ConversationDTO conversation = chatService.getOrCreateConversation(
-                    student.getUser().getId(),
-                    tutorEntity.getUser().getId()
+                    studentUser.getId(),
+                    tutorUser.getId()
             );
 
             String diagnosticMessage = "Please complete the Diagnostic Test to help us assess your current knowledge level in " 
                     + booking.getSubject() + ". This will help me tailor the lessons to your needs.";
 
+            notificationService.createNotification(
+                    studentUser,
+                    "Pending Diagnostic Test",
+                    "Your diagnostic test for " + booking.getSubject() + " is ready. Please complete it."
+            );
+
             return sendSystemMessage(
                     conversation.getId(),
-                    tutorEntity.getUser().getId(),
+                    tutorUser.getId(),
                     diagnosticMessage
             );
         } catch (Exception e) {

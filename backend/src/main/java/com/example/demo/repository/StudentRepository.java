@@ -14,12 +14,9 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
     // Find student by studentId
     Optional<Student> findByStudentId(String studentId);
 
-<<<<<<< HEAD
     // Find student by user ID (for chat integration)
     Optional<Student> findByUserId(Long userId);
 
-=======
->>>>>>> V3.23.2026
     // Check if email already exists
     boolean existsByEmail(String email);
 

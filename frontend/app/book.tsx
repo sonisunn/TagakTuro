@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  Platform, Alert, Modal
+  Alert, Modal
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import DropDownPicker from 'react-native-dropdown-picker';

@@ -1,17 +1,14 @@
 package com.example.demo.service;
 
-import com.example.demo.model.User;
-import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-<<<<<<< HEAD
-=======
-import java.util.Optional;
-import org.springframework.stereotype.Service;
->>>>>>> V3.23.2026
+
+import com.example.demo.model.User;
+import com.example.demo.repository.UserRepository;
 
 @Service
+@SuppressWarnings("all")
 public class UserService {
 
     @Autowired
@@ -32,30 +29,46 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Autowired
+    private com.example.demo.repository.TutorApplicationRepository tutorApplicationRepository;
+
     // login user
     public User loginUser(String email, String password) {
-<<<<<<< HEAD
-        User existingUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        java.util.Optional<User> userOpt = userRepository.findByEmail(email);
 
-        if (!passwordEncoder.matches(password, existingUser.getPassword())) {
-=======
-        System.out.println(">>> ATTEMPTING LOGIN FOR EMAIL: " + email);
-        System.out.println(">>> USERS IN DB: " + userRepository.findAll().stream().map(User::getEmail).toList());
-        
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
-            System.out.println(">>> ERROR: User not found for email: " + email);
-            throw new RuntimeException("User not found");
-        }
-        User existingUser = optionalUser.get();
-
-        if (!passwordEncoder.matches(password, existingUser.getPassword())) {
-            System.out.println(">>> ERROR: Password mismatch for email: " + email);
->>>>>>> V3.23.2026
-            throw new RuntimeException("Invalid credentials");
+        if (userOpt.isEmpty()) {
+            // If user not found, check if they are a pending or rejected tutor applicant
+            java.util.Optional<com.example.demo.model.TutorApplication> applicationOpt = tutorApplicationRepository.findByEmail(email);
+            if (applicationOpt.isPresent()) {
+                String status = applicationOpt.get().getStatus();
+                if ("PENDING".equals(status)) {
+                    throw new IllegalArgumentException("Your tutor application is still PENDING review. Please wait for an administrator to approve your account.");
+                } else if ("REJECTED".equals(status)) {
+                    throw new IllegalArgumentException("Your tutor application has been REJECTED. Please check your email for details.");
+                }
+            }
+            throw new IllegalArgumentException("User not found with email: " + email);
         }
 
-        return existingUser;
+        User user = userOpt.get();
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        return user;
+    }
+
+    public User updateUser(Long id, User incoming) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            return null;
+        }
+
+        if (incoming.getName() != null) user.setName(incoming.getName());
+        if (incoming.getEmail() != null) user.setEmail(incoming.getEmail());
+        if (incoming.getPhoneNumber() != null) user.setPhoneNumber(incoming.getPhoneNumber());
+        if (incoming.getCourseProgram() != null) user.setCourseProgram(incoming.getCourseProgram());
+
+        return userRepository.save(user);
     }
 }

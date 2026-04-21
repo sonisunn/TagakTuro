@@ -1,8 +1,6 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.MessageDTO;
-import com.example.demo.model.Booking;
-import com.example.demo.repository.BookingRepository;
 import com.example.demo.service.AutomatedMessageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,9 +18,6 @@ public class AutomatedMessageController {
     @Autowired
     private AutomatedMessageService automatedMessageService;
 
-    @Autowired
-    private BookingRepository bookingRepository;
-
     /**
      * Send automated tutor greeting when student is matched with tutor
      * POST /api/messages/automated/tutor-greeting/{bookingId}
@@ -30,10 +25,7 @@ public class AutomatedMessageController {
     @PostMapping("/tutor-greeting/{bookingId}")
     public ResponseEntity<?> sendTutorGreeting(@PathVariable Long bookingId) {
         try {
-            Booking booking = bookingRepository.findById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
-
-            MessageDTO greetingMessage = automatedMessageService.sendTutorGreetingMessage(booking);
+            MessageDTO greetingMessage = automatedMessageService.sendTutorGreetingMessage(bookingId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
@@ -58,10 +50,7 @@ public class AutomatedMessageController {
     @PostMapping("/diagnostic-test/{bookingId}")
     public ResponseEntity<?> sendDiagnosticTest(@PathVariable Long bookingId) {
         try {
-            Booking booking = bookingRepository.findById(bookingId)
-                    .orElseThrow(() -> new RuntimeException("Booking not found: " + bookingId));
-
-            MessageDTO diagnosticMessage = automatedMessageService.sendDiagnosticTestMessage(booking);
+            MessageDTO diagnosticMessage = automatedMessageService.sendDiagnosticTestMessage(bookingId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
@@ -80,7 +69,8 @@ public class AutomatedMessageController {
 
     /**
      * Send study readiness message from tutor
-     * POST /api/messages/automated/study-readiness?conversationId=1&tutorUserId=2&subject=Math
+     * POST
+     * /api/messages/automated/study-readiness?conversationId=1&tutorUserId=2&subject=Math
      */
     @PostMapping("/study-readiness")
     public ResponseEntity<?> sendStudyReadiness(
@@ -140,6 +130,7 @@ public class AutomatedMessageController {
      */
     @GetMapping("/health")
     public ResponseEntity<?> health() {
-        return ResponseEntity.ok(Map.of("status", "Automated message service is running", "timestamp", System.currentTimeMillis()));
+        return ResponseEntity
+                .ok(Map.of("status", "Automated message service is running", "timestamp", System.currentTimeMillis()));
     }
 }

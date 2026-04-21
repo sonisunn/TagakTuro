@@ -8,6 +8,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
+@SuppressWarnings("all")
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
@@ -29,7 +30,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // Register the WebSocket endpoint
         // Client will connect to ws://localhost:8080/ws
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*")  // Allow all origins (configure as needed)
-                .withSockJS();  // Enable SockJS fallback for older browsers
+                .setAllowedOrigins("*") // Allow all origins (configure as needed)
+                .withSockJS(); // Enable SockJS fallback for older browsers
     }
 }

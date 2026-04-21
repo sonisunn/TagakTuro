@@ -18,10 +18,13 @@ export default function TagakTuroLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [customError, setCustomError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
 
   const handleSubmit = () => {
     setError(false);
+    setCustomError('');
     setSubmitting(true);
     import('../src/api/auth').then(({ login }) => {
       login(email, password)
@@ -61,13 +64,17 @@ export default function TagakTuroLogin() {
         })
         .catch((err) => {
           setSubmitting(false);
-          console.warn('Login error', err?.response?.data || err.message || err);
-          setError(true);
+          const errorMsg = err?.response?.data?.error || err.message || 'Login failed';
+          console.warn('Login error', errorMsg);
+          
+          if (errorMsg.includes('PENDING') || errorMsg.includes('REJECTED')) {
+            setCustomError(errorMsg);
+          } else {
+            setError(true);
+          }
         });
     });
   };
-
-  const [submitting, setSubmitting] = React.useState(false);
 
   const handleSkip = () => {
     router.push('/homepage');
@@ -108,7 +115,7 @@ export default function TagakTuroLogin() {
               <TextInput
                 style={[
                   styles.passwordInput,
-                  error && !password && styles.inputError
+                  (error || customError) && !password && styles.inputError
                 ]}
                 placeholder="ILOVEYOU123"
                 value={password}
@@ -134,6 +141,12 @@ export default function TagakTuroLogin() {
           {error && (
             <Text style={styles.errorText}>
               The Email or Password you submitted is incorrect.
+            </Text>
+          )}
+
+          {customError !== '' && (
+            <Text style={styles.errorText}>
+              {customError}
             </Text>
           )}
 
@@ -295,5 +308,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#2B74B4",
     fontWeight: '600',
+  },
+  inputError: {
+    borderColor: '#FF0000',
   },
 });

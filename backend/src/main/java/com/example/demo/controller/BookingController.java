@@ -1,14 +1,10 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Booking;
-<<<<<<< HEAD
 import com.example.demo.service.AutomatedMessageService;
 import com.example.demo.service.BookingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-=======
-import com.example.demo.service.BookingService;
->>>>>>> V3.23.2026
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -16,10 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-<<<<<<< HEAD
 import java.util.HashMap;
-=======
->>>>>>> V3.23.2026
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +21,6 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class BookingController {
 
-<<<<<<< HEAD
     private static final Logger logger = LoggerFactory.getLogger(BookingController.class);
 
     @Autowired
@@ -37,11 +29,6 @@ public class BookingController {
     @Autowired
     private AutomatedMessageService automatedMessageService;
 
-=======
-    @Autowired
-    private BookingService bookingService;
-
->>>>>>> V3.23.2026
     @GetMapping
     public ResponseEntity<List<Booking>> getAllBookings() {
         return ResponseEntity.ok(bookingService.getAllBookings());
@@ -98,16 +85,6 @@ public class BookingController {
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
         try {
             Booking created = bookingService.createBooking(booking);
-<<<<<<< HEAD
-            
-            // Send automated tutor greeting when booking is created
-            try {
-                automatedMessageService.sendTutorGreetingMessage(created);
-                logger.info("Automated tutor greeting sent for booking ID: " + created.getId());
-            } catch (Exception e) {
-                logger.warn("Failed to send automated greeting for booking ID " + created.getId() + ": " + e.getMessage());
-                // Don't fail the booking creation if message sending fails
-            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("booking", created);
@@ -115,9 +92,6 @@ public class BookingController {
             response.put("status", "success");
             
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-=======
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
->>>>>>> V3.23.2026
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         }
@@ -141,18 +115,7 @@ public class BookingController {
 
         try {
             Booking.BookingStatus status = Booking.BookingStatus.valueOf(statusStr.toUpperCase());
-<<<<<<< HEAD
             Booking updatedBooking = bookingService.updateBookingStatus(id, status);
-            
-            // Send automated messages based on status change
-            if (status == Booking.BookingStatus.CONFIRMED) {
-                try {
-                    automatedMessageService.sendTutorGreetingMessage(updatedBooking);
-                    logger.info("Automated tutor greeting sent for confirmed booking ID: " + id);
-                } catch (Exception e) {
-                    logger.warn("Failed to send greeting for booking ID " + id + ": " + e.getMessage());
-                }
-            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("booking", updatedBooking);
@@ -165,9 +128,6 @@ public class BookingController {
             }
             
             return ResponseEntity.ok(response);
-=======
-            return ResponseEntity.ok(bookingService.updateBookingStatus(id, status));
->>>>>>> V3.23.2026
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "Invalid status: " + statusStr));
@@ -185,7 +145,6 @@ public class BookingController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
-<<<<<<< HEAD
 
     /**
      * Confirm a booking and send automated tutor greeting message to student
@@ -194,20 +153,7 @@ public class BookingController {
     @PostMapping("/{id}/confirm")
     public ResponseEntity<?> confirmBooking(@PathVariable Long id) {
         try {
-            Booking booking = bookingService.getBookingById(id);
-            
-            // Update status to CONFIRMED
-            booking.setStatus(Booking.BookingStatus.CONFIRMED);
-            Booking confirmedBooking = bookingService.updateBooking(id, booking);
-            
-            // Send automated tutor greeting message
-            try {
-                automatedMessageService.sendTutorGreetingMessage(confirmedBooking);
-                logger.info("Automated tutor greeting sent for confirmed booking ID: " + id);
-            } catch (Exception e) {
-                logger.warn("Failed to send greeting for booking ID " + id + ": " + e.getMessage());
-                // Don't fail the confirmation if message sending fails
-            }
+            Booking confirmedBooking = bookingService.confirmBooking(id);
             
             Map<String, Object> response = new HashMap<>();
             response.put("booking", confirmedBooking);
@@ -228,8 +174,7 @@ public class BookingController {
     @PostMapping("/{id}/send-diagnostic")
     public ResponseEntity<?> sendDiagnosticTest(@PathVariable Long id) {
         try {
-            Booking booking = bookingService.getBookingById(id);
-            automatedMessageService.sendDiagnosticTestMessage(booking);
+            bookingService.sendDiagnosticTest(id);
             
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
@@ -252,13 +197,6 @@ public class BookingController {
     @PostMapping("/{id}/ready-for-study")
     public ResponseEntity<?> readyForStudy(@PathVariable Long id, @RequestBody(required = false) Map<String, String> request) {
         try {
-            Booking booking = bookingService.getBookingById(id);
-            
-            if (booking.getStudent() == null || booking.getStudent().getUser() == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(Map.of("error", "Student not found or not linked to user"));
-            }
-            
             Long conversationId = request != null && request.containsKey("conversationId") 
                     ? Long.parseLong(request.get("conversationId")) 
                     : null;
@@ -272,17 +210,13 @@ public class BookingController {
                         .body(Map.of("error", "Tutor user ID is required"));
             }
             
-            automatedMessageService.sendStudyReadinessMessage(
-                    conversationId != null ? conversationId : 1L,
-                    tutorUserId,
-                    booking.getSubject()
-            );
+            bookingService.readyForStudy(id, conversationId, tutorUserId);
             
             Map<String, Object> response = new HashMap<>();
             response.put("status", "success");
             response.put("message", "Study readiness message sent to student");
             response.put("bookingId", id);
-            response.put("subject", booking.getSubject());
+            response.put("subject", bookingService.getBookingById(id).getSubject());
             
             return ResponseEntity.ok(response);
         } catch (NumberFormatException e) {
@@ -295,6 +229,4 @@ public class BookingController {
                     .body(Map.of("error", "Failed to send readiness message: " + e.getMessage()));
         }
     }
-=======
->>>>>>> V3.23.2026
 }

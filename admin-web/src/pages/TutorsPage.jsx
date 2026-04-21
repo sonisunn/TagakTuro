@@ -1,11 +1,34 @@
+import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
 
 export default function TutorsPage() {
-  const mockTutors = [
-    { id: 1, tutorId: 'T2021001', name: 'Jayson Partido', program: 'BS Computer Science', rating: '4.8', status: 'Active' },
-    { id: 2, tutorId: 'T2021002', name: 'Jane Doe', program: 'BS Mathematics', rating: '4.9', status: 'Active' },
-    { id: 3, tutorId: 'T2021003', name: 'Robert Smith', program: 'BS Information Technology', rating: '4.5', status: 'On Leave' },
-  ];
+  const { authFetch } = useAuth();
+  const [tutors, setTutors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTutors = async () => {
+      try {
+        setLoading(true);
+        const res = await authFetch('/api/tutor');
+        if (res?.ok) {
+          const data = await res.json();
+          setTutors(data);
+        } else {
+          setError('Failed to load tutors data');
+        }
+      } catch (err) {
+        console.error("Error fetching tutors:", err);
+        setError('An error occurred while fetching data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTutors();
+  }, [authFetch]);
 
   return (
     <DashboardLayout title="Tutors">
@@ -14,9 +37,15 @@ export default function TutorsPage() {
         <p>View and manage approved tutors in the system.</p>
       </section>
 
+      {error && (
+        <div style={{ color: 'red', marginBottom: '15px' }}>
+          {error}
+        </div>
+      )}
+
       <section className="table-section">
         <div className="table-header-row">
-          <div className="table-title">Approved Tutors ({mockTutors.length})</div>
+          <div className="table-title">Approved Tutors ({loading ? '...' : tutors.length})</div>
         </div>
         
         <div className="data-table-container">
@@ -26,22 +55,43 @@ export default function TutorsPage() {
                 <th>Tutor ID</th>
                 <th>Name</th>
                 <th>Program / Specialization</th>
+                <th>Sessions Done</th>
+                <th>Total Hours</th>
                 <th>Rating</th>
                 <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {mockTutors.map((t, idx) => (
-                <tr key={`tutor-${idx}`}>
-                  <td>{t.tutorId}</td>
-                  <td>{t.name}</td>
-                  <td>{t.program}</td>
-                  <td>{t.rating}</td>
-                  <td className={t.status === 'Active' ? 'status-green' : ''}>{t.status}</td>
-                  <td><a href="#" style={{color: 'var(--primary-blue)'}}>View</a></td>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>Loading tutors...</td>
                 </tr>
-              ))}
+              ) : tutors.length === 0 ? (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No tutors found.</td>
+                </tr>
+              ) : (
+                tutors.map((t, idx) => (
+                  <tr key={`tutor-${t.id || idx}`}>
+                    <td>{t.tutorId}</td>
+                    <td>{t.name}</td>
+                    <td>{t.courseProgram || 'N/A'}</td>
+                    <td style={{ textAlign: 'center' }}>{t.sessionsDone ?? 0}</td>
+                    <td style={{ textAlign: 'center' }}>{(t.totalHours || 0).toFixed(1)}h</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {t.rating > 0 ? (
+                        <span>⭐ {t.rating.toFixed(1)}</span>
+                      ) : (
+                        <span style={{ color: '#999' }}>No ratings</span>
+                      )}
+                    </td>
+                    {/* The backend Tutor model doesn't store 'active/inactive' status, let's default to active for now */}
+                    <td className="status-green">Active</td>
+                    <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

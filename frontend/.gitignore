@@ -32,11 +32,14 @@ yarn-error.*
 
 # local env files
 .env*.local
-
+.env
 # typescript
 *.tsbuildinfo
 
 app-example
+
+# Android stray build artifact files
+com.facebook.*
 
 # generated native folders
 /ios
