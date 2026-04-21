@@ -62,6 +62,16 @@ public class TutorApplicationController {
         }
     }
 
+    @PostMapping("/applications/{id}/reject")
+    public ResponseEntity<?> rejectApplication(@PathVariable Long id) {
+        try {
+            tutorApplicationService.rejectApplication(id);
+            return ResponseEntity.ok(Map.of("message", "Application rejected successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/applications/accept-all")
     public ResponseEntity<?> acceptAllApplications() {
         try {

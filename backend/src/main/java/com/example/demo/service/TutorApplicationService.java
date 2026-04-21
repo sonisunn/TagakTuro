@@ -135,6 +135,32 @@ public class TutorApplicationService {
         }
     }
 
+    public void rejectApplication(Long applicationId) {
+        @SuppressWarnings("null")
+        Optional<TutorApplication> applicationOpt = tutorApplicationRepository.findById(applicationId);
+        if (applicationOpt.isPresent()) {
+            TutorApplication application = applicationOpt.get();
+            application.setStatus("REJECTED");
+            tutorApplicationRepository.save(application);
+
+            // Send notification to the applicant's User account
+            try {
+                Optional<User> userOpt = userRepository.findByEmail(application.getEmail());
+                if (userOpt.isPresent()) {
+                    notificationService.createNotification(
+                            userOpt.get(),
+                            "Application Rejected",
+                            "We regret to inform you that your tutor application has been rejected. Thank you for your interest."
+                    );
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send rejection notification: " + e.getMessage());
+            }
+        } else {
+            throw new IllegalArgumentException("Application not found with id: " + applicationId);
+        }
+    }
+
     public void acceptAllApplications() {
         List<TutorApplication> applications = tutorApplicationRepository.findAll();
         for (TutorApplication application : applications) {
