@@ -40,12 +40,6 @@ public class EmailService {
             ? "Congratulations! Your tutor application for <strong>TagakTuro</strong> has been approved. You can now log in to the mobile application using your registered email and password."
             : "Thank you for your interest in becoming a tutor for <strong>TagakTuro</strong>. We regret to inform you that your application has been rejected at this time.";
 
-        String actionButton = isApproved
-            ? "<div style='text-align: center; margin-top: 30px;'>" +
-              "<a href='#' style='background-color: #2B74B4; color: white; padding: 12px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;'>Log In Now</a>" +
-              "</div>"
-            : "";
-
         return "<!DOCTYPE html>" +
                "<html>" +
                "<head>" +
@@ -70,7 +64,6 @@ public class EmailService {
                "    <div class='status-badge'>" + statusText + "</div>" +
                "    <h2 style='color: #2B74B4;'>Hi, " + name + "!</h2>" +
                "    <p>" + messageBody + "</p>" +
-               "    " + actionButton +
                "    <p style='margin-top: 30px;'>Best regards,<br><strong>TagakTuro Admin</strong></p>" +
                "  </div>" +
                "  <div class='footer'>" +
