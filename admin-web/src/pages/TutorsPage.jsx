@@ -77,9 +77,15 @@ export default function TutorsPage() {
                     <td>{t.tutorId}</td>
                     <td>{t.name}</td>
                     <td>{t.courseProgram || 'N/A'}</td>
-                    <td>{t.sessionsDone ?? 'N/A'}</td>
-                    <td>{t.totalHours ?? 'N/A'}</td>
-                    <td>{t.rating ?? 'N/A'}</td>
+                    <td style={{ textAlign: 'center' }}>{t.sessionsDone ?? 0}</td>
+                    <td style={{ textAlign: 'center' }}>{(t.totalHours || 0).toFixed(1)}h</td>
+                    <td style={{ textAlign: 'center' }}>
+                      {t.rating > 0 ? (
+                        <span>⭐ {t.rating.toFixed(1)}</span>
+                      ) : (
+                        <span style={{ color: '#999' }}>No ratings</span>
+                      )}
+                    </td>
                     {/* The backend Tutor model doesn't store 'active/inactive' status, let's default to active for now */}
                     <td className="status-green">Active</td>
                     <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
