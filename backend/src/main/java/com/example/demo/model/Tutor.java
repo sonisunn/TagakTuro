@@ -21,6 +21,9 @@ public class Tutor {
 
     private String phoneNumber;
     private String courseProgram;
+    private Integer sessionsDone = 0;
+    private Double totalHours = 0.0;
+    private Double rating = 0.0;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
@@ -37,6 +40,9 @@ public class Tutor {
         this.email = email;
         this.phoneNumber = phoneNumber;
         this.courseProgram = courseProgram;
+        this.sessionsDone = 0;
+        this.totalHours = 0.0;
+        this.rating = 0.0;
     }
 
     // Getters and Setters
@@ -86,6 +92,30 @@ public class Tutor {
 
     public void setCourseProgram(String courseProgram) {
         this.courseProgram = courseProgram;
+    }
+
+    public Integer getSessionsDone() {
+        return sessionsDone;
+    }
+
+    public void setSessionsDone(Integer sessionsDone) {
+        this.sessionsDone = sessionsDone;
+    }
+
+    public Double getTotalHours() {
+        return totalHours;
+    }
+
+    public void setTotalHours(Double totalHours) {
+        this.totalHours = totalHours;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
     }
 
     public User getUser() {
