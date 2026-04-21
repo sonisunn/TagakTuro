@@ -24,8 +24,10 @@ public class EmailService {
             helper.setText(htmlContent, true); // true indicates HTML
 
             mailSender.send(mimeMessage);
+            System.out.println(">>> Email sent successfully to: " + toEmail);
         } catch (Exception e) {
-            System.err.println("Failed to send HTML email to " + toEmail + ": " + e.getMessage());
+            System.err.println("!!! ERROR: Failed to send HTML email to " + toEmail);
+            e.printStackTrace();
         }
     }
 
