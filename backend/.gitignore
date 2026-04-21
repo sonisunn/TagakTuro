@@ -41,10 +41,13 @@ logs/
 data/
 *.mv.db
 *.trace.db
-
 ### Node (stray) ###
 package-lock.json
 node_modules/
 
 ### Uploads (user-generated content) ###
 uploads/
+
+application.properties
+
+*.properties
