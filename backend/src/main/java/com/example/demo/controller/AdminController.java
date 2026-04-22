@@ -52,7 +52,7 @@ public class AdminController {
         // Sessions this month
         LocalDateTime firstDayOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0);
         long sessionsThisMonth = bookingRepository.findAll().stream()
-                .filter(b -> b.getBookingDate() != null && b.getBookingDate().isAfter(firstDayOfMonth.toLocalDate().atStartOfDay()))
+                .filter(b -> b.getBookingDateTime() != null && b.getBookingDateTime().isAfter(firstDayOfMonth))
                 .count();
 
         summary.put("totalTutors", totalTutors);
