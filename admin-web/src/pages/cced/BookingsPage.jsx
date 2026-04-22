@@ -1,34 +1,72 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CcedLayout from '../../components/CcedLayout';
+import { useAuth } from '../../context/AuthContext';
 
-const allBookings = [
-  { id: 1, date: 'Mar 18, 2026', time: '10:00 AM – 11:00 AM', subject: 'Calculus I',       tutor: 'Jayson Partido', student: 'Christian Baldesco', status: 'Confirmed'  },
-  { id: 2, date: 'Mar 19, 2026', time: '1:00 PM – 2:00 PM',   subject: 'Java Programming', tutor: 'Jane Doe',       student: 'Maria Santos',      status: 'Pending'    },
-  { id: 3, date: 'Mar 19, 2026', time: '3:00 PM – 4:00 PM',   subject: 'Data Structures',  tutor: 'Jayson Partido', student: 'John Doe',           status: 'Cancelled'  },
-  { id: 4, date: 'Mar 20, 2026', time: '8:00 AM – 9:00 AM',   subject: 'Calculus II',      tutor: 'Robert Smith',   student: 'Ana Reyes',          status: 'Confirmed'  },
-  { id: 5, date: 'Mar 21, 2026', time: '2:00 PM – 3:00 PM',   subject: 'Physics',          tutor: 'Jane Doe',       student: 'Carlo Santos',       status: 'Confirmed'  },
-  { id: 6, date: 'Mar 21, 2026', time: '4:00 PM – 5:00 PM',   subject: 'Algebra',          tutor: 'Ana Rivera',     student: 'Ben Cruz',           status: 'Pending'    },
-  { id: 7, date: 'Mar 15, 2026', time: '9:00 AM – 10:00 AM',  subject: 'English Lit.',     tutor: 'Mark Tan',       student: 'Pia Dela Cruz',      status: 'Cancelled'  },
-  { id: 8, date: 'Mar 22, 2026', time: '10:00 AM – 11:00 AM', subject: 'Chemistry',        tutor: 'Jayson Partido', student: 'Leo Ramos',          status: 'Confirmed'  },
-];
-
-const today = new Date('2026-03-20');
 const FILTERS = ['All', 'Upcoming', 'Past', 'Cancelled'];
 
 function statusClass(s) {
-  return s === 'Confirmed' ? 'status-green' : s === 'Pending' ? 'status-orange' : 'status-red';
+  if (s === 'CONFIRMED') return 'status-green';
+  if (s === 'PENDING') return 'status-orange';
+  if (s === 'CANCELLED') return 'status-red';
+  if (s === 'COMPLETED') return 'status-green';
+  return '';
 }
 
 export default function CcedBookingsPage() {
+  const { authFetch } = useAuth();
+  const [bookings, setBookings] = useState([]);
   const [filter, setFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
 
-  const filtered = allBookings.filter((b) => {
-    const bDate = new Date(b.date);
-    if (filter === 'Upcoming')  return bDate >= today && b.status !== 'Cancelled';
-    if (filter === 'Past')      return bDate < today  && b.status !== 'Cancelled';
-    if (filter === 'Cancelled') return b.status === 'Cancelled';
-    return true;
-  });
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        setLoading(true);
+        const res = await authFetch('/api/booking');
+        if (res?.ok) {
+          const data = await res.json();
+          setBookings(data);
+        }
+      } catch (err) {
+        console.error("Error fetching bookings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, [authFetch]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const getFiltered = () => {
+    return bookings.filter((b) => {
+      const bDate = new Date(b.bookingDateTime);
+      bDate.setHours(0, 0, 0, 0);
+
+      if (filter === 'Upcoming') {
+        return bDate >= today && b.status !== 'CANCELLED' && b.status !== 'COMPLETED';
+      }
+      if (filter === 'Past') {
+        return bDate < today || b.status === 'COMPLETED';
+      }
+      if (filter === 'Cancelled') {
+        return b.status === 'CANCELLED';
+      }
+      return true;
+    });
+  };
+
+  const formatTimeRange = (dateTimeStr, durationMinutes) => {
+    if (!dateTimeStr) return 'N/A';
+    const start = new Date(dateTimeStr);
+    const end = new Date(start.getTime() + (durationMinutes || 60) * 60000);
+    
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return `${start.toLocaleTimeString([], options)} – ${end.toLocaleTimeString([], options)}`;
+  };
+
+  const filtered = getFiltered();
 
   return (
     <CcedLayout title="Bookings">
@@ -39,12 +77,18 @@ export default function CcedBookingsPage() {
 
       <section className="table-section">
         <div className="table-header-row">
-          <div className="table-title">Sessions ({filtered.length})</div>
+          <div className="table-title">Sessions ({loading ? '...' : filtered.length})</div>
           <div className="table-filters">
             {FILTERS.map((f, i) => (
               <span key={f}>
                 {i > 0 && ' | '}
-                <span className={filter === f ? '' : 'light'} onClick={() => setFilter(f)}>{f}</span>
+                <span 
+                  className={filter === f ? 'active-filter' : 'light clickable'} 
+                  onClick={() => setFilter(f)}
+                  style={{ cursor: 'pointer', fontWeight: filter === f ? 'bold' : 'normal' }}
+                >
+                  {f}
+                </span>
               </span>
             ))}
           </div>
@@ -55,13 +99,19 @@ export default function CcedBookingsPage() {
               <tr><th>#</th><th>Date</th><th>Time</th><th>Subject</th><th>Tutor</th><th>Student</th><th>Status</th></tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: '1.5rem', color: 'var(--text-grey)' }}>No bookings found.</td></tr>
+              {loading ? (
+                <tr><td colSpan={7} style={{ padding: '1.5rem', textAlign: 'center' }}>Loading...</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={7} style={{ padding: '1.5rem', color: 'var(--text-grey)', textAlign: 'center' }}>No bookings found.</td></tr>
               ) : (
                 filtered.map((b, idx) => (
-                  <tr key={b.id}>
-                    <td>{idx + 1}</td><td>{b.date}</td><td>{b.time}</td>
-                    <td>{b.subject}</td><td>{b.tutor}</td><td>{b.student}</td>
+                  <tr key={b.id || idx}>
+                    <td>{idx + 1}</td>
+                    <td>{new Date(b.bookingDateTime).toLocaleDateString()}</td>
+                    <td>{formatTimeRange(b.bookingDateTime, b.durationMinutes)}</td>
+                    <td>{b.subject}</td>
+                    <td>{b.tutorName || 'Unassigned'}</td>
+                    <td>{b.student?.name || 'Unknown'}</td>
                     <td className={statusClass(b.status)}>{b.status}</td>
                   </tr>
                 ))

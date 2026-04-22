@@ -70,11 +70,12 @@ public class TutorStudentChatService {
             throw new IllegalArgumentException("Student does not have a user account");
         }
 
+        Long studentUserId = student.getUser().getId();
         Page<ConversationDTO> conversations = chatService.getUserConversations(
-                student.getUser().getId(), page, size);
+                studentUserId, page, size);
 
         List<Map<String, Object>> enrichedConversations = conversations.getContent().stream()
-                .map(conv -> enrichConversationWithTutorInfo(conv, student.getId()))
+                .map(conv -> enrichConversationWithTutorInfo(conv, studentUserId))
                 .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
@@ -95,11 +96,12 @@ public class TutorStudentChatService {
             throw new IllegalArgumentException("Tutor does not have a user account");
         }
 
+        Long tutorUserId = tutor.getUser().getId();
         Page<ConversationDTO> conversations = chatService.getUserConversations(
-                tutor.getUser().getId(), page, size);
+                tutorUserId, page, size);
 
         List<Map<String, Object>> enrichedConversations = conversations.getContent().stream()
-                .map(conv -> enrichConversationWithStudentInfo(conv, tutor.getId()))
+                .map(conv -> enrichConversationWithStudentInfo(conv, tutorUserId))
                 .collect(Collectors.toList());
 
         Map<String, Object> response = new HashMap<>();
@@ -182,7 +184,7 @@ public class TutorStudentChatService {
         return response;
     }
 
-    private Map<String, Object> enrichConversationWithTutorInfo(ConversationDTO conv, Long studentId) {
+    private Map<String, Object> enrichConversationWithTutorInfo(ConversationDTO conv, Long currentUserId) {
         Map<String, Object> enriched = new HashMap<>();
         enriched.put("conversationId", conv.getId());
         enriched.put("lastMessage", conv.getLastMessage());
@@ -190,8 +192,8 @@ public class TutorStudentChatService {
         enriched.put("createdAt", conv.getCreatedAt());
         enriched.put("updatedAt", conv.getUpdatedAt());
 
-        Long otherUserId = conv.getUser1Id().equals(conv.getId()) ? conv.getUser2Id() : conv.getUser1Id();
-        Tutor tutor = tutorRepository.findByUserId(otherUserId).orElse(null);
+        Long otherUserId = conv.getUser1Id().equals(currentUserId) ? conv.getUser2Id() : conv.getUser1Id();
+        Tutor tutor = tutorRepository.findByUser_Id(otherUserId).orElse(null);
 
         if (tutor != null) {
             enriched.put("tutor", Map.of(
@@ -204,7 +206,7 @@ public class TutorStudentChatService {
         return enriched;
     }
 
-    private Map<String, Object> enrichConversationWithStudentInfo(ConversationDTO conv, Long tutorId) {
+    private Map<String, Object> enrichConversationWithStudentInfo(ConversationDTO conv, Long currentUserId) {
         Map<String, Object> enriched = new HashMap<>();
         enriched.put("conversationId", conv.getId());
         enriched.put("lastMessage", conv.getLastMessage());
@@ -212,8 +214,8 @@ public class TutorStudentChatService {
         enriched.put("createdAt", conv.getCreatedAt());
         enriched.put("updatedAt", conv.getUpdatedAt());
 
-        Long otherUserId = conv.getUser1Id().equals(conv.getId()) ? conv.getUser2Id() : conv.getUser1Id();
-        Student student = studentRepository.findByUserId(otherUserId).orElse(null);
+        Long otherUserId = conv.getUser1Id().equals(currentUserId) ? conv.getUser2Id() : conv.getUser1Id();
+        Student student = studentRepository.findByUser_Id(otherUserId).orElse(null);
 
         if (student != null) {
             enriched.put("student", Map.of(

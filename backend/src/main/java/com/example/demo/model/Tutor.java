@@ -1,6 +1,7 @@
 package com.example.demo.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 @Entity
@@ -25,6 +26,9 @@ public class Tutor {
     private Double totalHours = 0.0;
     private Double rating = 0.0;
 
+    @Column(name = "is_cert_issued")
+    private Boolean isCertIssued = false;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
@@ -43,6 +47,7 @@ public class Tutor {
         this.sessionsDone = 0;
         this.totalHours = 0.0;
         this.rating = 0.0;
+        this.isCertIssued = false;
     }
 
     // Getters and Setters
@@ -118,11 +123,24 @@ public class Tutor {
         this.rating = rating;
     }
 
+    public Boolean getIsCertIssued() {
+        return isCertIssued;
+    }
+
+    public void setIsCertIssued(Boolean isCertIssued) {
+        this.isCertIssued = isCertIssued;
+    }
+
     public User getUser() {
         return user;
     }
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    @JsonProperty("userId")
+    public Long getUserId() {
+        return user != null ? user.getId() : null;
     }
 }

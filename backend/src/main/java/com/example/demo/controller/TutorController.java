@@ -45,6 +45,21 @@ public class TutorController {
         }
     }
 
+    @PostMapping("/{id}/issue-certificate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CCED')")
+    public ResponseEntity<?> issueCertificate(@PathVariable Long id) {
+        try {
+            Tutor tutor = tutorService.issueCertificate(id);
+            return ResponseEntity.ok(tutor);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred while issuing the certificate"));
+        }
+    }
+
     @GetMapping("/homepage")
     @PreAuthorize("hasRole('TUTOR')")
     public ResponseEntity<String> getTutorHomepage() {
