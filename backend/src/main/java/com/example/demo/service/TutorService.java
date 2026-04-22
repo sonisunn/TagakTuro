@@ -25,6 +25,9 @@ public class TutorService {
     @Autowired
     private FeedbackRepository feedbackRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     // Get all tutors with live statistics
     public List<Tutor> getAllTutors() {
         List<Tutor> tutors = tutorRepository.findAll();
@@ -84,6 +87,22 @@ public class TutorService {
                 .orElseThrow(() -> new RuntimeException("Tutor not found with userId: " + userId));
         enrichTutorStats(tutor);
         return tutor;
+    }
+
+    public Tutor issueCertificate(Long id) {
+        Tutor tutor = getTutorById(id);
+        tutor.setIsCertIssued(true);
+        Tutor saved = tutorRepository.save(tutor);
+        
+        // Notify via email
+        emailService.sendCertificateEmail(
+            tutor.getEmail(), 
+            tutor.getName(), 
+            tutor.getTotalHours(), 
+            tutor.getRating()
+        );
+        
+        return saved;
     }
 
     // Delete a tutor
