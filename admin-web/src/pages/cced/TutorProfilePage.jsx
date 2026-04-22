@@ -1,24 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CcedLayout from '../../components/CcedLayout';
-import { mockTutors } from './TutorsPage';
-
-const evaluationsByTutor = {
-  1: [
-    { reviewer: 'Christian Baldesco', date: 'Mar 10, 2026', rating: 5.0, comment: 'Very patient and knowledgeable!' },
-    { reviewer: 'Leo Ramos',          date: 'Mar 12, 2026', rating: 4.8, comment: 'Explains concepts clearly.'       },
-    { reviewer: 'Ana Reyes',          date: 'Mar 15, 2026', rating: 5.0, comment: 'Best tutor I have ever had!'      },
-  ],
-  2: [
-    { reviewer: 'Maria Santos', date: 'Mar 11, 2026', rating: 4.7, comment: 'Great session, very helpful.'           },
-    { reviewer: 'Carlo Santos', date: 'Mar 14, 2026', rating: 4.7, comment: 'Clear explanations, highly recommended.' },
-  ],
-  3: [
-    { reviewer: 'John Doe', date: 'Mar 9, 2026',  rating: 4.5, comment: 'Good session overall.'     },
-    { reviewer: 'Ben Cruz', date: 'Mar 13, 2026', rating: 4.5, comment: 'Helpful but a bit rushed.' },
-  ],
-  4: [{ reviewer: 'Pia Dela Cruz', date: 'Mar 8, 2026', rating: 3.8, comment: 'Decent but needs improvement.' }],
-  5: [{ reviewer: 'Ben Cruz',      date: 'Mar 5, 2026', rating: 4.6, comment: 'Very engaging and fun session.' }],
-};
+import { useAuth } from '../../context/AuthContext';
 
 function renderStars(r) {
   const full = Math.floor(r), half = r - full >= 0.5 ? 1 : 0, empty = 5 - full - half;
@@ -27,7 +10,46 @@ function renderStars(r) {
 
 export default function CcedTutorProfilePage() {
   const { id } = useParams();
-  const tutor = mockTutors.find((t) => String(t.id) === id);
+  const { authFetch } = useAuth();
+  const [tutor, setTutor] = useState(null);
+  const [evaluations, setEvaluations] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTutorProfile = async () => {
+      try {
+        setLoading(true);
+        // Fetch tutor details
+        const res = await authFetch(`/api/tutor/${id}`);
+        if (res?.ok) {
+          const tutorData = await res.json();
+          setTutor(tutorData);
+
+          // If tutor has a user, fetch their evaluations
+          if (tutorData.userId) {
+            const feedbackRes = await authFetch(`/api/feedback/user/${tutorData.userId}`);
+            if (feedbackRes?.ok) {
+              const feedbackData = await feedbackRes.json();
+              setEvaluations(feedbackData);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching tutor profile:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTutorProfile();
+  }, [id, authFetch]);
+
+  if (loading) {
+    return (
+      <CcedLayout title="Tutor Profile">
+        <p style={{ padding: '2rem' }}>Loading profile...</p>
+      </CcedLayout>
+    );
+  }
 
   if (!tutor) {
     return (
@@ -38,15 +60,14 @@ export default function CcedTutorProfilePage() {
     );
   }
 
-  const evaluations = evaluationsByTutor[tutor.id] || [];
-  const eligible = tutor.totalHours >= 50 && tutor.overallRating >= 4.0;
+  const eligible = (tutor.totalHours || 0) >= 50 && (tutor.rating || 0) >= 4.0;
 
   return (
     <CcedLayout title="Tutor Profile">
       <section className="welcome-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2>{tutor.name}</h2>
-          <p>{tutor.program} · {tutor.tutorId} · {tutor.email}</p>
+          <p>{tutor.courseProgram || 'N/A'} · {tutor.tutorId} · {tutor.email}</p>
         </div>
         <Link to="/cced/tutors" className="btn btn-outline">← Back</Link>
       </section>
@@ -54,16 +75,16 @@ export default function CcedTutorProfilePage() {
       <div className="profile-stats-grid">
         <div className="profile-stat-card">
           <span className="profile-stat-label">Sessions Completed</span>
-          <span className="profile-stat-value">{tutor.sessionsCompleted}</span>
+          <span className="profile-stat-value">{tutor.sessionsDone ?? 0}</span>
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Total Hours Done</span>
-          <span className="profile-stat-value">{tutor.totalHours} hrs</span>
+          <span className="profile-stat-value">{(tutor.totalHours || 0).toFixed(1)} hrs</span>
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Overall Rating</span>
           <span className="profile-stat-value">
-            <span className="stars">{renderStars(tutor.overallRating)}</span> {tutor.overallRating.toFixed(1)}
+            <span className="stars">{renderStars(tutor.rating || 0)}</span> {(tutor.rating || 0).toFixed(1)}
           </span>
         </div>
       </div>
@@ -90,9 +111,9 @@ export default function CcedTutorProfilePage() {
                 <tr><td colSpan={4} style={{ padding: '1.5rem', color: 'var(--text-grey)' }}>No evaluations yet.</td></tr>
               ) : (
                 evaluations.map((ev, i) => (
-                  <tr key={i}>
-                    <td style={{ fontWeight: 600 }}>{ev.reviewer}</td>
-                    <td>{ev.date}</td>
+                  <tr key={ev.id || i}>
+                    <td style={{ fontWeight: 600 }}>{ev.reviewerName}</td>
+                    <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
                     <td><span className="stars">{renderStars(ev.rating)}</span> {ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left' }}>{ev.comment}</td>
                   </tr>

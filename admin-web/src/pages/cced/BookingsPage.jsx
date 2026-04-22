@@ -41,7 +41,7 @@ export default function CcedBookingsPage() {
 
   const getFiltered = () => {
     return bookings.filter((b) => {
-      const bDate = new Date(b.bookingDate);
+      const bDate = new Date(b.bookingDateTime);
       bDate.setHours(0, 0, 0, 0);
 
       if (filter === 'Upcoming') {
@@ -55,6 +55,15 @@ export default function CcedBookingsPage() {
       }
       return true;
     });
+  };
+
+  const formatTimeRange = (dateTimeStr, durationMinutes) => {
+    if (!dateTimeStr) return 'N/A';
+    const start = new Date(dateTimeStr);
+    const end = new Date(start.getTime() + (durationMinutes || 60) * 60000);
+    
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return `${start.toLocaleTimeString([], options)} – ${end.toLocaleTimeString([], options)}`;
   };
 
   const filtered = getFiltered();
@@ -98,11 +107,11 @@ export default function CcedBookingsPage() {
                 filtered.map((b, idx) => (
                   <tr key={b.id || idx}>
                     <td>{idx + 1}</td>
-                    <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
-                    <td>{b.startTime} – {b.endTime}</td>
+                    <td>{new Date(b.bookingDateTime).toLocaleDateString()}</td>
+                    <td>{formatTimeRange(b.bookingDateTime, b.durationMinutes)}</td>
                     <td>{b.subject}</td>
-                    <td>{b.tutorName}</td>
-                    <td>{b.studentName}</td>
+                    <td>{b.tutorName || 'Unassigned'}</td>
+                    <td>{b.student?.name || 'Unknown'}</td>
                     <td className={statusClass(b.status)}>{b.status}</td>
                   </tr>
                 ))

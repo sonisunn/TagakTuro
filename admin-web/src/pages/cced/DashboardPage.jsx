@@ -29,7 +29,7 @@ export default function CcedDashboardPage() {
         if (bookingsRes?.ok) {
           const bookingsData = await bookingsRes.json();
           // Sort by date descending and take top 5
-          const sorted = [...bookingsData].sort((a, b) => new Date(b.bookingDate) - new Date(a.bookingDate));
+          const sorted = [...bookingsData].sort((a, b) => new Date(b.bookingDateTime) - new Date(a.bookingDateTime));
           setRecentBookings(sorted.slice(0, 5));
         }
       } catch (err) {
@@ -48,6 +48,15 @@ export default function CcedDashboardPage() {
     if (h < 18) return 'Good afternoon';
     return 'Good evening';
   })();
+
+  const formatTimeRange = (dateTimeStr, durationMinutes) => {
+    if (!dateTimeStr) return 'N/A';
+    const start = new Date(dateTimeStr);
+    const end = new Date(start.getTime() + (durationMinutes || 60) * 60000);
+    
+    const options = { hour: 'numeric', minute: '2-digit', hour12: true };
+    return `${start.toLocaleTimeString([], options)} - ${end.toLocaleTimeString([], options)}`;
+  };
 
   return (
     <CcedLayout title="Dashboard">
@@ -94,11 +103,11 @@ export default function CcedDashboardPage() {
               ) : (
                 recentBookings.map((b, i) => (
                   <tr key={b.id || i}>
-                    <td>{new Date(b.bookingDate).toLocaleDateString()}</td>
-                    <td>{b.startTime} - {b.endTime}</td>
+                    <td>{new Date(b.bookingDateTime).toLocaleDateString()}</td>
+                    <td>{formatTimeRange(b.bookingDateTime, b.durationMinutes)}</td>
                     <td>{b.subject}</td>
-                    <td>{b.tutorName}</td>
-                    <td>{b.studentName}</td>
+                    <td>{b.tutorName || 'Unassigned'}</td>
+                    <td>{b.student?.name || 'Unknown'}</td>
                     <td className={b.status === 'CONFIRMED' ? 'status-green' : b.status === 'PENDING' ? 'status-orange' : 'status-red'}>
                       {b.status}
                     </td>
