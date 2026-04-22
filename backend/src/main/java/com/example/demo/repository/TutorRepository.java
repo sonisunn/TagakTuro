@@ -12,7 +12,7 @@ public interface TutorRepository extends JpaRepository<Tutor, Long> {
     Optional<Tutor> findByEmail(String email);
 
     // Find tutor by user ID (for chat integration)
-    Optional<Tutor> findByUserId(Long userId);
+    Optional<Tutor> findByUser_Id(Long userId);
 
     // Check if email already exists
     boolean existsByEmail(String email);
