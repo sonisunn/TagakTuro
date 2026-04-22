@@ -70,7 +70,7 @@ export default function CcedEvaluationsPage() {
                     <td>{ev.reviewerName}</td>
                     <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
                     <td><span className="stars">{renderStars(ev.rating)}</span> {ev.rating.toFixed(1)}</td>
-                    <td style={{ textAlign: 'left', maxWidth: '280px' }}>{ev.comment}</td>
+                    <td style={{ textAlign: 'left', maxWidth: '280px' }}>{ev.comments}</td>
                   </tr>
                 ))
               )}

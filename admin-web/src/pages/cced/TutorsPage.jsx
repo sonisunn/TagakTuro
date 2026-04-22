@@ -68,7 +68,14 @@ export default function CcedTutorsPage() {
                       <span className="stars">{renderStars(t.rating || 0)}</span> {(t.rating || 0).toFixed(1)}
                     </td>
                     <td className="status-green">Active</td>
-                    <td><Link to={`/cced/tutors/${t.id}`} className="btn btn-outline">View Profile</Link></td>
+                    <td>
+                      <Link 
+                        to={`/cced/tutors/${t.id}`} 
+                        style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '500' }}
+                      >
+                        View Profile
+                      </Link>
+                    </td>
                   </tr>
                 ))
               )}
