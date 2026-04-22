@@ -25,6 +25,9 @@ public class Tutor {
     private Double totalHours = 0.0;
     private Double rating = 0.0;
 
+    @Column(name = "is_cert_issued")
+    private Boolean isCertIssued = false;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
@@ -43,6 +46,7 @@ public class Tutor {
         this.sessionsDone = 0;
         this.totalHours = 0.0;
         this.rating = 0.0;
+        this.isCertIssued = false;
     }
 
     // Getters and Setters
@@ -116,6 +120,14 @@ public class Tutor {
 
     public void setRating(Double rating) {
         this.rating = rating;
+    }
+
+    public Boolean getIsCertIssued() {
+        return isCertIssued;
+    }
+
+    public void setIsCertIssued(Boolean isCertIssued) {
+        this.isCertIssued = isCertIssued;
     }
 
     public User getUser() {

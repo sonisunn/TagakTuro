@@ -1,13 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import CcedLayout from '../../components/CcedLayout';
-
-export const mockTutors = [
-  { id: 1, tutorId: 'T2021001', name: 'Jayson Partido', program: 'BS Computer Science',     sessionsCompleted: 62, totalHours: 58, overallRating: 4.9, email: 'jayson.partido@umak.edu.ph', status: 'Active',   certIssued: false },
-  { id: 2, tutorId: 'T2021002', name: 'Jane Doe',       program: 'BS Mathematics',           sessionsCompleted: 55, totalHours: 52, overallRating: 4.7, email: 'jane.doe@umak.edu.ph',       status: 'Active',   certIssued: true  },
-  { id: 3, tutorId: 'T2021003', name: 'Robert Smith',   program: 'BS Information Technology',sessionsCompleted: 38, totalHours: 35, overallRating: 4.5, email: 'robert.smith@umak.edu.ph',   status: 'Active',   certIssued: false },
-  { id: 4, tutorId: 'T2021004', name: 'Ana Rivera',     program: 'BS Civil Engineering',     sessionsCompleted: 70, totalHours: 65, overallRating: 3.8, email: 'ana.rivera@umak.edu.ph',     status: 'Active',   certIssued: false },
-  { id: 5, tutorId: 'T2021005', name: 'Mark Tan',       program: 'BA English',               sessionsCompleted: 28, totalHours: 25, overallRating: 4.6, email: 'mark.tan@umak.edu.ph',       status: 'On Leave', certIssued: false },
-];
+import { useAuth } from '../../context/AuthContext';
 
 function renderStars(r) {
   const full = Math.floor(r), half = r - full >= 0.5 ? 1 : 0, empty = 5 - full - half;
@@ -15,6 +9,28 @@ function renderStars(r) {
 }
 
 export default function CcedTutorsPage() {
+  const { authFetch } = useAuth();
+  const [tutors, setTutors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTutors = async () => {
+      try {
+        setLoading(true);
+        const res = await authFetch('/api/tutor');
+        if (res?.ok) {
+          const data = await res.json();
+          setTutors(data);
+        }
+      } catch (err) {
+        console.error("Error fetching tutors:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTutors();
+  }, [authFetch]);
+
   return (
     <CcedLayout title="Tutors">
       <section className="welcome-section">
@@ -24,7 +40,7 @@ export default function CcedTutorsPage() {
 
       <section className="table-section">
         <div className="table-header-row">
-          <div className="table-title">All Tutors ({mockTutors.length})</div>
+          <div className="table-title">All Tutors ({loading ? '...' : tutors.length})</div>
         </div>
         <div className="data-table-container">
           <table className="data-table">
@@ -36,18 +52,26 @@ export default function CcedTutorsPage() {
               </tr>
             </thead>
             <tbody>
-              {mockTutors.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.tutorId}</td>
-                  <td style={{ fontWeight: 600 }}>{t.name}</td>
-                  <td>{t.program}</td>
-                  <td>{t.sessionsCompleted}</td>
-                  <td>{t.totalHours} hrs</td>
-                  <td><span className="stars">{renderStars(t.overallRating)}</span> {t.overallRating.toFixed(1)}</td>
-                  <td className={t.status === 'Active' ? 'status-green' : 'status-orange'}>{t.status}</td>
-                  <td><Link to={`/cced/tutors/${t.id}`} className="btn btn-outline">View Profile</Link></td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>Loading...</td></tr>
+              ) : tutors.length === 0 ? (
+                <tr><td colSpan="8" style={{ textAlign: 'center', padding: '20px' }}>No tutors found.</td></tr>
+              ) : (
+                tutors.map((t) => (
+                  <tr key={t.id}>
+                    <td>{t.tutorId}</td>
+                    <td style={{ fontWeight: 600 }}>{t.name}</td>
+                    <td>{t.courseProgram || 'N/A'}</td>
+                    <td>{t.sessionsDone ?? 0}</td>
+                    <td>{(t.totalHours || 0).toFixed(1)} hrs</td>
+                    <td>
+                      <span className="stars">{renderStars(t.rating || 0)}</span> {(t.rating || 0).toFixed(1)}
+                    </td>
+                    <td className="status-green">Active</td>
+                    <td><Link to={`/cced/tutors/${t.id}`} className="btn btn-outline">View Profile</Link></td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
