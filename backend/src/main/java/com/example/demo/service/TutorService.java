@@ -83,7 +83,7 @@ public class TutorService {
 
     // Get tutor by userId
     public Tutor getTutorByUserId(Long userId) {
-        Tutor tutor = tutorRepository.findByUserId(userId)
+        Tutor tutor = tutorRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new RuntimeException("Tutor not found with userId: " + userId));
         enrichTutorStats(tutor);
         return tutor;
