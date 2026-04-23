@@ -2,13 +2,13 @@
 
 -- 1. Insert new Users
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
-VALUES ('TagakOVPSSCD', 'TagakOVPSSCD@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'OVPSSCD002', 'N/A', '0000000010');
+VALUES ('Admin', 'TagakOVPSSCD@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'OVPSSCD002', 'N/A', '0000000010');
 
 INSERT INTO `user_roles` (user_id, role)
 SELECT id, 'ROLE_ADMIN' FROM `users` WHERE email = 'TagakOVPSSCD';
 
 INSERT INTO `users` (name, email, password, student_id, course_program, phone_number)
-VALUES ('TagakCCED', 'TagakCCED@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'CCED002', 'N/A', '0000000011');
+VALUES ('CCED Admin', 'TagakCCED@gmail.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'CCED002', 'N/A', '0000000011');
 
 INSERT INTO `user_roles` (user_id, role)
 SELECT id, 'ROLE_CCED' FROM `users` WHERE email = 'TagakCCED';
