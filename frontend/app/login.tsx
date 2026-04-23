@@ -56,7 +56,8 @@ export default function TagakTuroLogin() {
           }
           // basic success flow - navigate to homepage
           alert('Login successful!');
-          if (loginResponse?.roles?.includes('ROLE_TUTOR')) {
+          const roles = loginResponse?.roles || [];
+          if (roles.includes('ROLE_TUTOR') || roles.includes('TUTOR')) {
             router.push('/tutor-homepage');
           } else {
             router.push('/homepage');
@@ -66,7 +67,7 @@ export default function TagakTuroLogin() {
           setSubmitting(false);
           const errorMsg = err?.response?.data?.error || err.message || 'Login failed';
           console.warn('Login error', errorMsg);
-          
+
           if (errorMsg.includes('PENDING') || errorMsg.includes('REJECTED')) {
             setCustomError(errorMsg);
           } else {
@@ -128,7 +129,7 @@ export default function TagakTuroLogin() {
                 style={styles.eyeIcon}
                 onPress={() => setShowPassword(!showPassword)}
               >
-                <Ionicons 
+                <Ionicons
                   name={showPassword ? "eye-off" : "eye"}
                   size={20}
                   color="#2B74B4"
@@ -153,7 +154,7 @@ export default function TagakTuroLogin() {
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>{submitting ? 'Signing in...' : 'Submit'}</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
             <Text style={styles.submitButtonText}>Skip</Text>
           </TouchableOpacity>
@@ -311,5 +312,8 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#FF0000',
+  },
+  eyeIcon: {
+    padding: 5,
   },
 });
