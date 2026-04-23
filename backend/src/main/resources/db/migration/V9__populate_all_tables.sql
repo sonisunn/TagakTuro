@@ -1,6 +1,12 @@
--- V9: Comprehensive data population for all tables
+-- V9: Schema fixes + comprehensive data population for all tables
 -- All passwords are 'TagakTuro2025'
 -- bcrypt hash: $2b$10$pG9kmSQcNjKZFfZjCYvvwOwiwVQRlVUQ/3rvrLZs6VQ/x.J6inXV6
+
+-- ============================================================
+-- 0. SCHEMA FIX: Add missing 'venue' column to bookings table
+--    (exists in Booking.java entity but was never migrated)
+-- ============================================================
+ALTER TABLE `bookings` ADD COLUMN `venue` VARCHAR(255) DEFAULT NULL;
 
 -- ============================================================
 -- 1. MORE STUDENTS (3 additional)
