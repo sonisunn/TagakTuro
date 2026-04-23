@@ -13,16 +13,16 @@ import { createBooking } from '../src/api/booking.js';
 import { getStudentById } from '../src/api/student.js';
 
 export default function BookingPage() {
-  
+
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
   const [venue, setVenue] = useState('');
-  
+
   // -- Date State --
   const [date, setDate] = useState(new Date());
   const [showDateModal, setShowDateModal] = useState(false);
   const [tempDate, setTempDate] = useState(new Date());
-  
+
   // -- Time State --
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(new Date());
@@ -34,7 +34,7 @@ export default function BookingPage() {
   const [openVenue, setOpenVenue] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [studentId, setStudentId] = useState(null);
-  const [studentEmail, setStudentEmail] = useState(null);
+
   const [validationErrors, setValidationErrors] = useState({
     subject: false,
     modality: false,
@@ -49,7 +49,7 @@ export default function BookingPage() {
         const storedStudentId = await AsyncStorage.getItem('studentId');
         if (userData) {
           const parsedData = JSON.parse(userData);
-          setStudentEmail(parsedData.email);
+          // email is not needed for booking
         }
         if (storedStudentId) {
           setStudentId(storedStudentId);
@@ -57,7 +57,7 @@ export default function BookingPage() {
       } catch (error) {
         console.error('Failed to load user data', error);
       }
-    };    
+    };
     loadUserData();
   }, []);
 
@@ -132,7 +132,7 @@ export default function BookingPage() {
   };
 
   const handleSubmit = async () => {
-    if (!studentId || !studentEmail) {
+    if (!studentId) {
       Alert.alert('Error', 'Student not logged in. Please log in to book a session.');
       return;
     }
@@ -176,7 +176,7 @@ export default function BookingPage() {
     } catch (error) {
       const err = error;
       const errorMessage = (err.response?.data)?.error || err.message;
-      
+
       if (errorMessage && (errorMessage.includes('FK95ehd6idg3lvmpah7byi8pfwc') || errorMessage.includes('Student not found'))) {
         await AsyncStorage.removeItem('studentId');
         Alert.alert('Session Expired', 'Your student session is invalid. Please log in again.');
@@ -283,13 +283,13 @@ export default function BookingPage() {
             <Text style={styles.label}>Time</Text>
             <View style={styles.timeInputContainer}>
               <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('start')}>
-                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12}}>
+                <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>
                   {startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </TouchableOpacity>
-              
+
               <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>to</Text>
-              
+
               <TouchableOpacity style={styles.timeInput} onPress={() => openTimePicker('end')}>
                 <Text style={{ color: '#2B74B4', fontWeight: '600', fontSize: 12 }}>
                   {endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -537,15 +537,15 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   placeholderStyle: {
-    color: '#95CDF2', 
-    fontFamily: 'Poppins', 
-    fontSize: 12, 
+    color: '#95CDF2',
+    fontFamily: 'Poppins',
+    fontSize: 12,
     fontWeight: '600'
   },
   dropdownText: {
-    fontFamily: 'Poppins', 
-    fontSize: 12, 
-    color: '#2B74B4', 
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
     fontWeight: '600'
   },
   // Modal Styles
