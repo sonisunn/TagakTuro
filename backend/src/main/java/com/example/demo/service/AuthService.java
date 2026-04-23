@@ -111,13 +111,13 @@ public class AuthService {
         Long studentId = null;
         Long tutorId = null;
 
-        if (user.getRoles() != null && user.getRoles().contains("ROLE_STUDENT")) {
+        if (user.getRoles() != null && (user.getRoles().contains("ROLE_STUDENT") || user.getRoles().contains("STUDENT"))) {
             studentId = studentRepository.findByEmail(user.getEmail())
                     .map(Student::getId)
                     .orElse(null);
         }
 
-        if (user.getRoles() != null && user.getRoles().contains("ROLE_TUTOR")) {
+        if (user.getRoles() != null && (user.getRoles().contains("ROLE_TUTOR") || user.getRoles().contains("TUTOR"))) {
             tutorId = tutorRepository.findByEmail(user.getEmail())
                     .map(Tutor::getId)
                     .orElse(null);

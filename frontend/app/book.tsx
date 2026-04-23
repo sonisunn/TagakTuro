@@ -33,7 +33,7 @@ export default function BookingPage() {
   const [openModality, setOpenModality] = useState(false);
   const [openVenue, setOpenVenue] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
-  const [studentId, setStudentId] = useState(null);
+  const [studentId, setStudentId] = useState<string | null>(null);
 
   const [validationErrors, setValidationErrors] = useState({
     subject: false,
@@ -45,14 +45,32 @@ export default function BookingPage() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const userData = await AsyncStorage.getItem('userData');
         const storedStudentId = await AsyncStorage.getItem('studentId');
-        if (userData) {
-          const parsedData = JSON.parse(userData);
-          // email is not needed for booking
-        }
+        console.log('[BookingPage] Loaded studentId from storage:', storedStudentId);
         if (storedStudentId) {
           setStudentId(storedStudentId);
+          return;
+        }
+
+        // Fallback: if studentId is not in storage, try to fetch it using the user's email
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const parsedData = JSON.parse(userData);
+          if (parsedData.email) {
+            console.log('[BookingPage] No studentId in storage, trying API lookup for:', parsedData.email);
+            try {
+              const { getStudentByEmail } = await import('../src/api/student.js');
+              const student = await getStudentByEmail(parsedData.email);
+              if (student?.id) {
+                const id = student.id.toString();
+                await AsyncStorage.setItem('studentId', id);
+                setStudentId(id);
+                console.log('[BookingPage] Fetched and stored studentId from API:', id);
+              }
+            } catch (apiError) {
+              console.warn('[BookingPage] Could not fetch studentId from API:', apiError);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load user data', error);
