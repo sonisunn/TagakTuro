@@ -23,7 +23,7 @@ export default function DashboardPage() {
         setLoading(true);
 
         const [statsRes, bookingsRes, applicationsRes] = await Promise.all([
-          authFetch('/api/admin/dashboard/stats'),
+          authFetch('/api/admin/summary'),
           authFetch('/api/booking'),
           authFetch('/api/tutor/applications')
         ]);
@@ -41,7 +41,7 @@ export default function DashboardPage() {
           const pendingApps = applicationsData.filter(a => a.status === 'PENDING');
 
           setStats({
-            totalUsers: statsData.totalUsers || 0,
+            totalUsers: (statsData.totalTutors || 0) + (statsData.totalStudents || 0),
             sessionsToday: todaysBookings.length,
             pendingTutors: pendingApps.length
           });
