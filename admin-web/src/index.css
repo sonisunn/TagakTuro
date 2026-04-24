@@ -689,6 +689,25 @@ button,
   transform: translateY(-1px);
 }
 
+.send-certificate-btn {
+  background: #0fe40f;
+  color: #0f4a16;
+  border: none;
+  border-radius: 8px;
+  padding: 0.42rem 0.9rem;
+  font-weight: 600;
+}
+
+.send-certificate-btn:hover {
+  background: #0ad10a;
+}
+
+.certificate-action-text {
+  color: #5d7690;
+  font-size: 13px;
+  font-weight: 500;
+}
+
 /* ─── Stars ──────────────────────────────────────────────────── */
 .stars {
   color: #f59e0b;
