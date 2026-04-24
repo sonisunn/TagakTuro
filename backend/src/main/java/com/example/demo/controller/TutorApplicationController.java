@@ -4,8 +4,15 @@ import com.example.demo.service.TutorApplicationService;
 import com.example.demo.model.TutorApplication;
 import com.example.demo.dto.TutorApplicationRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
 
 import java.util.List;
 import java.util.Map;
@@ -15,6 +22,9 @@ import java.util.Map;
 public class TutorApplicationController {
 
     private final TutorApplicationService tutorApplicationService;
+
+    @Value("${file.upload-dir}")
+    private String uploadDir;
 
     public TutorApplicationController(TutorApplicationService tutorApplicationService) {
         this.tutorApplicationService = tutorApplicationService;
@@ -79,6 +89,46 @@ public class TutorApplicationController {
             return ResponseEntity.ok(Map.of("message", "All applications accepted successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/applications/{id}/download")
+    public ResponseEntity<?> downloadFile(@PathVariable Long id, @RequestParam String fileType) {
+        try {
+            TutorApplication application = tutorApplicationService.getApplicationById(id);
+            if (application == null) {
+                return ResponseEntity.status(404).body(Map.of("error", "Application not found"));
+            }
+
+            String filePath = null;
+            String fileName = null;
+
+            if ("report".equalsIgnoreCase(fileType)) {
+                filePath = application.getReportOfGradesPath();
+                fileName = "Report_of_Grades_" + application.getName().replaceAll(" ", "_") + ".pdf";
+            } else if ("certificate".equalsIgnoreCase(fileType)) {
+                filePath = application.getCertificatesPath();
+                fileName = "Certificates_" + application.getName().replaceAll(" ", "_") + ".pdf";
+            }
+
+            if (filePath == null) {
+                return ResponseEntity.status(404).body(Map.of("error", "File not found"));
+            }
+
+            Path file = Paths.get(uploadDir, filePath);
+            if (!Files.exists(file)) {
+                return ResponseEntity.status(404).body(Map.of("error", "File does not exist"));
+            }
+
+            byte[] fileContent = Files.readAllBytes(file);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(fileContent);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error reading file: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Error: " + e.getMessage()));
         }
     }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { sortByDateWithPriority, formatDateDisplay } from '../utils/dateUtils';
 
 export default function TutorProfilePage() {
   const { id } = useParams();
@@ -112,10 +113,10 @@ export default function TutorProfilePage() {
               {evaluations.length === 0 ? (
                 <tr><td colSpan={4} style={{ padding: '1.5rem', color: 'var(--text-grey)' }}>No evaluations yet.</td></tr>
               ) : (
-                evaluations.map((ev, i) => (
+                sortByDateWithPriority(evaluations, 'createdAt', 'past').map((ev, i) => (
                   <tr key={ev.id || i}>
                     <td style={{ fontWeight: 600 }}>{ev.reviewerName}</td>
-                    <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
+                    <td>{formatDateDisplay(ev.createdAt)}</td>
                     <td>{ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left' }}>{ev.comments}</td>
                   </tr>

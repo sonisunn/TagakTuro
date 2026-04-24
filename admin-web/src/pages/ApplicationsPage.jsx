@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import AttachmentModal from '../components/AttachmentModal';
 import { useAuth } from '../context/AuthContext';
+import { sortByDateWithPriority, formatDateDisplay } from '../utils/dateUtils';
 
 export default function ApplicationsPage() {
   const { authFetch } = useAuth();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedApplicant, setSelectedApplicant] = useState(null);
 
   const fetchApplications = async () => {
     try {
@@ -66,17 +70,22 @@ export default function ApplicationsPage() {
     }
   };
 
-  const displayedApplications = applications.filter(app => app.status === 'PENDING');
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const handleViewAttachments = (applicant) => {
+    setSelectedApplicant(applicant);
+    setModalOpen(true);
   };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedApplicant(null);
+  };
+
+  const getDisplayedApplications = () => {
+    const filtered = applications.filter(app => app.status === 'PENDING');
+    return sortByDateWithPriority(filtered, 'createdAt', 'past');
+  };
+
+  const displayedApplications = getDisplayedApplications();
 
   return (
     <DashboardLayout title="Applications">
@@ -96,9 +105,9 @@ export default function ApplicationsPage() {
           <div className="table-title">
             Pending Applications ({loading ? '...' : displayedApplications.length})
           </div>
-          <div className="table-filters">
+          {/* <div className="table-filters">
             <span style={{ fontWeight: 'bold', color: 'var(--primary-blue)' }}>Pending</span>
-          </div>
+          </div> */}
         </div>
         
         <div className="data-table-container">
@@ -109,7 +118,7 @@ export default function ApplicationsPage() {
                 <th>Applicant Name</th>
                 <th>Course / Program</th>
                 <th>Experience</th>
-                <th>Status</th>
+                <th>Attachments</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -125,14 +134,28 @@ export default function ApplicationsPage() {
               ) : (
                 displayedApplications.map((app) => (
                   <tr key={`app-${app.id}`}>
-                    <td>{formatDate(app.createdAt)}</td>
+                    <td>{formatDateDisplay(app.createdAt)}</td>
                     <td>{app.name}</td>
                     <td>{app.courseProgram}</td>
                     <td title={app.experience} style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {app.experience}
                     </td>
-                    <td className={app.status === 'APPROVED' ? 'status-green' : app.status === 'REJECTED' ? 'status-red' : ''}>
-                      {app.status}
+                    <td>
+                      <button 
+                        onClick={() => handleViewAttachments(app)}
+                        style={{
+                          background: 'var(--primary-blue)',
+                          color: 'white',
+                          border: 'none',
+                          padding: '4px 12px',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        View Attachments
+                      </button>
                     </td>
                     <td>
                       {app.status === 'PENDING' && (
@@ -162,6 +185,12 @@ export default function ApplicationsPage() {
           </table>
         </div>
       </section>
+
+      <AttachmentModal 
+        isOpen={modalOpen}
+        onClose={handleCloseModal}
+        application={selectedApplicant}
+      />
     </DashboardLayout>
   );
 }
