@@ -451,9 +451,6 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 }
 .btn-success:hover { background: #15803d; transform: translateY(-1px); }
 
-/* ─── Stars ──────────────────────────────────────────────────── */
-.stars { color: #f59e0b; letter-spacing: 0.05em; }
-
 /* ─── Tutor Profile Stats ────────────────────────────────────── */
 .profile-stats-grid {
   display: grid;

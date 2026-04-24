@@ -38,9 +38,9 @@ export default function CcedLayout({ children, title }) {
           </Link>
 
           <div className="nav-section-title">Reports</div>
-          <Link to="/cced/evaluations" className={`nav-link ${pathname === '/cced/evaluations' ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Evaluations
-          </Link>
+          {/* <Link to="/cced/evaluations" className={`nav-link ${pathname === '/cced/evaluations' ? 'active' : ''}`}>
+            <span className="nav-icon"></span> Evaluations 
+          </Link>  */}
           <Link to="/cced/certificates" className={`nav-link ${pathname === '/cced/certificates' ? 'active' : ''}`}>
             <span className="nav-icon"></span> Certificates
           </Link>

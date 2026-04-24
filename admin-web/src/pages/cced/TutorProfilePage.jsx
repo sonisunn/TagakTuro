@@ -3,11 +3,6 @@ import { useParams, Link } from 'react-router-dom';
 import CcedLayout from '../../components/CcedLayout';
 import { useAuth } from '../../context/AuthContext';
 
-function renderStars(r) {
-  const full = Math.floor(r), half = r - full >= 0.5 ? 1 : 0, empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function CcedTutorProfilePage() {
   const { id } = useParams();
   const { authFetch } = useAuth();
@@ -83,9 +78,7 @@ export default function CcedTutorProfilePage() {
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Overall Rating</span>
-          <span className="profile-stat-value">
-            <span className="stars">{renderStars(tutor.rating || 0)}</span> {(tutor.rating || 0).toFixed(1)}
-          </span>
+          <span className="profile-stat-value">{(tutor.rating || 0).toFixed(1)}</span>
         </div>
       </div>
 
@@ -114,7 +107,7 @@ export default function CcedTutorProfilePage() {
                   <tr key={ev.id || i}>
                     <td style={{ fontWeight: 600 }}>{ev.reviewerName}</td>
                     <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
-                    <td><span className="stars">{renderStars(ev.rating)}</span> {ev.rating.toFixed(1)}</td>
+                    <td>{ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left' }}>{ev.comments}</td>
                   </tr>
                 ))

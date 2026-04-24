@@ -70,13 +70,6 @@ export const mockTutors = [
   },
 ];
 
-function renderStars(rating) {
-  const full  = Math.floor(rating);
-  const half  = rating - full >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function TutorsPage() {
   return (
     <DashboardLayout title="Tutors">
@@ -112,10 +105,7 @@ export default function TutorsPage() {
                   <td>{t.program}</td>
                   <td>{t.sessionsCompleted}</td>
                   <td>{t.totalHours} hrs</td>
-                  <td>
-                    <span className="stars">{renderStars(t.overallRating)}</span>{' '}
-                    {t.overallRating.toFixed(1)}
-                  </td>
+                  <td>{t.overallRating.toFixed(1)}</td>
                   <td className={t.status === 'Active' ? 'status-green' : 'status-orange'}>{t.status}</td>
                   <td>
                     <Link to={`/tutors/${t.id}`} className="btn btn-outline">View Profile</Link>

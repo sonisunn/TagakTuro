@@ -2,11 +2,6 @@ import { useEffect, useState } from 'react';
 import CcedLayout from '../../components/CcedLayout';
 import { useAuth } from '../../context/AuthContext';
 
-function renderStars(r) {
-  const full = Math.floor(r), half = r - full >= 0.5 ? 1 : 0, empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function CcedEvaluationsPage() {
   const { authFetch } = useAuth();
   const [evaluations, setEvaluations] = useState([]);
@@ -69,7 +64,7 @@ export default function CcedEvaluationsPage() {
                     <td style={{ fontWeight: 600 }}>{ev.revieweeName}</td>
                     <td>{ev.reviewerName}</td>
                     <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
-                    <td><span className="stars">{renderStars(ev.rating)}</span> {ev.rating.toFixed(1)}</td>
+                    <td>{ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left', maxWidth: '280px' }}>{ev.comments}</td>
                   </tr>
                 ))

@@ -24,13 +24,6 @@ const evaluationsByTutor = {
   ],
 };
 
-function renderStars(rating) {
-  const full  = Math.floor(rating);
-  const half  = rating - full >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function TutorProfilePage() {
   const { id } = useParams();
   const tutor = mockTutors.find((t) => String(t.id) === id);
@@ -68,9 +61,7 @@ export default function TutorProfilePage() {
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Overall Rating</span>
-          <span className="profile-stat-value">
-            <span className="stars">{renderStars(tutor.overallRating)}</span> {tutor.overallRating.toFixed(1)}
-          </span>
+          <span className="profile-stat-value">{tutor.overallRating.toFixed(1)}</span>
         </div>
       </div>
 
@@ -108,7 +99,7 @@ export default function TutorProfilePage() {
                   <tr key={i}>
                     <td style={{ fontWeight: 600 }}>{ev.reviewer}</td>
                     <td>{ev.date}</td>
-                    <td><span className="stars">{renderStars(ev.rating)}</span> {ev.rating.toFixed(1)}</td>
+                    <td>{ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left' }}>{ev.comment}</td>
                   </tr>
                 ))

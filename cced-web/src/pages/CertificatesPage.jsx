@@ -11,13 +11,6 @@ const eligibleTutors = mockTutors.filter(
   (t) => t.totalHours >= MIN_HOURS && t.overallRating >= MIN_RATING
 );
 
-function renderStars(rating) {
-  const full  = Math.floor(rating);
-  const half  = rating - full >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function CertificatesPage() {
   // Track issued state locally (would be persisted via API in production)
   const [issued, setIssued] = useState(
@@ -84,10 +77,7 @@ export default function CertificatesPage() {
                     <td style={{ fontWeight: 600 }}>{t.name}</td>
                     <td>{t.program}</td>
                     <td>{t.totalHours} hrs</td>
-                    <td>
-                      <span className="stars">{renderStars(t.overallRating)}</span>{' '}
-                      {t.overallRating.toFixed(1)}
-                    </td>
+                    <td>{t.overallRating.toFixed(1)}</td>
                     <td>
                       {issued[t.id] ? (
                         <span className="cert-badge issued">🏆 Issued</span>
@@ -123,7 +113,7 @@ export default function CertificatesPage() {
             <p>
               This will issue an official completion certificate to <strong>{modal.name}</strong> ({modal.email}) for completing{' '}
               <strong>{modal.totalHours} hours</strong> of tutoring with an overall rating of{' '}
-              <strong>{modal.overallRating.toFixed(1)} ⭐</strong>.
+              <strong>{modal.overallRating.toFixed(1)}</strong>.
             </p>
 
             <div style={{ background: '#f0f7fc', borderRadius: 8, padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-grey)', marginBottom: '0.5rem' }}>

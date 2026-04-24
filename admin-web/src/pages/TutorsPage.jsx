@@ -81,7 +81,7 @@ export default function TutorsPage() {
                     <td style={{ textAlign: 'center' }}>{(t.totalHours || 0).toFixed(1)}h</td>
                     <td style={{ textAlign: 'center' }}>
                       {t.rating > 0 ? (
-                        <span>⭐ {t.rating.toFixed(1)}</span>
+                        <span>{t.rating.toFixed(1)}</span>
                       ) : (
                         <span style={{ color: '#999' }}>No ratings</span>
                       )}

@@ -41,7 +41,7 @@ export default function DashboardLayout({ children, title }) {
 
           <div className="nav-section-title">Reports</div>
           <Link to="/evaluations" className={`nav-link ${pathname === '/evaluations' ? 'active' : ''}`}>
-            <span className="nav-icon">⭐</span> Evaluations
+            <span className="nav-icon"></span> Evaluations
           </Link>
           <Link to="/certificates" className={`nav-link ${pathname === '/certificates' ? 'active' : ''}`}>
             <span className="nav-icon">🏆</span> Certificates
