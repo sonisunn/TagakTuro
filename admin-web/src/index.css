@@ -568,6 +568,17 @@ button,
   color: var(--text-light-blue);
 }
 
+.table-view-link {
+  color: var(--primary-blue);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.table-view-link:hover {
+  color: #216098;
+}
+
 .data-table-container {
   border: 1px solid var(--border-color);
   border-radius: 12px;
