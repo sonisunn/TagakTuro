@@ -87,7 +87,7 @@ export default function CertificatesPage() {
                     </td>
                     <td>
                       {issued[t.id] ? (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--text-grey)' }}>Already sent</span>
+                        <span style={{ fontSize: '0.85rem', color: '#2B74B4' }}>Already sent</span>
                       ) : (
                         <button
                           className="btn btn-success"

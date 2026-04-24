@@ -506,8 +506,8 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
   display: flex; flex-direction: column; gap: 0.15rem;
 }
 
-.profile-stat-label { font-size: 15px; color: #f5fbff; font-weight: 600; }
-.profile-stat-value { font-size: 1.6rem; font-weight: 700; color: #ffffff; }
+.profile-stat-label { font-size: 0.78rem; color: #f5fbff; font-weight: 600; }
+.profile-stat-value { font-size: 15px; font-weight: 700; color: #ffffff; }
 
 /* ─── Certificate Badge ──────────────────────────────────────── */
 .cert-badge {

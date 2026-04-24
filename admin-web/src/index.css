@@ -782,13 +782,13 @@ button,
 }
 
 .profile-stat-label {
-  font-size: 15px;
+  font-size: 13px;
   color: #eaf5ff;
   font-weight: 600;
 }
 
 .profile-stat-value {
-  font-size: 27px;
+  font-size: 25px;
   font-weight: 700;
   color: #ffffff;
 }
