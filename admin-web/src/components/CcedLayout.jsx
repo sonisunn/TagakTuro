@@ -17,38 +17,38 @@ export default function CcedLayout({ children, title }) {
 
   return (
     <div className="dashboard-layout">
-      <aside className={`sidebar${sidebarOpen ? ' open' : ''}`} id="cced-sidebar">
-        <div className="sidebar-header">
-          <div className="sidebar-brand">
+      <aside className={`sidebar cced-sidebar${sidebarOpen ? ' open' : ''}`} id="cced-sidebar">
+        <div className="sidebar-header cced-sidebar-header">
+          <div className="sidebar-brand cced-sidebar-brand">
             <h2>TagakTuro</h2>
             <span>CCED Admin</span>
           </div>
         </div>
 
-        <nav className="sidebar-nav">
-          <div className="nav-section-title">Main</div>
-          <Link to="/cced/dashboard" className={`nav-link ${pathname === '/cced/dashboard' ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Dashboard
+        <nav className="sidebar-nav cced-sidebar-nav">
+          <div className="nav-section-title cced-nav-section-title">Main</div>
+          <Link to="/cced/dashboard" className={`nav-link cced-nav-link ${pathname === '/cced/dashboard' ? 'active' : ''}`}>
+            Dashboard
           </Link>
-          <Link to="/cced/bookings" className={`nav-link ${pathname === '/cced/bookings' ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Bookings
+          <Link to="/cced/bookings" className={`nav-link cced-nav-link ${pathname === '/cced/bookings' ? 'active' : ''}`}>
+            Bookings
           </Link>
-          <Link to="/cced/tutors" className={`nav-link ${pathname.startsWith('/cced/tutors') ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Tutors
+          <Link to="/cced/tutors" className={`nav-link cced-nav-link ${pathname.startsWith('/cced/tutors') ? 'active' : ''}`}>
+            Tutors
           </Link>
 
-          <div className="nav-section-title">Reports</div>
+          <div className="nav-section-title cced-nav-section-title">Reports</div>
           {/* <Link to="/cced/evaluations" className={`nav-link ${pathname === '/cced/evaluations' ? 'active' : ''}`}>
             <span className="nav-icon"></span> Evaluations 
           </Link>  */}
-          <Link to="/cced/certificates" className={`nav-link ${pathname === '/cced/certificates' ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Certificates
+          <Link to="/cced/certificates" className={`nav-link cced-nav-link ${pathname === '/cced/certificates' ? 'active' : ''}`}>
+            Certificate
           </Link>
         </nav>
 
-        <div className="sidebar-footer">
-          <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); logout(); }}>
-            <span className="nav-icon"></span> Sign Out
+        <div className="sidebar-footer cced-sidebar-footer">
+          <a href="#" className="nav-link cced-nav-link" onClick={(e) => { e.preventDefault(); logout(); }}>
+            Sign Out
           </a>
         </div>
       </aside>

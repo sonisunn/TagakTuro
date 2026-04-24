@@ -55,42 +55,52 @@ export default function CcedTutorProfilePage() {
     );
   }
 
-  const eligible = (tutor.totalHours || 0) >= 50 && (tutor.rating || 0) >= 4.0;
+  const toNumber = (value) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
+  const sessionsCompleted = toNumber(tutor.sessionsDone ?? tutor.sessionsCompleted);
+  const totalHoursDone = toNumber(tutor.totalHours ?? tutor.totalHoursDone);
+  const overallRating = toNumber(tutor.rating ?? tutor.overallRating);
+  const eligible = totalHoursDone >= 50 && overallRating >= 4.0;
 
   return (
     <CcedLayout title="Tutor Profile">
-      <section className="welcome-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
+      <section className="welcome-section tutor-profile-header">
+        <div className="tutor-profile-meta">
           <h2>{tutor.name}</h2>
           <p>{tutor.courseProgram || 'N/A'} · {tutor.tutorId} · {tutor.email}</p>
         </div>
-        <Link to="/cced/tutors" className="btn btn-outline">Back</Link>
+        <Link to="/cced/tutors" className="profile-back-btn">Back</Link>
       </section>
 
       <div className="profile-stats-grid">
         <div className="profile-stat-card">
           <span className="profile-stat-label">Sessions Completed</span>
-          <span className="profile-stat-value">{tutor.sessionsDone ?? 0}</span>
+          <span className="profile-stat-value">{sessionsCompleted}</span>
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Total Hours Done</span>
-          <span className="profile-stat-value">{(tutor.totalHours || 0).toFixed(1)} hrs</span>
+          <span className="profile-stat-value">{totalHoursDone.toFixed(1)} hrs</span>
         </div>
         <div className="profile-stat-card">
           <span className="profile-stat-label">Overall Rating</span>
-          <span className="profile-stat-value">{(tutor.rating || 0).toFixed(1)}</span>
+          <span className="profile-stat-value">{overallRating.toFixed(1)}</span>
         </div>
       </div>
 
-      <div className="eligibility-notice" style={eligible
-        ? { background: '#00C853', borderColor: '#00C853', color: '#ffffff' }
-        : {}}>
+      <div className="eligibility-notice eligibility-notice-success">
         {eligible
           ? 'This tutor meets certificate eligibility (≥50 hrs & ≥4.0 rating).'
           : 'This tutor does not yet meet certificate eligibility (needs ≥50 hrs & ≥4.0 rating).'}
       </div>
 
-      <section className="table-section">
+      <section className="table-section tutor-evaluations-section">
         <div className="table-header-row">
           <div className="table-title">Student Evaluations ({evaluations.length})</div>
         </div>
