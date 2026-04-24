@@ -66,7 +66,7 @@ export default function CcedTutorsPage() {
                         to={`/cced/tutors/${t.id}`} 
                         style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '500' }}
                       >
-                        View Profile
+                        View
                       </Link>
                     </td>
                   </tr>

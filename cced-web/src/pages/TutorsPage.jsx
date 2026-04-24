@@ -33,20 +33,20 @@ export const mockTutors = [
     id: 3,
     tutorId: 'T2021003',
     name: 'Robert Smith',
-    program: 'BS Information Technology',
+    program: 'BS Mathematics',
     sessionsCompleted: 38,
     totalHours: 35,
     overallRating: 4.5,
     email: 'robert.smith@umak.edu.ph',
     phone: '09221112222',
-    status: 'Active',
+    status: 'Inactive',
     certIssued: false,
   },
   {
     id: 4,
     tutorId: 'T2021004',
     name: 'Ana Rivera',
-    program: 'BS Civil Engineering',
+    program: 'BS Information Technology',
     sessionsCompleted: 70,
     totalHours: 65,
     overallRating: 3.8,
@@ -59,13 +59,13 @@ export const mockTutors = [
     id: 5,
     tutorId: 'T2021005',
     name: 'Mark Tan',
-    program: 'BA English',
+    program: 'BS Civil Engineering',
     sessionsCompleted: 28,
     totalHours: 25,
     overallRating: 4.6,
     email: 'mark.tan@umak.edu.ph',
     phone: '09176667788',
-    status: 'On Leave',
+    status: 'Inactive',
     certIssued: false,
   },
 ];
@@ -78,13 +78,13 @@ export default function TutorsPage() {
         <p>View tutor profiles, session counts, hours, and performance ratings.</p>
       </section>
 
-      <section className="table-section">
+      <section className="table-section tutors-table-section">
         <div className="table-header-row">
           <div className="table-title">All Tutors ({mockTutors.length})</div>
         </div>
 
         <div className="data-table-container">
-          <table className="data-table">
+          <table className="data-table tutors-data-table">
             <thead>
               <tr>
                 <th>Tutor ID</th>
@@ -92,9 +92,9 @@ export default function TutorsPage() {
                 <th>Program</th>
                 <th>Sessions Done</th>
                 <th>Total Hours</th>
-                <th>Overall Rating</th>
+                <th>Rating</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -106,9 +106,9 @@ export default function TutorsPage() {
                   <td>{t.sessionsCompleted}</td>
                   <td>{t.totalHours} hrs</td>
                   <td>{t.overallRating.toFixed(1)}</td>
-                  <td className={t.status === 'Active' ? 'status-green' : 'status-orange'}>{t.status}</td>
+                  <td className={t.status === 'Active' ? 'status-green' : 'status-gray'}>{t.status}</td>
                   <td>
-                    <Link to={`/tutors/${t.id}`} className="btn btn-outline">View Profile</Link>
+                    <Link to={`/tutors/${t.id}`} className="table-view-link">View</Link>
                   </td>
                 </tr>
               ))}

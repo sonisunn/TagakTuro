@@ -50,7 +50,7 @@ export default function CcedTutorProfilePage() {
     return (
       <CcedLayout title="Tutor Profile">
         <p style={{ color: 'var(--text-grey)', padding: '2rem' }}>Tutor not found.</p>
-        <Link to="/cced/tutors" className="btn btn-outline" style={{ marginLeft: '2rem' }}>← Back</Link>
+        <Link to="/cced/tutors" className="btn btn-outline" style={{ marginLeft: '2rem' }}>Back</Link>
       </CcedLayout>
     );
   }
@@ -64,7 +64,7 @@ export default function CcedTutorProfilePage() {
           <h2>{tutor.name}</h2>
           <p>{tutor.courseProgram || 'N/A'} · {tutor.tutorId} · {tutor.email}</p>
         </div>
-        <Link to="/cced/tutors" className="btn btn-outline">← Back</Link>
+        <Link to="/cced/tutors" className="btn btn-outline">Back</Link>
       </section>
 
       <div className="profile-stats-grid">
@@ -83,7 +83,7 @@ export default function CcedTutorProfilePage() {
       </div>
 
       <div className="eligibility-notice" style={eligible
-        ? { background: '#dcfce7', borderColor: '#86efac', color: '#15803d' }
+        ? { background: '#00C853', borderColor: '#00C853', color: '#ffffff' }
         : {}}>
         {eligible
           ? 'This tutor meets certificate eligibility (≥50 hrs & ≥4.0 rating).'

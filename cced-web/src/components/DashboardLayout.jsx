@@ -20,7 +20,6 @@ export default function DashboardLayout({ children, title }) {
       {/* Sidebar */}
       <aside className={`sidebar${sidebarOpen ? ' open' : ''}`} id="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo">🎓</div>
           <div className="sidebar-brand">
             <h2>TagakTuro</h2>
             <span>CCED Admin</span>
@@ -30,27 +29,27 @@ export default function DashboardLayout({ children, title }) {
         <nav className="sidebar-nav">
           <div className="nav-section-title">Main</div>
           <Link to="/dashboard" className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}>
-            <span className="nav-icon">📊</span> Dashboard
+            Dashboard
           </Link>
           <Link to="/bookings" className={`nav-link ${pathname === '/bookings' ? 'active' : ''}`}>
-            <span className="nav-icon">📅</span> Bookings
+            Bookings
           </Link>
           <Link to="/tutors" className={`nav-link ${pathname.startsWith('/tutors') ? 'active' : ''}`}>
-            <span className="nav-icon">👨‍🏫</span> Tutors
+            Tutors
           </Link>
 
           <div className="nav-section-title">Reports</div>
           <Link to="/evaluations" className={`nav-link ${pathname === '/evaluations' ? 'active' : ''}`}>
-            <span className="nav-icon"></span> Evaluations
+            Evaluations
           </Link>
           <Link to="/certificates" className={`nav-link ${pathname === '/certificates' ? 'active' : ''}`}>
-            <span className="nav-icon">🏆</span> Certificates
+            Certificate
           </Link>
         </nav>
 
         <div className="sidebar-footer">
           <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); logout(); }}>
-            <span className="nav-icon">🚪</span> Sign Out
+            Sign Out
           </a>
         </div>
       </aside>
