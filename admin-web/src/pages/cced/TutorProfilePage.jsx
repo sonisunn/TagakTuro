@@ -94,7 +94,7 @@ export default function CcedTutorProfilePage() {
         </div>
       </div>
 
-      <div className="eligibility-notice eligibility-notice-success">
+      <div className={`eligibility-notice ${eligible ? 'eligibility-notice-success' : ''}`}>
         {eligible
           ? 'This tutor meets certificate eligibility (≥50 hrs & ≥4.0 rating).'
           : 'This tutor does not yet meet certificate eligibility (needs ≥50 hrs & ≥4.0 rating).'}

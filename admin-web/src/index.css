@@ -782,7 +782,7 @@ button,
 }
 
 .profile-stat-label {
-  font-size: 13px;
+  font-size: 15px;
   color: #eaf5ff;
   font-weight: 600;
 }
@@ -816,20 +816,22 @@ button,
 
 /* ─── Eligibility Notice ─────────────────────────────────────── */
 .eligibility-notice {
-  background: #f0f7fc;
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1px solid #2B7ABF;
   border-radius: 10px;
   padding: 0.75rem 1rem;
+  margin: 0.1rem 0;
   font-size: 14px;
-  color: var(--text-grey);
+  color: #2B7ABF;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-weight: 500;
 }
 
 .eligibility-notice-success {
-  background: #00c853;
-  border-color: #00c853;
+  background: #0FE40F;
+  border-color: #0FE40F;
   color: #ffffff;
   font-weight: 600;
 }
