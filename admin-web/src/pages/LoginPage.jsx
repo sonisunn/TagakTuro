@@ -48,13 +48,6 @@ export default function LoginPage() {
           <p>Sign in with your Admin or CCED credentials</p>
         </div>
 
-        {error && (
-          <div className="error-message">
-            <span></span>
-            <span>{error}</span>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} autoComplete="on">
           <div className="form-group">
             <label htmlFor="email">Email Address</label>
@@ -87,6 +80,12 @@ export default function LoginPage() {
               />
             </div>
           </div>
+
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
 
           <button type="submit" className="submit-btn" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}
