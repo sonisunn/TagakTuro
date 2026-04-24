@@ -7,7 +7,6 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('PENDING'); // 'PENDING' or 'ALL'
 
   const fetchApplications = async () => {
     try {
@@ -67,9 +66,7 @@ export default function ApplicationsPage() {
     }
   };
 
-  const displayedApplications = filter === 'PENDING' 
-    ? applications.filter(app => app.status === 'PENDING')
-    : applications;
+  const displayedApplications = applications.filter(app => app.status === 'PENDING');
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -97,22 +94,10 @@ export default function ApplicationsPage() {
       <section className="table-section">
         <div className="table-header-row">
           <div className="table-title">
-            {filter === 'PENDING' ? 'Pending' : 'All'} Applications ({loading ? '...' : displayedApplications.length})
+            Pending Applications ({loading ? '...' : displayedApplications.length})
           </div>
           <div className="table-filters">
-            <span 
-              onClick={() => setFilter('PENDING')} 
-              style={{ cursor: 'pointer', fontWeight: filter === 'PENDING' ? 'bold' : 'normal', color: filter === 'PENDING' ? 'var(--primary-blue)' : 'inherit' }}
-            >
-              Pending
-            </span> 
-            <span className="light"> | </span>
-            <span 
-              onClick={() => setFilter('ALL')} 
-              style={{ cursor: 'pointer', fontWeight: filter === 'ALL' ? 'bold' : 'normal', color: filter === 'ALL' ? 'var(--primary-blue)' : 'inherit' }}
-            >
-              All
-            </span>
+            <span style={{ fontWeight: 'bold', color: 'var(--primary-blue)' }}>Pending</span>
           </div>
         </div>
         
