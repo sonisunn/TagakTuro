@@ -23,7 +23,7 @@ export default function BottomNav() {
           <TouchableOpacity
             key={item.name}
             style={styles.navItem}
-            onPress={() => router.push(item.route)}
+            onPress={() => router.navigate(item.route)}
             activeOpacity={0.7}
             disabled={false}
           >
