@@ -8,5 +8,10 @@ export default function Layout() {
     loadTokenToHeader().catch((e) => console.warn('Failed to load token', e));
   }, []);
 
-  return <Stack />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(student)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tutor)" options={{ headerShown: false }} />
+    </Stack>
+  );
 }

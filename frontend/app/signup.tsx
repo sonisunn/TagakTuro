@@ -101,7 +101,7 @@ export default function TagakTuroSignUp() {
       await signup(userData);
       setSubmitting(false);
       alert('Registration successful! You can now log in.');
-      router.push('/');
+      router.replace('/');
     } catch (err: any) {
       setSubmitting(false);
       console.warn('Signup error', err);
@@ -431,13 +431,13 @@ export default function TagakTuroSignUp() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Already have an account?{' '}
-              <Text style={styles.link} onPress={() => router.push('/')}>
+              <Text style={styles.link} onPress={() => router.replace('/')}>
                 Log in now
               </Text>
             </Text>
             <Text style={styles.footerText}>
               Want to apply as a tutor?{' '}
-              <Text style={styles.link} onPress={() => router.push('/apply')}>
+              <Text style={styles.link} onPress={() => router.replace('/apply')}>
                 Click here
               </Text>
             </Text>

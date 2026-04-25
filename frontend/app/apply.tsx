@@ -153,7 +153,7 @@ export default function ApplyTutorPage() {
     try {
       await applyAsTutor(formData);
       alert('Application submitted successfully! You will be notified upon approval.');
-      router.push('/login');
+      router.replace('/login');
     } catch (error) {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
@@ -291,14 +291,14 @@ export default function ApplyTutorPage() {
               <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
                 <Text style={styles.submitButtonText}>Next</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={() => router.push('/session-availability')}>
+              <TouchableOpacity style={styles.submitButton} onPress={() => router.replace('/session-availability')}>
                 <Text style={styles.submitButtonText}>skip</Text>
               </TouchableOpacity>
 
               <View style={styles.footer}>
                 <Text style={styles.footerText}>
                   Already have an account?{' '}
-                  <Text style={styles.link} onPress={() => router.push('/')}>
+                  <Text style={styles.link} onPress={() => router.replace('/')}>
                     Log in now
                   </Text>
                 </Text>
