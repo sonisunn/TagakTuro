@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.model.Booking;
 import com.example.demo.model.Student;
 import com.example.demo.model.Tutor;
+import com.example.demo.model.TutorAvailability;
 import com.example.demo.model.User;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.StudentRepository;
@@ -13,7 +14,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -103,6 +106,43 @@ public class BookingService {
     // Get all pending bookings (for tutors to see all available bookings)
     public List<Booking> getPendingBookings() {
         return enrichBookingsWithUserIds(bookingRepository.findByStatus(Booking.BookingStatus.PENDING));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Booking> getPendingBookingsForTutor(Long tutorUserId) {
+        List<Booking> allPending = getPendingBookings();
+        Tutor tutor = tutorRepository.findByUser_Id(tutorUserId)
+                .orElseThrow(() -> new RuntimeException("Tutor not found with userId: " + tutorUserId));
+
+        List<TutorAvailability> availabilities = tutor.getAvailabilities();
+
+        if (availabilities == null || availabilities.isEmpty()) {
+            return allPending;
+        }
+
+        return allPending.stream().filter(booking -> {
+            if (booking.getBookingDateTime() == null || booking.getDurationMinutes() == null) {
+                return false;
+            }
+            
+            LocalDateTime start = booking.getBookingDateTime();
+            LocalDateTime end = start.plusMinutes(booking.getDurationMinutes());
+            
+            int javaDayOfWeek = start.getDayOfWeek().getValue(); // 1=Mon, 7=Sun
+            int jsDayOfWeek = javaDayOfWeek == 7 ? 0 : javaDayOfWeek;
+
+            LocalTime bStart = start.toLocalTime();
+            LocalTime bEnd = end.toLocalTime();
+
+            return availabilities.stream().anyMatch(avail -> {
+                if (avail.getDayOfWeek() != jsDayOfWeek) {
+                    return false;
+                }
+                boolean startsAfterOrAt = !bStart.isBefore(avail.getStartTime());
+                boolean endsBeforeOrAt = !bEnd.isAfter(avail.getEndTime());
+                return startsAfterOrAt && endsBeforeOrAt;
+            });
+        }).collect(java.util.stream.Collectors.toList());
     }
 
     // Get bookings by tutor name
