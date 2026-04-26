@@ -9,6 +9,7 @@ import {
   ActivityIndicator
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
+import TutorBottomNav from '../components/TutorBottomNav';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../src/api/config';
@@ -26,10 +27,21 @@ export default function NotificationsPage() {
   const [todayNotifications, setTodayNotifications] = useState<Notification[]>([]);
   const [pastNotifications, setPastNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isTutor, setIsTutor] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
+    checkUserRole();
   }, []);
+
+  const checkUserRole = async () => {
+    try {
+      const tutorId = await AsyncStorage.getItem('tutorId');
+      setIsTutor(!!tutorId);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -141,7 +153,7 @@ export default function NotificationsPage() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      <BottomNav />
+      {isTutor ? <TutorBottomNav /> : <BottomNav />}
     </View>
   );
 }
