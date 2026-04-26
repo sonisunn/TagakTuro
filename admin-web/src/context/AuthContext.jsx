@@ -78,11 +78,16 @@ export function AuthProvider({ children }) {
   };
 
   const authFetch = async (url, options = {}) => {
+    const method = options.method || 'GET';
     const headers = {
       ...options.headers,
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
     };
+
+    // Only set Content-Type to JSON if it's a POST/PUT/PATCH and not already set
+    if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const res = await fetch(url, { ...options, headers });
 

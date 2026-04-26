@@ -23,10 +23,9 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-import TutorBottomNav from "../components/TutorBottomNav";
-import { updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../src/api/booking.js";
+import { updateBookingStatus, getPendingBookingsForTutor, getBookingsByTutorName, updateBooking } from "../../src/api/booking.js";
 import axios from 'axios';
-import { API_BASE_URL } from '../src/api/config';
+import { API_BASE_URL } from '../../src/api/config';
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface Booking {
@@ -180,8 +179,8 @@ export default function TagakTuroHomepage() {
   const fetchBookings = async (tutorId: string, tutorName: string) => {
     if (!tutorId || !tutorName) return;
     try {
-      // Fetch all pending bookings (for tutors to see all available bookings)
-      const pendingResponse = await getPendingBookings();
+      // Fetch all pending bookings filtered by tutor availability
+      const pendingResponse = await getPendingBookingsForTutor(tutorId);
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
 
       // Fetch bookings assigned to this tutor (confirmed/accepted bookings)
@@ -483,6 +482,32 @@ export default function TagakTuroHomepage() {
     }
   };
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('authToken');
+              await AsyncStorage.removeItem('userData');
+              await AsyncStorage.removeItem('studentId');
+              await AsyncStorage.removeItem('tutorId');
+              router.replace('/login');
+            } catch (error) {
+              console.error('Error during logout:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -502,7 +527,7 @@ export default function TagakTuroHomepage() {
           <View style={styles.headerIcons}>
             <TouchableOpacity
               style={styles.notificationContainer}
-              onPress={() => router.push("/notification")}
+              onPress={() => router.replace("/notification")}
             >
               <Ionicons name="notifications" size={32} color="#95CDF2" />
               {unreadCount > 0 && (
@@ -510,6 +535,10 @@ export default function TagakTuroHomepage() {
                   <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
                 </View>
               )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
             </TouchableOpacity>
 
             <View style={styles.profilePicture}>
@@ -721,7 +750,7 @@ export default function TagakTuroHomepage() {
                       style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
                       onPress={() => {
                         closeBookingDetailsModal();
-                        router.push(`/feedback?userId=${selectedBookingForModal.studentUserId}&name=${selectedBookingForModal.studentName}&bookingId=${selectedBookingForModal.id}`);
+                        router.replace(`/feedback?userId=${selectedBookingForModal.studentUserId}&name=${selectedBookingForModal.studentName}&bookingId=${selectedBookingForModal.id}`);
                       }}
                     >
                       <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
@@ -857,8 +886,6 @@ export default function TagakTuroHomepage() {
           </View>
         </BlurView>
       </Modal>
-
-      <TutorBottomNav />
     </View>
   );
 }
@@ -895,6 +922,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 15,
+  },
+  logoutButton: {
+    padding: 4,
   },
   notificationContainer: {
     position: "relative",

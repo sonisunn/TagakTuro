@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 /**
  * Create an Axios instance with Authorization header
  */
-const axiosWithAuth = async () => {
+export const axiosWithAuth = async () => {
   const token = await AsyncStorage.getItem('authToken'); // read JWT from storage
   const instance = axios.create({
     baseURL: API_BASE_URL,
@@ -79,6 +79,20 @@ export async function getPendingBookings() {
     return response.data;
   } catch (error) {
     console.error('Error in getPendingBookings:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get bookings by tutor name
+ */
+export async function getPendingBookingsForTutor(userId) {
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.get(`/api/booking/pending/tutor/${userId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error in getPendingBookingsForTutor:', (error.response && error.response.data) || error.message);
     throw error;
   }
 }

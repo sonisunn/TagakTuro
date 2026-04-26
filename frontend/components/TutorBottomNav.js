@@ -23,7 +23,7 @@ export default function TutorBottomNav() {
           <TouchableOpacity
             key={item.name}
             style={styles.navItem}
-            onPress={() => router.push(item.route)}
+            onPress={() => router.navigate(item.route)}
           >
             {isActive && <View style={styles.activeNavBar} />}
             <Ionicons

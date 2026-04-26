@@ -63,6 +63,15 @@ public class BookingController {
     public ResponseEntity<List<Booking>> getPendingBookings() {
         return ResponseEntity.ok(bookingService.getPendingBookings());
     }
+
+    @GetMapping("/pending/tutor/{userId}")
+    public ResponseEntity<List<Booking>> getPendingBookingsForTutor(@PathVariable Long userId) {
+        try {
+            return ResponseEntity.ok(bookingService.getPendingBookingsForTutor(userId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+    }
     
     @GetMapping("/tutor/{tutorName}")
     public ResponseEntity<List<Booking>> getBookingsByTutorName(@PathVariable String tutorName) {

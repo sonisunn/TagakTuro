@@ -12,3 +12,17 @@ export const applyAsTutor = (formData: FormData) => {
     },
   });
 };
+
+import { axiosWithAuth } from './booking';
+
+export const getTutorAvailabilityByUserId = async (userId: string | number) => {
+  const client = await axiosWithAuth();
+  const res = await client.get(`/api/tutor/user/${userId}/availability`);
+  return res.data;
+};
+
+export const updateTutorAvailabilityByUserId = async (userId: string | number, availabilities: any[]) => {
+  const client = await axiosWithAuth();
+  const res = await client.put(`/api/tutor/user/${userId}/availability`, availabilities);
+  return res.data;
+};

@@ -115,14 +115,30 @@ public class TutorApplicationController {
                 return ResponseEntity.status(404).body(Map.of("error", "File not found"));
             }
 
+            // Try resolving relative to uploadDir first
             Path file = Paths.get(uploadDir, filePath);
+            
+            // If not found, and filePath starts with uploadDir, try filePath directly
+            if (!Files.exists(file) && filePath.startsWith(uploadDir + "/")) {
+                file = Paths.get(filePath);
+            }
+            
+            // If still not found, try stripping uploadDir if it was doubled
+            if (!Files.exists(file) && filePath.contains("/")) {
+                // Handle cases like "uploads/grades/file.pdf" when uploadDir is "uploads"
+                String strippedPath = filePath.startsWith(uploadDir + "/") 
+                    ? filePath.substring(uploadDir.length() + 1) 
+                    : filePath;
+                file = Paths.get(uploadDir, strippedPath);
+            }
+
             if (!Files.exists(file)) {
-                return ResponseEntity.status(404).body(Map.of("error", "File does not exist"));
+                return ResponseEntity.status(404).body(Map.of("error", "File does not exist: " + filePath));
             }
 
             byte[] fileContent = Files.readAllBytes(file);
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(fileContent);
         } catch (IOException e) {

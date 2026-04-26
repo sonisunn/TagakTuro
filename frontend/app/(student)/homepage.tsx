@@ -14,10 +14,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import BottomNav from '../components/BottomNav';
-import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../src/api/booking';
+import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../../src/api/booking';
 import axios from 'axios';
-import { API_BASE_URL } from '../src/api/config';
+import { API_BASE_URL } from '../../src/api/config';
 
 // TypeScript interfaces
 interface ClassItem {
@@ -424,7 +423,7 @@ export default function TagakTuroHomepage() {
             <Text style={styles.subGreeting}>Ready to learn?</Text>
           </View>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.notificationContainer} onPress={() => router.push('/notification')}>
+            <TouchableOpacity style={styles.notificationContainer} onPress={() => router.replace('/notification')}>
               <Ionicons name="notifications" size={32} color="#95CDF2" />
               {unreadCount > 0 && (
                 <View style={styles.notificationBadge}>
@@ -447,7 +446,7 @@ export default function TagakTuroHomepage() {
         <View style={styles.bookCard}>
           <Text style={styles.bookCardTitle}>Unlock your full potential!</Text>
           <Text style={styles.bookCardSubtitle}>Book a tutor today!</Text>
-          <TouchableOpacity style={styles.bookButton} onPress={() => router.push('/book')}>
+          <TouchableOpacity style={styles.bookButton} onPress={() => router.replace('/book')}>
             <Text style={styles.bookButtonText}>Book now</Text>
           </TouchableOpacity>
         </View>
@@ -548,7 +547,7 @@ export default function TagakTuroHomepage() {
                       style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
                       onPress={() => {
                         handleCloseModal();
-                        router.push(`/tutor-feedback?userId=${selectedClass.tutorUserId}&name=${selectedClass.tutor}&bookingId=${selectedClass.id}`);
+                        router.replace(`/tutor-feedback?userId=${selectedClass.tutorUserId}&name=${selectedClass.tutor}&bookingId=${selectedClass.id}`);
                       }}
                     >
                       <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
@@ -684,8 +683,6 @@ export default function TagakTuroHomepage() {
           </View>
         </BlurView>
       </Modal>
-
-      <BottomNav />
 
       {showMatchNotification && matchBooking && (
         <TouchableOpacity

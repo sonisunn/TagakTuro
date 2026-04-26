@@ -11,7 +11,6 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import BottomNav from '../components/BottomNav';
 
 export default function MessagesPage() {
 
@@ -120,7 +119,7 @@ export default function MessagesPage() {
                   message.sender === 'student' ? styles.studentBubble : styles.tutorBubble,
                 ]}
               >
-                <Text
+                <Text 
                   style={[
                     styles.messageText,
                     message.sender === 'student' ? styles.studentText : styles.tutorText,
@@ -148,8 +147,6 @@ export default function MessagesPage() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-
-      <BottomNav />
     </View>
   );
 }
@@ -191,8 +188,6 @@ export default function MessagesPage() {
         ))}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-
-      <BottomNav />
     </View>
   );
 }

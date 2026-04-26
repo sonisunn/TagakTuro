@@ -6,23 +6,22 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BottomNav from '../components/BottomNav';
-import { getFeedbackForUser, submitFeedback, FeedbackResponse } from '../src/api/feedback';
+import { getFeedbackForUser, submitFeedback, FeedbackResponse } from '../../src/api/feedback';
 
-export default function TutorFeedbackPage() {
+export default function StudentFeedbackPage() {
   const router = useRouter();
   const params = useLocalSearchParams();
 
-  // The user ID of the tutor we are viewing
-  const tutorIdString = params.userId as string;
-  // If the student came here directly from a completed class linking to rate
+  // The user ID of the student we are viewing
+  const studentUserIdString = params.userId as string;
+  // If the tutor came here directly from a completed class linking to rate
   const bookingIdString = params.bookingId as string;
 
   const [feedbacks, setFeedbacks] = useState<FeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [studentId, setStudentId] = useState<number | null>(null);
-  const [activeTutorName, setActiveTutorName] = useState('Tutor');
-  const [tutorRole, setTutorRole] = useState('Tutor');
+  const [tutorUserId, setTutorUserId] = useState<number | null>(null);
+  const [activeStudentName, setActiveStudentName] = useState('Student');
+  const [studentRole, setStudentRole] = useState('Student');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -32,23 +31,21 @@ export default function TutorFeedbackPage() {
   useEffect(() => {
     const init = async () => {
       try {
-        const storedStudentId = await AsyncStorage.getItem('studentId');
-        if (storedStudentId) setStudentId(parseInt(storedStudentId));
-
         const storedUserData = await AsyncStorage.getItem('userData');
         let currentUserId = null;
-        let currentName = 'Tutor';
-        let currentRole = 'Tutor';
+        let currentName = 'Student';
+        let currentRole = 'Student';
         if (storedUserData) {
           const parsed = JSON.parse(storedUserData);
+          setTutorUserId(parsed.id);
           currentUserId = parsed.id;
-          currentName = parsed.name || 'Tutor';
-          currentRole = parsed.role || parsed.specialization || 'Tutor';
+          currentName = parsed.name || 'Student';
+          currentRole = parsed.role || parsed.year || 'Student';
         }
 
-        const targetUserId = tutorIdString ? parseInt(tutorIdString) : currentUserId;
-        setActiveTutorName((params.name as string) || currentName);
-        setTutorRole(currentRole);
+        const targetUserId = studentUserIdString ? parseInt(studentUserIdString) : currentUserId;
+        setActiveStudentName((params.name as string) || currentName);
+        setStudentRole(currentRole);
 
         if (targetUserId) {
           const list = await getFeedbackForUser(targetUserId);
@@ -61,23 +58,23 @@ export default function TutorFeedbackPage() {
       }
     };
     init();
-  }, [tutorIdString]);
+  }, [studentUserIdString]);
 
   const handleSubmitReview = async () => {
     if (rating === 0) {
       Alert.alert('Error', 'Please select a star rating first.');
       return;
     }
-    if (!studentId || !bookingIdString || !tutorIdString) {
+    if (!tutorUserId || !bookingIdString || !studentUserIdString) {
       Alert.alert('Error', 'Missing required details to submit feedback.');
       return;
     }
 
     setSubmitLoading(true);
     try {
-      const response = await submitFeedback(studentId, {
+      const response = await submitFeedback(tutorUserId, {
         bookingId: parseInt(bookingIdString),
-        revieweeId: parseInt(tutorIdString),
+        revieweeId: parseInt(studentUserIdString),
         rating: rating,
         comments: comments
       });
@@ -114,8 +111,8 @@ export default function TutorFeedbackPage() {
           <View style={styles.profileImageContainer}>
             <Ionicons name="person-circle" size={150} color="#2B74B4" />
           </View>
-          <Text style={styles.profileName}>{activeTutorName}</Text>
-          <Text style={styles.profileRole}>{tutorRole}</Text>
+          <Text style={styles.profileName}>{activeStudentName}</Text>
+          <Text style={styles.profileRole}>{studentRole}</Text>
 
           <View style={styles.ratingContainer}>
             <View style={styles.starRow}>
@@ -144,13 +141,13 @@ export default function TutorFeedbackPage() {
               <ActivityIndicator size="large" color="#2B74B4" style={{ padding: 20 }} />
             ) : feedbacks.length === 0 ? (
               <Text style={[styles.feedbackComment, { textAlign: 'center', paddingVertical: 20 }]}>
-                No feedback found for this tutor.
+                No feedback found for this student.
               </Text>
             ) : feedbacks.map((feedback, index) => (
               <View key={feedback.id}>
                 <View style={styles.feedbackItem}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.feedbackName}>{feedback.reviewerName || 'Student'}</Text>
+                    <Text style={styles.feedbackName}>{feedback.reviewerName || 'Tutor'}</Text>
                     <View style={{ flexDirection: 'row' }}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Ionicons
@@ -186,8 +183,8 @@ export default function TutorFeedbackPage() {
       >
         <BlurView intensity={20} tint="dark" style={styles.absolute}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rate Your Tutor</Text>
-            <Text style={styles.modalSubTitle}>How was your session with {activeTutorName}?</Text>
+            <Text style={styles.modalTitle}>Rate Your Student</Text>
+            <Text style={styles.modalSubTitle}>How was {activeStudentName} during the session?</Text>
 
             <View style={styles.starsContainer}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -232,8 +229,6 @@ export default function TutorFeedbackPage() {
           </View>
         </BlurView>
       </Modal>
-
-      <BottomNav />
     </View>
   );
 }

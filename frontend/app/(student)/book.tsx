@@ -5,12 +5,11 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   Alert, Modal
 } from 'react-native';
-import BottomNav from '../components/BottomNav';
 import DropDownPicker from 'react-native-dropdown-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
-import { createBooking } from '../src/api/booking.js';
-import { getStudentById } from '../src/api/student.js';
+import { createBooking } from '../../src/api/booking.js';
+import { getStudentById } from '../../src/api/student.js';
 
 export default function BookingPage() {
 
@@ -394,7 +393,6 @@ export default function BookingPage() {
         </BlurView>
       </Modal>
 
-      <BottomNav />
     </View>
   );
 }

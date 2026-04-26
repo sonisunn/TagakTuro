@@ -58,9 +58,9 @@ export default function TagakTuroLogin() {
           alert('Login successful!');
           const roles = loginResponse?.roles || [];
           if (roles.includes('ROLE_TUTOR') || roles.includes('TUTOR')) {
-            router.push('/tutor-homepage');
+            router.replace('/tutor-homepage');
           } else {
-            router.push('/homepage');
+            router.replace('/homepage');
           }
         })
         .catch((err) => {
@@ -78,7 +78,7 @@ export default function TagakTuroLogin() {
   };
 
   const handleSkip = () => {
-    router.push('/homepage');
+    router.replace('/homepage');
   }
   return (
     <KeyboardAvoidingView
@@ -162,13 +162,13 @@ export default function TagakTuroLogin() {
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Don&apos;t have an account yet?{' '}
-              <Text style={styles.link} onPress={() => router.push('/signup')}>
+              <Text style={styles.link} onPress={() => router.replace('/signup')}>
                 Sign up now
               </Text>
             </Text>
             <Text style={styles.footerText}>
               Want to apply as a tutor?{' '}
-              <Text style={styles.link} onPress={() => router.push('/apply')}>
+              <Text style={styles.link} onPress={() => router.replace('/apply')}>
                 Click here
               </Text>
             </Text>

@@ -6,6 +6,8 @@ import com.example.demo.model.Feedback;
 import com.example.demo.repository.TutorRepository;
 import com.example.demo.repository.BookingRepository;
 import com.example.demo.repository.FeedbackRepository;
+import com.example.demo.repository.TutorAvailabilityRepository;
+import com.example.demo.model.TutorAvailability;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,9 @@ public class TutorService {
 
     @Autowired
     private FeedbackRepository feedbackRepository;
+
+    @Autowired
+    private TutorAvailabilityRepository tutorAvailabilityRepository;
 
     @Autowired
     private EmailService emailService;
@@ -112,5 +117,24 @@ public class TutorService {
         }
         Tutor tutor = getTutorById(id);
         tutorRepository.delete(tutor);
+    }
+
+    public List<TutorAvailability> getAvailabilityByUserId(Long userId) {
+        Tutor tutor = getTutorByUserId(userId);
+        return tutor.getAvailabilities();
+    }
+
+    public List<TutorAvailability> updateAvailabilityByUserId(Long userId, List<TutorAvailability> availabilities) {
+        Tutor tutor = getTutorByUserId(userId);
+        tutorAvailabilityRepository.deleteByTutorId(tutor.getId());
+        tutor.getAvailabilities().clear();
+        if (availabilities != null) {
+            for (TutorAvailability a : availabilities) {
+                a.setTutor(tutor);
+                tutor.getAvailabilities().add(a);
+            }
+        }
+        tutorRepository.save(tutor);
+        return tutor.getAvailabilities();
     }
 }
