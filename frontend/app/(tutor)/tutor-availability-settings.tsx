@@ -73,6 +73,7 @@ export default function TutorAvailabilitySettings() {
         setTutorId(parseInt(storedTutorId));
         fetchAvailabilities(parseInt(storedTutorId));
       } else if (tutorUserId) {
+        // Fallback: use userId
         setTutorId(parseInt(tutorUserId));
         fetchAvailabilities(parseInt(tutorUserId));
       }
@@ -150,6 +151,7 @@ export default function TutorAvailabilitySettings() {
         Alert.alert('Success', 'Availability added successfully');
         await fetchAvailabilities(tutorId);
         setShowModal(false);
+        // Reset form
         setSelectedDay('MONDAY');
         setStartTime(new Date(0, 0, 0, 9, 0));
         setEndTime(new Date(0, 0, 0, 17, 0));
@@ -220,7 +222,8 @@ export default function TutorAvailabilitySettings() {
       <SafeAreaView style={styles.container}>
         <Stack.Screen
           options={{
-            headerShown: false,
+            title: 'Availability Settings',
+            headerShown: true,
           }}
         />
         <View style={styles.centerContent}>
@@ -234,13 +237,14 @@ export default function TutorAvailabilitySettings() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
-          headerShown: false,
+          title: 'Availability Settings',
+          headerShown: true,
         }}
       />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Session Availability</Text>
+          <Text style={styles.sectionTitle}>Your Availability Slots</Text>
           <Text style={styles.sectionDescription}>
             Set your available days and times. Students will only see you when you're available.
           </Text>
@@ -289,6 +293,7 @@ export default function TutorAvailabilitySettings() {
           </View>
 
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {/* Day Selection */}
             <View style={styles.formSection}>
               <Text style={styles.label}>Day of Week</Text>
               <View style={styles.dayGrid}>
@@ -314,6 +319,7 @@ export default function TutorAvailabilitySettings() {
               </View>
             </View>
 
+            {/* Start Time */}
             <View style={styles.formSection}>
               <Text style={styles.label}>Start Time</Text>
               <TouchableOpacity
@@ -333,6 +339,7 @@ export default function TutorAvailabilitySettings() {
               )}
             </View>
 
+            {/* End Time */}
             <View style={styles.formSection}>
               <Text style={styles.label}>End Time</Text>
               <TouchableOpacity

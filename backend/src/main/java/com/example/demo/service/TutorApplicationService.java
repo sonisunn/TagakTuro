@@ -1,23 +1,22 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.TutorApplicationRequest;
-import com.example.demo.model.TutorApplication;
-import com.example.demo.model.User;
-import com.example.demo.model.Tutor;
-import com.example.demo.service.NotificationService;
-import com.example.demo.repository.TutorApplicationRepository;
-import com.example.demo.repository.UserRepository;
-import com.example.demo.repository.TutorRepository;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.example.demo.dto.TutorApplicationRequest;
+import com.example.demo.model.Tutor;
+import com.example.demo.model.TutorApplication;
+import com.example.demo.model.User;
+import com.example.demo.repository.TutorApplicationRepository;
+import com.example.demo.repository.TutorRepository;
+import com.example.demo.repository.UserRepository;
 
 @Service
 public class TutorApplicationService {
@@ -84,6 +83,10 @@ public class TutorApplicationService {
                 .orElse(null);
     }
 
+    public TutorApplication getApplicationById(Long id) {
+        return tutorApplicationRepository.findById(id).orElse(null);
+    }
+
     public List<TutorApplication> getAllApplications() {
         return tutorApplicationRepository.findAll();
     }
@@ -125,7 +128,7 @@ public class TutorApplicationService {
             if ("APPROVED".equals(application.getStatus())) {
                 return;
             }
-            
+
             application.setStatus("APPROVED");
             tutorApplicationRepository.save(application);
 
@@ -142,8 +145,7 @@ public class TutorApplicationService {
                     notificationService.createNotification(
                             userOpt.get(),
                             "Application Approved!",
-                            "Your tutor application has been approved. Welcome to TagakTuro!"
-                    );
+                            "Your tutor application has been approved. Welcome to TagakTuro!");
                 }
             } catch (Exception e) {
                 System.err.println("Failed to send approval notification: " + e.getMessage());
@@ -177,7 +179,7 @@ public class TutorApplicationService {
             if (!"APPROVED".equals(application.getStatus())) {
                 application.setStatus("APPROVED");
                 tutorApplicationRepository.save(application);
-                
+
                 // Create accounts for batch approval
                 createTutorAccounts(application);
 
@@ -190,11 +192,11 @@ public class TutorApplicationService {
                         notificationService.createNotification(
                                 userOpt.get(),
                                 "Application Approved!",
-                                "Your tutor application has been approved. Welcome to TagakTuro!"
-                        );
+                                "Your tutor application has been approved. Welcome to TagakTuro!");
                     }
                 } catch (Exception e) {
-                    System.err.println("Failed to send approval notification for " + application.getEmail() + ": " + e.getMessage());
+                    System.err.println("Failed to send approval notification for " + application.getEmail() + ": "
+                            + e.getMessage());
                 }
             }
         }

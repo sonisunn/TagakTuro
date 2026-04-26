@@ -1,84 +1,167 @@
-import { Stack } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { Stack, useFocusEffect } from 'expo-router';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator
+  ActivityIndicator,
+  Badge,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import BottomNav from '../components/BottomNav';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../src/api/config';
+import { useWebSocket } from '../src/hooks/useWebSocket';
 
 interface Notification {
   id: number;
   title: string;
   body: string;
-  read: boolean;
+  isRead: boolean;
   dateSent: string;
 }
 
 export default function NotificationsPage() {
-
+  const { subscribe, unsubscribe, publish } = useWebSocket();
   const [todayNotifications, setTodayNotifications] = useState<Notification[]>([]);
   const [pastNotifications, setPastNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  const fetchNotifications = async () => {
+  /**
+   * Fetch initial notifications from API
+   */
+  const fetchNotifications = useCallback(async () => {
     try {
       const userDataString = await AsyncStorage.getItem('userData');
       if (!userDataString) return;
 
       const user = JSON.parse(userDataString);
+      setUserId(user.id.toString());
+
       const response = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
       const data: Notification[] = response.data;
 
-      const today = new Date();
-
-      const todayArr: Notification[] = [];
-      const pastArr: Notification[] = [];
-
-      data.forEach(n => {
-        const d = new Date(n.dateSent);
-        if (d.toDateString() === today.toDateString()) {
-          todayArr.push(n);
-        } else {
-          pastArr.push(n);
-        }
-      });
-
-      setTodayNotifications(todayArr);
-      setPastNotifications(pastArr);
+      categorizeNotifications(data);
+      
+      // Count unread
+      const unread = data.filter(n => !n.isRead).length;
+      setUnreadCount(unread);
     } catch (error) {
-      console.error('Error fetching notifications: ', error);
+      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  /**
+   * Categorize notifications into today and past
+   */
+  const categorizeNotifications = (data: Notification[]) => {
+    const today = new Date();
+    const todayArr: Notification[] = [];
+    const pastArr: Notification[] = [];
+
+    data.forEach(n => {
+      const d = new Date(n.dateSent);
+      if (d.toDateString() === today.toDateString()) {
+        todayArr.push(n);
+      } else {
+        pastArr.push(n);
+      }
+    });
+
+    setTodayNotifications(todayArr);
+    setPastNotifications(pastArr);
   };
 
-  const markAsRead = async (id: number) => {
+  /**
+   * Handle new notification from WebSocket
+   */
+  const handleNewNotification = useCallback((notification: Notification) => {
+    console.log('📬 New notification received:', notification);
+    
+    const today = new Date();
+    const d = new Date(notification.dateSent);
+
+    if (d.toDateString() === today.toDateString()) {
+      setTodayNotifications(prev => [notification, ...prev]);
+    } else {
+      setPastNotifications(prev => [notification, ...prev]);
+    }
+
+    if (!notification.isRead) {
+      setUnreadCount(prev => prev + 1);
+    }
+  }, []);
+
+  /**
+   * Handle unread count update from WebSocket
+   */
+  const handleUnreadCountUpdate = useCallback((data: { unreadCount: number }) => {
+    console.log('📊 Unread count updated:', data.unreadCount);
+    setUnreadCount(data.unreadCount);
+  }, []);
+
+  /**
+   * Mark notification as read
+   */
+  const markAsRead = useCallback(async (id: number) => {
     try {
       await axios.patch(`${API_BASE_URL}/api/notifications/${id}/read`);
 
       const updateList = (list: Notification[]) =>
-        list.map(n => n.id === id ? { ...n, read: true } : n);
+        list.map(n => n.id === id ? { ...n, isRead: true } : n);
 
       setTodayNotifications(updateList(todayNotifications));
       setPastNotifications(updateList(pastNotifications));
+      
+      // Decrement unread count
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Failed to mark read', error);
+      console.error('Failed to mark read:', error);
     }
-  };
+  }, [todayNotifications, pastNotifications]);
+
+  /**
+   * Initialize notifications and WebSocket subscriptions
+   */
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  /**
+   * Subscribe to WebSocket notifications when userId is available
+   */
+  useEffect(() => {
+    if (userId) {
+      console.log('🔔 Subscribing to notifications for user:', userId);
+      
+      // Subscribe to new notifications
+      subscribe(
+        `/user/${userId}/queue/notifications`,
+        handleNewNotification
+      );
+
+      // Subscribe to unread count updates
+      subscribe(
+        `/user/${userId}/queue/notification-count`,
+        handleUnreadCountUpdate
+      );
+
+      return () => {
+        unsubscribe(`/user/${userId}/queue/notifications`);
+        unsubscribe(`/user/${userId}/queue/notification-count`);
+      };
+    }
+  }, [userId, subscribe, unsubscribe, handleNewNotification, handleUnreadCountUpdate]);
 
   const renderNotification = (notification: Notification) => {
-    const isRead = notification.read;
+    const isRead = notification.isRead;
     return (
       <TouchableOpacity
         key={notification.id}
@@ -90,8 +173,15 @@ export default function NotificationsPage() {
           if (!isRead) markAsRead(notification.id);
         }}
       >
-        <Text style={styles.notificationTitle}>{notification.title}</Text>
-        <Text numberOfLines={2} ellipsizeMode='tail' style={styles.notificationBody}>{notification.body}</Text>
+        <View style={styles.notificationContent}>
+          <View style={styles.notificationHeader}>
+            <Text style={styles.notificationTitle}>{notification.title}</Text>
+            {!isRead && <View style={styles.unreadIndicator} />}
+          </View>
+          <Text numberOfLines={2} ellipsizeMode='tail' style={styles.notificationBody}>
+            {notification.body}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -103,8 +193,17 @@ export default function NotificationsPage() {
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Notifications</Text>
-          <Text style={styles.subtitle}>Hear the latest updates!</Text>
+          <View style={styles.headerTop}>
+            <View>
+              <Text style={styles.title}>Notifications</Text>
+              <Text style={styles.subtitle}>Hear the latest updates!</Text>
+            </View>
+            {unreadCount > 0 && (
+              <View style={styles.badgeContainer}>
+                <Text style={styles.badgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         {loading ? (
@@ -132,7 +231,9 @@ export default function NotificationsPage() {
             )}
 
             {todayNotifications.length === 0 && pastNotifications.length === 0 && (
-              <Text style={{ textAlign: 'center', marginTop: 50, color: '#888' }}>No notifications yet!</Text>
+              <Text style={{ textAlign: 'center', marginTop: 50, color: '#888' }}>
+                No notifications yet!
+              </Text>
             )}
           </>
         )}
@@ -159,6 +260,11 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     backgroundColor: '#fff',
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
     fontFamily: 'Poppins',
     fontSize: 24,
@@ -170,6 +276,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#95CDF2',
     fontWeight: '600',
+  },
+  badgeContainer: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '700',
+    fontSize: 12,
   },
   section: {
     marginTop: 20,
@@ -196,28 +316,39 @@ const styles = StyleSheet.create({
   },
   notificationItem: {
     marginBottom: 5,
+    width: '100%',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    borderRadius: 10,
   },
   notificationItemUnread: {
     backgroundColor: '#CAE6F9',
-    padding: 15,
-    borderRadius: 10,
-    color: '#fff',
-    height: 85,
   },
   notificationItemRead: {
     backgroundColor: '#F5F5F5',
-    padding: 15,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 85,
-    width: '100%',
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
   },
   notificationTitle: {
     fontFamily: 'Poppins',
     fontSize: 16,
     fontWeight: '600',
     color: '#2B74B4',
-    marginBottom: 5,
+    flex: 1,
+  },
+  unreadIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF6B6B',
+    marginLeft: 10,
   },
   notificationBody: {
     fontFamily: 'Poppins',

@@ -56,6 +56,9 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
+  const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(false);
+  const [hasAvailabilitySet, setHasAvailabilitySet] = useState(false);
+  const [availabilityCheckLoading, setAvailabilityCheckLoading] = useState(false);
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
@@ -224,6 +227,23 @@ export default function TagakTuroHomepage() {
     }
   };
 
+  const checkTutorAvailability = async (tutorId: string) => {
+    try {
+      setAvailabilityCheckLoading(true);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/tutor/availability/${tutorId}/is-available-now`
+      );
+      setIsCurrentlyAvailable(response.data.isCurrentlyAvailable);
+      setHasAvailabilitySet(response.data.hasAvailabilitySet);
+    } catch (error) {
+      console.error("Failed to check availability:", error);
+      setIsCurrentlyAvailable(false);
+      setHasAvailabilitySet(false);
+    } finally {
+      setAvailabilityCheckLoading(false);
+    }
+  };
+
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
     "Poppins-Bold": Poppins_700Bold,
@@ -270,6 +290,7 @@ export default function TagakTuroHomepage() {
       const loadBookings = async () => {
         if (!isActive) return;
         await fetchBookings(userId, userName);
+        await checkTutorAvailability(userId);
         retryCount = 0; // Reset retry count on success
       };
 
@@ -518,6 +539,29 @@ export default function TagakTuroHomepage() {
         </View>
 
         <TouchableOpacity style={styles.bookCard} onPress={() => {
+          if (!hasAvailabilitySet) {
+            Alert.alert(
+              'Set Availability First',
+              'You need to set your availability schedule before students can see you. Go to settings to add your availability.',
+              [
+                { text: 'Cancel', onPress: () => {} },
+                {
+                  text: 'Go to Settings',
+                  onPress: () => router.replace('/(tutor)/tutor-availability-settings'),
+                },
+              ]
+            );
+            return;
+          }
+          
+          if (!isCurrentlyAvailable) {
+            Alert.alert(
+              'Not Currently Available',
+              'You have no active availability right now. Please update your schedule if you\'re ready to accept bookings.'
+            );
+            return;
+          }
+          
           if (pendingBookings.length > 0) {
             setShowStudents(true);
             Animated.parallel([
@@ -534,13 +578,18 @@ export default function TagakTuroHomepage() {
               }),
             ]).start();
           } else {
-            console.log('No bookings available');
-            alert('There are no bookings yet');
+            alert('There are no bookings available right now');
           }
         }}>
-          <Text style={styles.bookCardTitle}>Student are waiting!</Text>
+          <Text style={styles.bookCardTitle}>
+            {!hasAvailabilitySet ? '📅 Set Your Availability' : isCurrentlyAvailable ? '✓ Students are waiting!' : '⏰ Not Currently Available'}
+          </Text>
           <Text style={styles.bookCardSubtitle}>
-            Click here to view the list of students you can teach
+            {!hasAvailabilitySet 
+              ? 'Click here to set your available days and times' 
+              : isCurrentlyAvailable 
+              ? 'Click here to view the list of students you can teach' 
+              : 'You have no active availability right now'}
           </Text>
         </TouchableOpacity>
 

@@ -49,6 +49,19 @@ CREATE TABLE IF NOT EXISTS `tutors` (
   CONSTRAINT `fk_tutors_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- TUTOR AVAILABILITY
+CREATE TABLE IF NOT EXISTS `tutor_availability` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT,
+  `tutor_id` BIGINT NOT NULL,
+  `day_of_week` VARCHAR(10) NOT NULL,
+  `start_time` TIME NOT NULL,
+  `end_time` TIME NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_tutor_id` (`tutor_id`),
+  KEY `idx_tutor_day` (`tutor_id`, `day_of_week`),
+  CONSTRAINT `fk_tutor_availability_tutor` FOREIGN KEY (`tutor_id`) REFERENCES `tutors` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- BOOKINGS
 CREATE TABLE IF NOT EXISTS `bookings` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,

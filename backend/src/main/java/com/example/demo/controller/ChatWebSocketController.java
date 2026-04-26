@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.config.WebSocketChannelInterceptor.UserPrincipal;
 import com.example.demo.dto.MessageDTO;
 import com.example.demo.dto.SendMessageRequest;
 import com.example.demo.service.ChatService;
@@ -37,8 +38,7 @@ public class ChatWebSocketController {
             throw new Exception("User not authenticated");
         }
 
-        // For now, extract userId from principal name or from a custom header
-        // You'll need to implement proper authentication
+        // Extract userId from the authenticated principal
         Long userId = extractUserIdFromPrincipal(principal);
 
         // Send the message via the service
@@ -107,17 +107,18 @@ public class ChatWebSocketController {
 
     /**
      * Helper method to extract userId from Principal
-     * This is a basic implementation - adjust based on your authentication
-     * mechanism
+     * Works with JWT tokens via WebSocketChannelInterceptor
      */
     private Long extractUserIdFromPrincipal(Principal principal) {
-        // This assumes the principal.getName() returns the userId as a string
-        // Adjust based on your actual authentication implementation
-        // For JWT tokens, you might need to parse the token instead
+        if (principal instanceof UserPrincipal) {
+            UserPrincipal userPrincipal = (UserPrincipal) principal;
+            return Long.parseLong(userPrincipal.getUserId());
+        }
+        
+        // Fallback for other principal types
         try {
             return Long.parseLong(principal.getName());
         } catch (NumberFormatException e) {
-            // Fallback: return a default value or handle differently
             throw new RuntimeException("Invalid user ID format: " + principal.getName());
         }
     }
