@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import '../styles/modal.css';
 
 export default function AttachmentModal({ isOpen, onClose, application }) {
+  const { authFetch } = useAuth();
   const [attachments, setAttachments] = useState([]);
 
   useEffect(() => {
@@ -31,10 +33,27 @@ export default function AttachmentModal({ isOpen, onClose, application }) {
 
   if (!isOpen || !application) return null;
 
-  const handleViewFile = (attachment) => {
-    // Use the backend endpoint to download the file
-    const url = `/api/tutor/applications/${attachment.id}/download?fileType=${attachment.type}`;
-    window.open(url, '_blank');
+  const handleViewFile = async (attachment) => {
+    try {
+      const res = await authFetch(`/api/tutor/applications/${attachment.id}/download?fileType=${attachment.type}`);
+      if (res && res.ok) {
+        const blob = await res.blob();
+        if (blob.size === 0) {
+          alert('The file appears to be empty.');
+          return;
+        }
+        const fileURL = URL.createObjectURL(blob);
+        window.open(fileURL, '_blank');
+      } else if (res) {
+        const errorData = await res.json().catch(() => ({}));
+        alert(`Failed to load attachment: ${errorData.error || res.statusText || res.status}`);
+      } else {
+        alert('Failed to load attachment: Unauthorized or Session Expired');
+      }
+    } catch (err) {
+      console.error('Error viewing attachment:', err);
+      alert('An error occurred while loading the attachment');
+    }
   };
 
   return (
