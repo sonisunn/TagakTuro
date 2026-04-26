@@ -22,6 +22,7 @@ export default function StudentFeedbackPage() {
   const [loading, setLoading] = useState(true);
   const [tutorUserId, setTutorUserId] = useState<number | null>(null);
   const [activeStudentName, setActiveStudentName] = useState('Student');
+  const [studentRole, setStudentRole] = useState('Student');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -34,15 +35,18 @@ export default function StudentFeedbackPage() {
         const storedUserData = await AsyncStorage.getItem('userData');
         let currentUserId = null;
         let currentName = 'Student';
+        let currentRole = 'Student';
         if (storedUserData) {
           const parsed = JSON.parse(storedUserData);
           setTutorUserId(parsed.id);
           currentUserId = parsed.id;
           currentName = parsed.name || 'Student';
+          currentRole = parsed.role || parsed.year || 'Student';
         }
 
         const targetUserId = studentUserIdString ? parseInt(studentUserIdString) : currentUserId;
         setActiveStudentName((params.name as string) || currentName);
+        setStudentRole(currentRole);
 
         if (targetUserId) {
           const list = await getFeedbackForUser(targetUserId);
@@ -109,23 +113,29 @@ export default function StudentFeedbackPage() {
             <Ionicons name="person-circle" size={150} color="#2B74B4" />
           </View>
           <Text style={styles.profileName}>{activeStudentName}</Text>
+          <Text style={styles.profileRole}>{studentRole}</Text>
 
-          <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={16} color="#FCC419" />
-            <Text style={styles.ratingBadgeText}>{feedbacks.length > 0 ? getAverageRating() : 'No ratings'}</Text>
+          <View style={styles.ratingContainer}>
+            <View style={styles.starRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Ionicons
+                  key={star}
+                  name="star"
+                  size={24}
+                  color="#FCC419"
+                  style={{ marginHorizontal: 3 }}
+                />
+              ))}
+            </View>
+            <Text style={styles.ratingValue}>
+              ({feedbacks.length > 0 ? getAverageRating() : '0'})
+            </Text>
           </View>
         </View>
 
         {/* Feedback Section */}
         <View style={styles.feedbackSection}>
-          <View style={styles.feedbackHeader}>
-            <Text style={styles.feedbackTitle}>Feedback</Text>
-            {bookingIdString && (
-              <TouchableOpacity style={styles.rateButton} onPress={() => setModalVisible(true)}>
-                <Text style={styles.rateButtonText}>Leave Review</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <Text style={styles.feedbackSectionTitle}>Recent Feedback from students</Text>
 
           <View style={styles.feedbackList}>
             {loading ? (
@@ -262,7 +272,27 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#2B74B4',
-    marginBottom: 5,
+    marginBottom: 3,
+  },
+  profileRole: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95CDF2',
+    marginBottom: 12,
+  },
+  ratingContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  starRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingValue: {
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    color: '#FCC419',
+    fontSize: 14,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -281,8 +311,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   feedbackSection: {
-    marginTop: 20,
+    marginTop: 25,
     marginHorizontal: 20,
+    marginBottom: 100,
+  },
+  feedbackSectionTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 15,
   },
   feedbackHeader: {
     flexDirection: 'row',
