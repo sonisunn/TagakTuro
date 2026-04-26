@@ -84,6 +84,11 @@ public class TutorApplicationService {
                 .orElse(null);
     }
 
+    public TutorApplication getApplicationById(Long id) {
+        return tutorApplicationRepository.findById(id)
+                .orElse(null);
+    }
+
     public List<TutorApplication> getAllApplications() {
         return tutorApplicationRepository.findAll();
     }
