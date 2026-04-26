@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.model.Tutor;
+import com.example.demo.model.TutorAvailability;
 import com.example.demo.service.TutorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -79,6 +80,26 @@ public class TutorController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An error occurred while deleting the tutor"));
+        }
+    }
+
+    @GetMapping("/user/{userId}/availability")
+    public ResponseEntity<?> getTutorAvailabilityByUserId(@PathVariable Long userId) {
+        try {
+            List<TutorAvailability> availabilities = tutorService.getAvailabilityByUserId(userId);
+            return ResponseEntity.ok(availabilities);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/user/{userId}/availability")
+    public ResponseEntity<?> updateTutorAvailabilityByUserId(@PathVariable Long userId, @RequestBody List<TutorAvailability> availabilities) {
+        try {
+            List<TutorAvailability> updated = tutorService.updateAvailabilityByUserId(userId, availabilities);
+            return ResponseEntity.ok(updated);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         }
     }
 }
