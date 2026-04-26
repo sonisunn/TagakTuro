@@ -23,7 +23,7 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-import { updateBookingStatus, getPendingBookings, getBookingsByTutorName, updateBooking } from "../../src/api/booking.js";
+import { updateBookingStatus, getPendingBookingsForTutor, getBookingsByTutorName, updateBooking } from "../../src/api/booking.js";
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -179,8 +179,8 @@ export default function TagakTuroHomepage() {
   const fetchBookings = async (tutorId: string, tutorName: string) => {
     if (!tutorId || !tutorName) return;
     try {
-      // Fetch all pending bookings (for tutors to see all available bookings)
-      const pendingResponse = await getPendingBookings();
+      // Fetch all pending bookings filtered by tutor availability
+      const pendingResponse = await getPendingBookingsForTutor(tutorId);
       const allPendingBookings = Array.isArray(pendingResponse) ? pendingResponse : [];
 
       // Fetch bookings assigned to this tutor (confirmed/accepted bookings)

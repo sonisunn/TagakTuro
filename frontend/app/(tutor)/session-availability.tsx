@@ -11,9 +11,11 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getTutorAvailabilityByUserId, updateTutorAvailabilityByUserId } from '../../src/api/tutor';
 
 export default function AvailabilityPage() {
-  const initialDays = [
+  const initialDays: any[] = [
     { id: 0, label: 'S', slots: [] },
     { id: 1, label: 'M', slots: [] },
     { id: 2, label: 'T', slots: [] },
@@ -23,7 +25,7 @@ export default function AvailabilityPage() {
     { id: 6, label: 'S', slots: [] },
   ];
 
-  const [schedule, setSchedule] = useState(initialDays);
+  const [schedule, setSchedule] = useState<any[]>(initialDays);
   const [successMessage, setSuccessMessage] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
 
@@ -32,6 +34,63 @@ export default function AvailabilityPage() {
   const [activeDayIndex, setActiveDayIndex] = useState(null);
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
   const [tempDate, setTempDate] = useState(new Date());
+  const [userId, setUserId] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUserData = async () => {
+      const userDataString = await AsyncStorage.getItem("userData");
+      if (userDataString) {
+        const userData = JSON.parse(userDataString);
+        setUserId(userData.id);
+        fetchAvailability(userData.id);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  const timeStringToEpoch = (timeStr) => {
+    if (!timeStr) return new Date().getTime();
+    const [h, m, s] = timeStr.split(':');
+    const d = new Date();
+    d.setHours(parseInt(h, 10), parseInt(m, 10), parseInt(s || 0, 10), 0);
+    return d.getTime();
+  };
+
+  const epochToTimeString = (epoch) => {
+    const d = new Date(epoch);
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${h}:${m}:00`;
+  };
+
+  const fetchAvailability = async (id) => {
+    try {
+      const data = await getTutorAvailabilityByUserId(id);
+      if (data && Array.isArray(data) && data.length > 0) {
+        const newSchedule = [
+          { id: 0, label: 'S', slots: [] },
+          { id: 1, label: 'M', slots: [] },
+          { id: 2, label: 'T', slots: [] },
+          { id: 3, label: 'W', slots: [] },
+          { id: 4, label: 'T', slots: [] },
+          { id: 5, label: 'F', slots: [] },
+          { id: 6, label: 'S', slots: [] },
+        ];
+        data.forEach(item => {
+          const day = newSchedule.find(d => d.id === item.dayOfWeek);
+          if (day) {
+            day.slots.push({
+              start: timeStringToEpoch(item.startTime),
+              end: timeStringToEpoch(item.endTime),
+            });
+          }
+        });
+        setSchedule(newSchedule);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tutor availability", error);
+    }
+  };
 
   const addSlot = (dayIndex) => {
     const newSchedule = [...schedule];
@@ -83,117 +142,141 @@ export default function AvailabilityPage() {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const hasSlots = schedule.some(day => day.slots.length > 0);
-    
+
     if (hasSlots) {
+      const payload = [];
+      schedule.forEach(day => {
+        day.slots.forEach(slot => {
+          payload.push({
+            dayOfWeek: day.id,
+            startTime: epochToTimeString(slot.start),
+            endTime: epochToTimeString(slot.end)
+          });
+        });
+      });
+
+      try {
+        await updateTutorAvailabilityByUserId(userId, payload);
         setSuccessMessage(true);
         setErrorMessage(false);
-    } else {
+      } catch (error) {
+        console.error("Error updating", error);
         setSuccessMessage(false);
         setErrorMessage(true);
+      }
+    } else {
+      try {
+        await updateTutorAvailabilityByUserId(userId, []);
+        setSuccessMessage(true);
+        setErrorMessage(false);
+      } catch (error) {
+        setSuccessMessage(false);
+        setErrorMessage(true);
+      }
     }
   };
 
   const handleReset = () => {
-      const clearedSchedule = schedule.map(day => ({ ...day, slots: [] }));
-      setSchedule(clearedSchedule);
-      setSuccessMessage(false);
-      setErrorMessage(false);
+    const clearedSchedule = schedule.map(day => ({ ...day, slots: [] }));
+    setSchedule(clearedSchedule);
+    setSuccessMessage(false);
+    setErrorMessage(false);
   };
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <View style={styles.headerSection}>
-          <Text style={styles.headerTitle}>Session Availability</Text>
-          <Text style={styles.headerSubtitle}>Set your preferred time to tutor</Text>
+        <Text style={styles.headerTitle}>Session Availability</Text>
+        <Text style={styles.headerSubtitle}>Set your preferred time to tutor</Text>
       </View>
 
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentSection}>
-            <Text style={styles.sectionTitle}>Weekly hours</Text>
+          <Text style={styles.sectionTitle}>Weekly hours</Text>
 
-            {schedule.map((day, dayIndex) => (
-                <View key={day.id} style={styles.dayRow}>
-                    <View style={styles.dayCircle}>
-                        <Text style={styles.dayText}>{day.label}</Text>
-                    </View>
+          {schedule.map((day, dayIndex) => (
+            <View key={day.id} style={styles.dayRow}>
+              <View style={styles.dayCircle}>
+                <Text style={styles.dayText}>{day.label}</Text>
+              </View>
 
-                    <View style={styles.slotsContainer}>
-                        {day.slots.length === 0 ? (
-                            <View style={styles.unavailableContainer}>
-                                <Text style={styles.unavailableText}>Unavailable</Text>
-                                <TouchableOpacity onPress={() => addSlot(dayIndex)}>
-                                    <Ionicons name="add-circle-outline" size={28} color="#2B74B4" />
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <View>
-                                {day.slots.map((slot, slotIndex) => (
-                                    <View key={slotIndex} style={styles.timeSlotRow}>
-                                        <TouchableOpacity 
-                                            style={styles.timeInput}
-                                            onPress={() => openTimePicker(dayIndex, slotIndex, 'start')}
-                                        >
-                                            <Text style={styles.timeText}>{formatTime(slot.start)}</Text>
-                                        </TouchableOpacity>
+              <View style={styles.slotsContainer}>
+                {day.slots.length === 0 ? (
+                  <View style={styles.unavailableContainer}>
+                    <Text style={styles.unavailableText}>Unavailable</Text>
+                    <TouchableOpacity onPress={() => addSlot(dayIndex)}>
+                      <Ionicons name="add-circle-outline" size={28} color="#2B74B4" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View>
+                    {day.slots.map((slot, slotIndex) => (
+                      <View key={slotIndex} style={styles.timeSlotRow}>
+                        <TouchableOpacity
+                          style={styles.timeInput}
+                          onPress={() => openTimePicker(dayIndex, slotIndex, 'start')}
+                        >
+                          <Text style={styles.timeText}>{formatTime(slot.start)}</Text>
+                        </TouchableOpacity>
 
-                                        <Text style={styles.dash}>-</Text>
+                        <Text style={styles.dash}>-</Text>
 
-                                        <TouchableOpacity 
-                                            style={styles.timeInput}
-                                            onPress={() => openTimePicker(dayIndex, slotIndex, 'end')}
-                                        >
-                                            <Text style={styles.timeText}>{formatTime(slot.end)}</Text>
-                                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.timeInput}
+                          onPress={() => openTimePicker(dayIndex, slotIndex, 'end')}
+                        >
+                          <Text style={styles.timeText}>{formatTime(slot.end)}</Text>
+                        </TouchableOpacity>
 
-                                        <TouchableOpacity 
-                                            style={styles.deleteBtn}
-                                            onPress={() => removeSlot(dayIndex, slotIndex)}
-                                        >
-                                            <Ionicons name="close-circle-outline" size={28} color="#FF4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                </View>
-            ))}
+                        <TouchableOpacity
+                          style={styles.deleteBtn}
+                          onPress={() => removeSlot(dayIndex, slotIndex)}
+                        >
+                          <Ionicons name="close-circle-outline" size={28} color="#FF4444" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+          ))}
         </View>
       </ScrollView>
 
       <View style={styles.fixedFooter}>
         {errorMessage && (
-            <View style={[styles.notificationBox, styles.errorBox]}>
-                <Text style={styles.errorText}>
-                    This time slot is already booked. Please manage your time before editing availability
-                </Text>
-            </View>
+          <View style={[styles.notificationBox, styles.errorBox]}>
+            <Text style={styles.errorText}>
+              This time slot is already booked. Please manage your time before editing availability
+            </Text>
+          </View>
         )}
-        
+
         {successMessage && (
-            <View style={[styles.notificationBox, styles.successBox]}>
-                <Text style={styles.successText}>
-                    Your availability has been updated successfully
-                </Text>
-            </View>
+          <View style={[styles.notificationBox, styles.successBox]}>
+            <Text style={styles.successText}>
+              Your availability has been updated successfully
+            </Text>
+          </View>
         )}
 
         <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-                <Text style={styles.resetButtonText}>Reset</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
+            <Text style={styles.resetButtonText}>Reset</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                <Text style={styles.submitButtonText}>Submit</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <Text style={styles.submitButtonText}>Submit</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -208,7 +291,7 @@ export default function AvailabilityPage() {
             <Text style={styles.modalTitle}>
               Select {pickerMode === 'start' ? 'Start' : 'End'} Time
             </Text>
-            
+
             <DateTimePicker
               value={tempDate}
               mode="time"
