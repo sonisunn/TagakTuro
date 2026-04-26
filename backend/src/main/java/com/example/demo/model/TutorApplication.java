@@ -42,8 +42,7 @@ public class TutorApplication {
     @Column(name = "time_available_end", nullable = false)
     private LocalTime timeAvailableEnd;
 
-    @Lob
-    @Column(nullable = false)
+    @Column(name = "experience", columnDefinition = "TEXT", nullable = false)
     private String experience;
 
     @Column(name = "report_of_grades_path", nullable = false)

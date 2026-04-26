@@ -8,6 +8,7 @@
   --text-light-blue: #7cb3e0;
   --text-grey: #737373;
   --status-green: #00cc00;
+  --status-gray: #8d99a8;
   --status-orange: #f59e0b;
   --status-red: #ef4444;
   --border-color: #91C7ED;
@@ -225,62 +226,50 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 }
 
 .sidebar-header {
-  padding: 1.5rem;
+  padding: 1.2rem 1.4rem 1rem;
   display: flex;
   align-items: center;
-  gap: 0.8rem;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
-.sidebar-logo {
-  width: 36px; height: 36px;
-  background: #fff;
-  color: var(--primary-blue);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-}
-
-.sidebar-brand h2 { font-size: 1rem; font-weight: 600; }
-.sidebar-brand span { font-size: 0.72rem; opacity: 0.8; letter-spacing: 0.05em; }
+.sidebar-brand h2 { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+.sidebar-brand span { font-size: 0.88rem; opacity: 0.75; letter-spacing: 0.01em; }
 
 .sidebar-nav {
   flex: 1;
-  padding: 1rem 0.75rem;
+  padding: 0.85rem 0.85rem;
   overflow-y: auto;
 }
 
 .nav-section-title {
-  font-size: 0.68rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 700;
   opacity: 0.7;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0.5rem 0.75rem;
-  margin-top: 0.5rem;
+  letter-spacing: 0.04em;
+  padding: 0.7rem 0.75rem 0.35rem;
+  margin-top: 0.35rem;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 6px;
+  padding: 0.62rem 0.75rem;
+  border-radius: 10px;
   color: #fff;
   text-decoration: none;
-  font-size: 0.85rem;
-  opacity: 0.9;
+  font-size: 1.03rem;
+  font-weight: 500;
+  opacity: 0.92;
   transition: all var(--transition-fast);
-  margin-bottom: 2px;
+  margin-bottom: 0.2rem;
 }
 
 .nav-link:hover { background: rgba(255,255,255,0.1); opacity: 1; }
 .nav-link.active { background: rgba(255,255,255,0.2); font-weight: 600; opacity: 1; }
 
-.nav-icon { width: 1.2rem; text-align: center; }
-
 .sidebar-footer {
-  padding: 1rem 0.75rem;
+  padding: 0.9rem 0.85rem 1.2rem;
   border-top: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -337,7 +326,7 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 
 /* ─── Dashboard Content ───────────────────────────────────────── */
 .dashboard-content {
-  padding: 1.5rem 2rem;
+  padding: 1.35rem 1.9rem;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -345,7 +334,7 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 }
 
 .welcome-section {
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.55rem;
   border-bottom: 2px solid #e2e8f0;
 }
 
@@ -396,7 +385,7 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 
 .data-table-container {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
   background: var(--bg-white);
 }
@@ -404,7 +393,7 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 .data-table { width: 100%; border-collapse: collapse; text-align: center; }
 
 .data-table th {
-  padding: 0.5rem 0.75rem;
+  padding: 0.62rem 0.75rem;
   font-weight: 600;
   color: var(--primary-blue);
   font-size: 0.85rem;
@@ -412,7 +401,7 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 }
 
 .data-table td {
-  padding: 0.6rem 0.75rem;
+  padding: 0.36rem 0.75rem;
   font-size: 0.8rem;
   color: var(--primary-blue);
   font-weight: 500;
@@ -421,8 +410,29 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 .data-table tr:not(:last-child) { border-bottom: 1px solid #eef6fc; }
 
 .status-green  { color: var(--status-green) !important; }
+.status-gray   { color: var(--status-gray) !important; }
 .status-orange { color: var(--status-orange) !important; }
 .status-red    { color: var(--status-red) !important; }
+
+.tutors-table-section {
+  gap: 0.6rem;
+}
+
+.tutors-data-table th,
+.tutors-data-table td {
+  white-space: nowrap;
+}
+
+.table-view-link {
+  color: var(--primary-blue);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.table-view-link:hover {
+  color: #216098;
+}
 
 /* ─── Action Buttons ─────────────────────────────────────────── */
 .btn {
@@ -451,9 +461,6 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 }
 .btn-success:hover { background: #15803d; transform: translateY(-1px); }
 
-/* ─── Stars ──────────────────────────────────────────────────── */
-.stars { color: #f59e0b; letter-spacing: 0.05em; }
-
 /* ─── Tutor Profile Stats ────────────────────────────────────── */
 .profile-stats-grid {
   display: grid;
@@ -461,16 +468,46 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
   gap: 1rem;
 }
 
-.profile-stat-card {
-  background: #f0f7fc;
-  border: 1px solid var(--border-color);
+.tutor-profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.tutor-profile-meta h2 {
+  margin-bottom: 0.1rem;
+}
+
+.profile-back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  padding: 0.45rem 1rem;
+  border: 1px solid #b8cedf;
   border-radius: 10px;
-  padding: 1rem 1.25rem;
+  color: #426b8b;
+  text-decoration: none;
+  font-size: 0.86rem;
+  font-weight: 500;
+  background: #ffffff;
+}
+
+.profile-back-btn:hover {
+  background: #f7fbff;
+}
+
+.profile-stat-card {
+  background: var(--light-blue);
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
   display: flex; flex-direction: column; gap: 0.15rem;
 }
 
-.profile-stat-label { font-size: 0.78rem; color: var(--text-grey); }
-.profile-stat-value { font-size: 1.6rem; font-weight: 700; color: var(--primary-blue); }
+.profile-stat-label { font-size: 0.78rem; color: #f5fbff; font-weight: 600; }
+.profile-stat-value { font-size: 15px; font-weight: 700; color: #ffffff; }
 
 /* ─── Certificate Badge ──────────────────────────────────────── */
 .cert-badge {
@@ -488,13 +525,24 @@ button, .submit-btn, .sign-out-btn, .sidebar-toggle {
 
 /* ─── Eligibility Notice ─────────────────────────────────────── */
 .eligibility-notice {
-  background: #f0f7fc;
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1px solid #2B7ABF;
   border-radius: 10px;
   padding: 0.75rem 1rem;
+  margin: 0.1rem 0;
   font-size: 0.82rem;
-  color: var(--text-grey);
-  display: flex; align-items: center; gap: 0.5rem;
+  color: #2B7ABF;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.eligibility-notice-success {
+  background: #0FE40F;
+  border-color: #0FE40F;
+  color: #ffffff;
+  font-weight: 600;
 }
 
 /* ─── Modal ──────────────────────────────────────────────────── */

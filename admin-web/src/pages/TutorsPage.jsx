@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 
@@ -81,14 +82,16 @@ export default function TutorsPage() {
                     <td style={{ textAlign: 'center' }}>{(t.totalHours || 0).toFixed(1)}h</td>
                     <td style={{ textAlign: 'center' }}>
                       {t.rating > 0 ? (
-                        <span>⭐ {t.rating.toFixed(1)}</span>
+                        <span>{t.rating.toFixed(1)}</span>
                       ) : (
                         <span style={{ color: '#999' }}>No ratings</span>
                       )}
                     </td>
                     {/* The backend Tutor model doesn't store 'active/inactive' status, let's default to active for now */}
                     <td className="status-green">Active</td>
-                    <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
+                    <td>
+                      <Link to={`/tutors/${t.id}`} className="table-view-link">View</Link>
+                    </td>
                   </tr>
                 ))
               )}

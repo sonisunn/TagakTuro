@@ -1,0 +1,324 @@
+/* Modal Overlay & Container */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-in;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-blue);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.modal-close:hover {
+  color: #000;
+}
+
+/* Modal Body */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.attachments-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.attachment-item:hover {
+  background: #f3f4f6;
+  border-color: var(--primary-blue);
+}
+
+.attachment-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.attachment-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.attachment-name {
+  margin: 0 0 0.25rem 0;
+  font-weight: 600;
+  color: var(--primary-blue);
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.attachment-type {
+  margin: 0 0 0.25rem 0;
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.attachment-date {
+  margin: 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.attachment-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: var(--primary-blue);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.attachment-link:hover {
+  background: #2568a3;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-footer .btn {
+  padding: 0.6rem 1.2rem;
+  font-size: 14px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .modal-content {
+    max-width: 100%;
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .attachment-item {
+    flex-direction: column;
+  }
+
+  .attachment-link {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Simple Modal Styles */
+.modal-content-simple {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+.modal-header-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modal-header-simple h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-blue);
+}
+
+.modal-body-simple {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.attachments-list-simple {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.attachment-row-simple {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.attachment-row-simple:hover {
+  background: #f0f2f5;
+  border-color: var(--primary-blue);
+}
+
+.attachment-file-info-simple {
+  display: flex;
+  align-items: center;
+  gap: 0rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-blue);
+  word-break: break-word;
+}
+
+.btn-view-simple {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-view-simple:hover {
+  background: #2568a3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 112, 168, 0.3);
+}
+
+.btn-view-simple:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 600px) {
+  .modal-content-simple {
+    max-width: 100%;
+    width: 95%;
+  }
+
+  .attachment-row-simple {
+    flex-wrap: wrap;
+  }
+
+  .attachment-file-info-simple {
+    width: 100%;
+  }
+
+  .btn-view-simple {
+    width: 100%;
+    justify-content: center;
+  }
+}

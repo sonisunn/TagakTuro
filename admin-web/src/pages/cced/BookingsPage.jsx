@@ -4,6 +4,14 @@ import { useAuth } from '../../context/AuthContext';
 
 const FILTERS = ['All', 'Upcoming', 'Past', 'Cancelled'];
 
+function sortByBookingDateDesc(items) {
+  return [...items].sort((a, b) => {
+    const timeA = new Date(a.bookingDateTime).getTime();
+    const timeB = new Date(b.bookingDateTime).getTime();
+    return timeB - timeA;
+  });
+}
+
 function statusClass(s) {
   if (s === 'CONFIRMED') return 'status-green';
   if (s === 'PENDING') return 'status-orange';
@@ -25,7 +33,7 @@ export default function CcedBookingsPage() {
         const res = await authFetch('/api/booking');
         if (res?.ok) {
           const data = await res.json();
-          setBookings(data);
+          setBookings(sortByBookingDateDesc(data));
         }
       } catch (err) {
         console.error("Error fetching bookings:", err);
@@ -40,7 +48,7 @@ export default function CcedBookingsPage() {
   today.setHours(0, 0, 0, 0);
 
   const getFiltered = () => {
-    return bookings.filter((b) => {
+    const filteredBookings = bookings.filter((b) => {
       const bDate = new Date(b.bookingDateTime);
       bDate.setHours(0, 0, 0, 0);
 
@@ -55,6 +63,8 @@ export default function CcedBookingsPage() {
       }
       return true;
     });
+
+    return sortByBookingDateDesc(filteredBookings);
   };
 
   const formatTimeRange = (dateTimeStr, durationMinutes) => {

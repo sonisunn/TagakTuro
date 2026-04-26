@@ -12,13 +12,6 @@ const allEvaluations = [
   { tutor: 'Mark Tan',       reviewer: 'Ben Cruz',           date: 'Mar 5, 2026',  rating: 4.6, comment: 'Very engaging and fun session.'   },
 ];
 
-function renderStars(rating) {
-  const full  = Math.floor(rating);
-  const half  = rating - full >= 0.5 ? 1 : 0;
-  const empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function EvaluationsPage() {
   return (
     <DashboardLayout title="Evaluations">
@@ -50,10 +43,7 @@ export default function EvaluationsPage() {
                   <td style={{ fontWeight: 600 }}>{ev.tutor}</td>
                   <td>{ev.reviewer}</td>
                   <td>{ev.date}</td>
-                  <td>
-                    <span className="stars">{renderStars(ev.rating)}</span>{' '}
-                    {ev.rating.toFixed(1)}
-                  </td>
+                  <td>{ev.rating.toFixed(1)}</td>
                   <td style={{ textAlign: 'left', maxWidth: '280px' }}>{ev.comment}</td>
                 </tr>
               ))}

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import CcedLayout from '../../components/CcedLayout';
-import { useAuth } from '../../context/AuthContext';
+import DashboardLayout from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
+import { sortByDateWithPriority, formatDateDisplay } from '../utils/dateUtils';
 
-export default function CcedTutorProfilePage() {
+export default function TutorProfilePage() {
   const { id } = useParams();
   const { authFetch } = useAuth();
   const [tutor, setTutor] = useState(null);
@@ -14,13 +15,11 @@ export default function CcedTutorProfilePage() {
     const fetchTutorProfile = async () => {
       try {
         setLoading(true);
-        // Fetch tutor details
         const res = await authFetch(`/api/tutor/${id}`);
         if (res?.ok) {
           const tutorData = await res.json();
           setTutor(tutorData);
 
-          // If tutor has a user, fetch their evaluations
           if (tutorData.userId) {
             const feedbackRes = await authFetch(`/api/feedback/user/${tutorData.userId}`);
             if (feedbackRes?.ok) {
@@ -30,28 +29,29 @@ export default function CcedTutorProfilePage() {
           }
         }
       } catch (err) {
-        console.error("Error fetching tutor profile:", err);
+        console.error('Error fetching tutor profile:', err);
       } finally {
         setLoading(false);
       }
     };
+
     fetchTutorProfile();
   }, [id, authFetch]);
 
   if (loading) {
     return (
-      <CcedLayout title="Tutor Profile">
+      <DashboardLayout title="Tutor Profile">
         <p style={{ padding: '2rem' }}>Loading profile...</p>
-      </CcedLayout>
+      </DashboardLayout>
     );
   }
 
   if (!tutor) {
     return (
-      <CcedLayout title="Tutor Profile">
+      <DashboardLayout title="Tutor Profile">
         <p style={{ color: 'var(--text-grey)', padding: '2rem' }}>Tutor not found.</p>
-        <Link to="/cced/tutors" className="btn btn-outline" style={{ marginLeft: '2rem' }}>Back</Link>
-      </CcedLayout>
+        <Link to="/tutors" className="btn btn-outline" style={{ marginLeft: '2rem' }}>Back</Link>
+      </DashboardLayout>
     );
   }
 
@@ -70,13 +70,13 @@ export default function CcedTutorProfilePage() {
   const eligible = totalHoursDone >= 50 && overallRating >= 4.0;
 
   return (
-    <CcedLayout title="Tutor Profile">
+    <DashboardLayout title="Tutor Profile">
       <section className="welcome-section tutor-profile-header">
         <div className="tutor-profile-meta">
           <h2>{tutor.name}</h2>
           <p>{tutor.courseProgram || 'N/A'} · {tutor.tutorId} · {tutor.email}</p>
         </div>
-        <Link to="/cced/tutors" className="profile-back-btn">Back</Link>
+        <Link to="/tutors" className="profile-back-btn">Back</Link>
       </section>
 
       <div className="profile-stats-grid">
@@ -113,10 +113,10 @@ export default function CcedTutorProfilePage() {
               {evaluations.length === 0 ? (
                 <tr><td colSpan={4} style={{ padding: '1.5rem', color: 'var(--text-grey)' }}>No evaluations yet.</td></tr>
               ) : (
-                evaluations.map((ev, i) => (
+                sortByDateWithPriority(evaluations, 'createdAt', 'past').map((ev, i) => (
                   <tr key={ev.id || i}>
                     <td style={{ fontWeight: 600 }}>{ev.reviewerName}</td>
-                    <td>{new Date(ev.createdAt).toLocaleDateString()}</td>
+                    <td>{formatDateDisplay(ev.createdAt)}</td>
                     <td>{ev.rating.toFixed(1)}</td>
                     <td style={{ textAlign: 'left' }}>{ev.comments}</td>
                   </tr>
@@ -126,6 +126,6 @@ export default function CcedTutorProfilePage() {
           </table>
         </div>
       </section>
-    </CcedLayout>
+    </DashboardLayout>
   );
 }

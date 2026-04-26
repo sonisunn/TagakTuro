@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom';
 import CcedLayout from '../../components/CcedLayout';
 import { useAuth } from '../../context/AuthContext';
 
-function renderStars(r) {
-  const full = Math.floor(r), half = r - full >= 0.5 ? 1 : 0, empty = 5 - full - half;
-  return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(empty);
-}
-
 export default function CcedTutorsPage() {
   const { authFetch } = useAuth();
   const [tutors, setTutors] = useState([]);
@@ -64,16 +59,14 @@ export default function CcedTutorsPage() {
                     <td>{t.courseProgram || 'N/A'}</td>
                     <td>{t.sessionsDone ?? 0}</td>
                     <td>{(t.totalHours || 0).toFixed(1)} hrs</td>
-                    <td>
-                      <span className="stars">{renderStars(t.rating || 0)}</span> {(t.rating || 0).toFixed(1)}
-                    </td>
+                    <td>{(t.rating || 0).toFixed(1)}</td>
                     <td className="status-green">Active</td>
                     <td>
                       <Link 
                         to={`/cced/tutors/${t.id}`} 
                         style={{ color: 'var(--primary-blue)', textDecoration: 'none', fontWeight: '500' }}
                       >
-                        View Profile
+                        View
                       </Link>
                     </td>
                   </tr>

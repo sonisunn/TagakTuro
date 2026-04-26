@@ -1,6 +1,91 @@
--- V9: Comprehensive data population for all tables
+-- V9: Schema fixes + comprehensive data population for all tables
 -- All passwords are 'TagakTuro2025'
 -- bcrypt hash: $2b$10$pG9kmSQcNjKZFfZjCYvvwOwiwVQRlVUQ/3rvrLZs6VQ/x.J6inXV6
+
+SET FOREIGN_KEY_CHECKS=0;
+
+-- ============================================================
+-- 0. SCHEMA FIXES: Create missing tables that Hibernate auto-created
+-- ============================================================
+ALTER TABLE `bookings` ADD COLUMN IF NOT EXISTS `venue` VARCHAR(255) DEFAULT NULL;
+
+CREATE TABLE IF NOT EXISTS `modules` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `capacity` int(11) DEFAULT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `current_tutors` int(11) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `is_active` bit(1) DEFAULT NULL,
+  `module_name` varchar(255) NOT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_module_name` (`module_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `tutor_applications` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `certificates_path` varchar(255) DEFAULT NULL,
+  `course_program` varchar(255) NOT NULL,
+  `created_at` datetime(6) DEFAULT NULL,
+  `email` varchar(255) NOT NULL,
+  `experience` text NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `phone_number` varchar(255) NOT NULL,
+  `report_of_grades_path` varchar(255) NOT NULL,
+  `status` varchar(255) NOT NULL,
+  `student_id` varchar(255) NOT NULL,
+  `time_available_end` time(6) NOT NULL,
+  `time_available_start` time(6) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_tutor_app_email` (`email`),
+  UNIQUE KEY `uk_tutor_app_student_id` (`student_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `pama_preferences` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `preference_rank` int(11) DEFAULT NULL,
+  `score` double DEFAULT NULL,
+  `module_id` bigint(20) NOT NULL,
+  `tutor_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `pama_assignments` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) DEFAULT NULL,
+  `matching_score` double DEFAULT NULL,
+  `round_number` int(11) DEFAULT NULL,
+  `status` enum('CONFIRMED','DEADLOCK','PENDING','REJECTED') DEFAULT NULL,
+  `updated_at` datetime(6) DEFAULT NULL,
+  `module_id` bigint(20) NOT NULL,
+  `tutor_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `conversations` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `created_at` datetime(6) NOT NULL,
+  `updated_at` datetime(6) NOT NULL,
+  `last_message_id` bigint(20) DEFAULT NULL,
+  `user1_id` bigint(20) NOT NULL,
+  `user2_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `messages` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `content` longtext NOT NULL,
+  `created_at` datetime(6) NOT NULL,
+  `is_read` bit(1) NOT NULL,
+  `message_type` enum('FILE','IMAGE','SYSTEM','TEXT') DEFAULT NULL,
+  `read_at` datetime(6) DEFAULT NULL,
+  `conversation_id` bigint(20) NOT NULL,
+  `sender_id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET FOREIGN_KEY_CHECKS=1;
 
 -- ============================================================
 -- 1. MORE STUDENTS (3 additional)

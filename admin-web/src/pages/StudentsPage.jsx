@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 
@@ -79,7 +80,7 @@ export default function StudentsPage() {
                     {/* The backend Student model doesn't store 'active/inactive' status, let's default to active mune */}
                     {/* fix later */}
                     <td className="status-green">Active</td>
-                    <td><button style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', cursor: 'pointer' }}>View</button></td>
+                    <td><Link to={`/students/${s.id}`} className="table-view-link">View</Link></td>
                   </tr>
                 ))
               )}

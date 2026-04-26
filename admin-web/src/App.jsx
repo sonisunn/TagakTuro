@@ -6,7 +6,9 @@ import LoginPage from './pages/LoginPage';
 // Admin pages
 import DashboardPage    from './pages/DashboardPage';
 import StudentsPage     from './pages/StudentsPage';
+import StudentProfilePage from './pages/StudentProfilePage';
 import TutorsPage       from './pages/TutorsPage';
+import TutorProfilePage from './pages/TutorProfilePage';
 import ApplicationsPage from './pages/ApplicationsPage';
 import BookingsPage     from './pages/BookingsPage';
 
@@ -32,7 +34,9 @@ export default function App() {
           {/* Admin routes */}
           <Route path="/dashboard"    element={<Admin><DashboardPage /></Admin>} />
           <Route path="/students"     element={<Admin><StudentsPage /></Admin>} />
+          <Route path="/students/:id" element={<Admin><StudentProfilePage /></Admin>} />
           <Route path="/tutors"       element={<Admin><TutorsPage /></Admin>} />
+          <Route path="/tutors/:id"   element={<Admin><TutorProfilePage /></Admin>} />
           <Route path="/applications" element={<Admin><ApplicationsPage /></Admin>} />
           <Route path="/bookings"     element={<Admin><BookingsPage /></Admin>} />
 

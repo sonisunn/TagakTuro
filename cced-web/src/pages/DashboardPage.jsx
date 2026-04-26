@@ -35,7 +35,7 @@ export default function DashboardPage() {
         </div>
         <div className="stat-card">
           <span className="stat-label">Average Rating</span>
-          <span className="stat-value">4.7 ⭐</span>
+          <span className="stat-value">4.7</span>
         </div>
         <div className="stat-card">
           <span className="stat-label">Certificates Issued</span>

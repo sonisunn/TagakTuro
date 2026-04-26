@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
+import { sortByDateWithPriority, formatDateDisplay, formatTimeRange } from '../utils/dateUtils';
 
 export default function DashboardPage() {
   const { user, authFetch } = useAuth();
@@ -46,12 +47,12 @@ export default function DashboardPage() {
             pendingTutors: pendingApps.length
           });
 
-          // Sort bookings: most recent or upcoming first. 
-          // Let's sort by date descending and take top 5
-          const sortedBookings = [...bookingsData].sort((a, b) => new Date(b.bookingDateTime) - new Date(a.bookingDateTime)).slice(0, 5);
+          // Sort bookings by date priority (upcoming first) and take top 5
+          const sortedBookings = sortByDateWithPriority(bookingsData, 'bookingDateTime', 'upcoming').slice(0, 5);
           setSessions(sortedBookings);
 
-          const sortedApps = [...pendingApps].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+          // Sort applications by date priority and take top 5
+          const sortedApps = sortByDateWithPriority(pendingApps, 'createdAt', 'past').slice(0, 5);
           setPendingApplications(sortedApps);
         }
       } catch (error) {
@@ -64,19 +65,7 @@ export default function DashboardPage() {
     fetchData();
   }, [authFetch]);
 
-  const formatTime = (dateString, durationMinutes) => {
-    if (!dateString) return 'N/A';
-    const start = new Date(dateString);
-    const end = new Date(start.getTime() + (durationMinutes || 60) * 60000);
-    
-    const formatOpts = { hour: 'numeric', minute: '2-digit', hour12: true };
-    return `${start.toLocaleTimeString([], formatOpts)} - ${end.toLocaleTimeString([], formatOpts)}`;
-  };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
-  };
 
   return (
     <DashboardLayout title="Dashboard">
@@ -115,29 +104,23 @@ export default function DashboardPage() {
                 <th>Venue</th>
                 <th>Tutor</th>
                 <th>Student</th>
-                <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan="5" style={{textAlign: 'center', padding: '20px'}}>Loading sessions...</td></tr>
+                <tr><td colSpan="4" style={{textAlign: 'center', padding: '20px'}}>Loading sessions...</td></tr>
               ) : sessions.length === 0 ? (
-                <tr><td colSpan="5" style={{textAlign: 'center', padding: '20px'}}>No sessions found.</td></tr>
+                <tr><td colSpan="4" style={{textAlign: 'center', padding: '20px'}}>No sessions found.</td></tr>
               ) : (
                 sessions.map((session) => (
                   <tr key={session.id}>
                     <td>
-                      <div>{formatDate(session.bookingDateTime)}</div>
-                      <div style={{fontSize: '0.85em', color: '#666', marginTop: '4px'}}>{formatTime(session.bookingDateTime, session.durationMinutes)}</div>
+                      <div>{formatDateDisplay(session.bookingDateTime)}</div>
+                      <div style={{fontSize: '0.85em', color: 'var(--primary-blue)', marginTop: '4px'}}>{formatTimeRange(session.bookingDateTime, session.durationMinutes)}</div>
                     </td>
                     <td>{session.venue || session.modality || 'N/A'}</td>
                     <td>{session.tutorName || 'Unassigned'}</td>
                     <td>{session.student?.name || 'N/A'}</td>
-                    <td>
-                      <span className={session.status?.toLowerCase() === 'confirmed' || session.status?.toLowerCase() === 'completed' ? 'status-green' : ''}>
-                        {session.status || 'N/A'}
-                      </span>
-                    </td>
                   </tr>
                 ))
               )}
@@ -171,7 +154,7 @@ export default function DashboardPage() {
               ) : (
                 pendingApplications.map((app) => (
                   <tr key={app.id}>
-                    <td>{formatDate(app.createdAt)}</td>
+                    <td>{formatDateDisplay(app.createdAt)}</td>
                     <td>{app.name}</td>
                     <td>{app.studentId}</td>
                     <td>{app.courseProgram}</td>

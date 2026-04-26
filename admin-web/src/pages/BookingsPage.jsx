@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { sortByDateWithPriority, formatDateDisplay, formatTimeRange } from '../utils/dateUtils';
 
 export default function BookingsPage() {
   const { authFetch } = useAuth();
@@ -31,39 +32,21 @@ export default function BookingsPage() {
     fetchBookings();
   }, [authFetch]);
 
-  const formatDate = (dateTimeString) => {
-    if (!dateTimeString) return 'N/A';
-    const date = new Date(dateTimeString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const formatTimeRange = (dateTimeString, durationMinutes = 60) => {
-    if (!dateTimeString) return 'N/A';
-    const start = new Date(dateTimeString);
-    const end = new Date(start.getTime() + durationMinutes * 60000);
-    
-    const format = (date) => date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-
-    return `${format(start)} - ${format(end)}`;
-  };
-
   const getFilteredBookings = () => {
+    let filtered;
     if (filter === 'UPCOMING') {
-      return bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING');
+      filtered = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING');
     } else if (filter === 'PAST') {
-      return bookings.filter(b => b.status === 'COMPLETED');
+      filtered = bookings.filter(b => b.status === 'COMPLETED');
     } else if (filter === 'CANCELLED') {
-      return bookings.filter(b => b.status === 'CANCELLED');
+      filtered = bookings.filter(b => b.status === 'CANCELLED');
+    } else {
+      filtered = bookings;
     }
-    return bookings;
+    
+    // Sort by date priority
+    const direction = filter === 'PAST' ? 'past' : 'upcoming';
+    return sortByDateWithPriority(filtered, 'bookingDateTime', direction);
   };
 
   const displayedBookings = getFilteredBookings();
@@ -134,7 +117,7 @@ export default function BookingsPage() {
               ) : (
                 displayedBookings.map((b) => (
                   <tr key={`booking-${b.id}`}>
-                    <td>{formatDate(b.bookingDateTime)}</td>
+                    <td>{formatDateDisplay(b.bookingDateTime)}</td>
                     <td>{formatTimeRange(b.bookingDateTime, b.durationMinutes)}</td>
                     <td>{b.subject}</td>
                     <td>{b.tutorName || 'Unassigned'}</td>
