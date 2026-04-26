@@ -3,6 +3,8 @@ package com.example.demo.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Table(name = "tutors")
@@ -33,6 +35,9 @@ public class Tutor {
     @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
     private User user;
+
+    @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TutorAvailability> availabilities = new ArrayList<>();
 
     // Constructors
     public Tutor() {
@@ -142,5 +147,19 @@ public class Tutor {
     @JsonProperty("userId")
     public Long getUserId() {
         return user != null ? user.getId() : null;
+    }
+
+    public List<TutorAvailability> getAvailabilities() {
+        return availabilities;
+    }
+
+    public void setAvailabilities(List<TutorAvailability> availabilities) {
+        if (this.availabilities == null) {
+            this.availabilities = new ArrayList<>();
+        }
+        this.availabilities.clear();
+        if (availabilities != null) {
+            this.availabilities.addAll(availabilities);
+        }
     }
 }
