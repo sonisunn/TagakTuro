@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 
 @Service
 public class BookingService {
@@ -107,7 +109,6 @@ public class BookingService {
     public List<Booking> getPendingBookings() {
         return enrichBookingsWithUserIds(bookingRepository.findByStatus(Booking.BookingStatus.PENDING));
     }
-
     @Transactional(readOnly = true)
     public List<Booking> getPendingBookingsForTutor(Long tutorUserId) {
         List<Booking> allPending = getPendingBookings();
@@ -128,7 +129,8 @@ public class BookingService {
             LocalDateTime start = booking.getBookingDateTime();
             LocalDateTime end = start.plusMinutes(booking.getDurationMinutes());
             
-            int javaDayOfWeek = start.getDayOfWeek().getValue(); // 1=Mon, 7=Sun
+            // Map Java DayOfWeek (1=Mon...7=Sun) to JS format (0=Sun...6=Sat)
+            int javaDayOfWeek = start.getDayOfWeek().getValue();
             int jsDayOfWeek = javaDayOfWeek == 7 ? 0 : javaDayOfWeek;
 
             LocalTime bStart = start.toLocalTime();
@@ -144,7 +146,6 @@ public class BookingService {
             });
         }).collect(java.util.stream.Collectors.toList());
     }
-
     // Get bookings by tutor name
     public List<Booking> getBookingsByTutorName(String tutorName) {
         if (tutorName == null || tutorName.isEmpty()) {

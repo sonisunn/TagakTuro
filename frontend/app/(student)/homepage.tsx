@@ -311,8 +311,14 @@ export default function TagakTuroHomepage() {
         return;
       }
 
-      // Convert to ISO string for API
-      const isoDateTime = newDateTime.toISOString();
+      // Convert to Local ISO string for API (avoiding UTC shift)
+      const pad = (n: number) => n < 10 ? '0' + n : n;
+      const isoDateTime = newDateTime.getFullYear() + '-' +
+        pad(newDateTime.getMonth() + 1) + '-' +
+        pad(newDateTime.getDate()) + 'T' +
+        pad(newDateTime.getHours()) + ':' +
+        pad(newDateTime.getMinutes()) + ':' +
+        pad(newDateTime.getSeconds());
 
       // Call API to update booking
       await updateBooking(selectedClass!.id, {
