@@ -3,6 +3,8 @@ package com.example.demo.controller;
 import com.example.demo.dto.MessageDTO;
 import com.example.demo.dto.SendMessageRequest;
 import com.example.demo.service.ChatService;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -21,6 +23,9 @@ public class ChatWebSocketController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private UserRepository userRepository;
+
     /**
      * Handle incoming messages from a conversation
      * Client sends to: /app/chat/{conversationId}
@@ -33,13 +38,7 @@ public class ChatWebSocketController {
             @DestinationVariable Long conversationId,
             Principal principal) throws Exception {
 
-        if (principal == null) {
-            throw new Exception("User not authenticated");
-        }
-
-        // For now, extract userId from principal name or from a custom header
-        // You'll need to implement proper authentication
-        Long userId = extractUserIdFromPrincipal(principal);
+        Long userId = extractUserIdFromPrincipal(principal, request);
 
         // Send the message via the service
         MessageDTO messageDTO = chatService.sendMessage(conversationId, userId, request);
@@ -49,8 +48,6 @@ public class ChatWebSocketController {
 
     /**
      * Handle typing indicator
-     * Client sends to: /app/typing/{conversationId}
-     * Broadcasted to: /topic/conversation/{conversationId}/typing
      */
     @MessageMapping("/typing/{conversationId}")
     @SendTo("/topic/conversation/{conversationId}/typing")
@@ -58,12 +55,9 @@ public class ChatWebSocketController {
             @DestinationVariable Long conversationId,
             Principal principal) throws Exception {
 
-        if (principal == null) {
-            throw new Exception("User not authenticated");
-        }
-
-        Long userId = extractUserIdFromPrincipal(principal);
+        Long userId = extractUserIdFromPrincipal(principal, null);
         TypingIndicator indicator = new TypingIndicator();
+        // ...
         indicator.setUserId(userId);
         indicator.setConversationId(conversationId);
         indicator.setIsTyping(true);
@@ -80,11 +74,7 @@ public class ChatWebSocketController {
             @DestinationVariable Long conversationId,
             Principal principal) throws Exception {
 
-        if (principal == null) {
-            throw new Exception("User not authenticated");
-        }
-
-        Long userId = extractUserIdFromPrincipal(principal);
+        Long userId = extractUserIdFromPrincipal(principal, null);
         TypingIndicator indicator = new TypingIndicator();
         indicator.setUserId(userId);
         indicator.setConversationId(conversationId);
@@ -106,19 +96,25 @@ public class ChatWebSocketController {
     }
 
     /**
-     * Helper method to extract userId from Principal
-     * This is a basic implementation - adjust based on your authentication
-     * mechanism
+     * Helper method to extract userId from Principal or use request senderId
      */
-    private Long extractUserIdFromPrincipal(Principal principal) {
-        // This assumes the principal.getName() returns the userId as a string
-        // Adjust based on your actual authentication implementation
-        // For JWT tokens, you might need to parse the token instead
+    private Long extractUserIdFromPrincipal(Principal principal, SendMessageRequest request) {
+        if (principal == null) {
+            if (request != null && request.getSenderId() != null) {
+                return request.getSenderId();
+            }
+            // Fallback for typing indicators if no principal
+            return 1L; 
+        }
+        
+        String name = principal.getName();
         try {
-            return Long.parseLong(principal.getName());
+            return Long.parseLong(name);
         } catch (NumberFormatException e) {
-            // Fallback: return a default value or handle differently
-            throw new RuntimeException("Invalid user ID format: " + principal.getName());
+            // If name is not a number, it's likely an email - look up the user
+            return userRepository.findByEmail(name)
+                    .map(User::getId)
+                    .orElseThrow(() -> new RuntimeException("User not found with email: " + name));
         }
     }
 
