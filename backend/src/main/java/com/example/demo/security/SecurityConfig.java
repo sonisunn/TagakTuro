@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/student/**").permitAll()
                         .requestMatchers("/api/tutor/**").permitAll()
+                        .requestMatchers("/api/chat/**").permitAll()
+                        .requestMatchers("/ws/**", "/ws", "/ws-native/**", "/ws-native").permitAll()
                         .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "CCED")
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/booking").hasRole("STUDENT")
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/booking/student/**")
