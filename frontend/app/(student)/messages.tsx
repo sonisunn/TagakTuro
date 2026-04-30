@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,153 +9,171 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useChat } from '../../hooks/useChat';
+import { getUserConversations, getMessageHistory } from '../../src/api/chat';
 
 export default function MessagesPage() {
-
-  const [selectedChat, setSelectedChat] = useState(null);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messageText, setMessageText] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'tutor',
-      text: "I am Juan, your matched tutor for Computer Science, and your preferred modality is Online. Kindly answer this Diagnostic test so we can assess your current knowledge \n\n Diagnostic Test \n\n I'm looking forward to a swift study session with you!"
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
-    },
-    {
-      id: 2,
-      sender: 'tutor',
-      text: "HRU Jayson?! I hope you are doing all good. Reminding you about our session on September 30, 2025. This will be held using our online video conference feature. See you there!",
-    },
-    {
-      id: 3,
-      sender: 'student',
-      text: "Doing good!! I’ll be there 15 minutes prior :)",
-    },
-  ]);
+  const { messages, setMessages, sendMessage, connected } = useChat(selectedChat?.id || null, userId);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const conversations = [
-    {
-      id: 1,
-      name: 'Juan Dela Cruz',
-      preview: "Hey!!! Just a quick reminder about our session later today at 5 PM",
-      avatar: null,
-    },
-    {
-      id: 2,
-      name: 'Jayson Partido',
-      preview: "Looking forward to our session today at 10 AM. I'm ready to help with your English homework.",
-      avatar: null,
-    },
-    {
-      id: 3,
-      name: 'Jayson Partido',
-      preview: "I'm writing to confirm our tutoring session for today. [Date], at [Time, e.g., 4:00 PM].",
-      avatar: null,
-    },
-    {
-      id: 4,
-      name: 'Jayson Partido',
-      preview: "Looking forward to our session today at 10 AM. I'm ready to help with your English homework.",
-      avatar: null,
-    },
-    {
-      id: 5,
-      name: 'Jayson Partido',
-      preview: "I'm writing to confirm our tutoring session for today. [Date], at [Time, e.g., 4:00 PM].",
-      avatar: null,
-    },
-  ];
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setUserId(user.id);
+        fetchConversations(user.id);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const fetchConversations = async (id: number) => {
+    try {
+      const data = await getUserConversations(id);
+      setConversations(data.content || []);
+    } catch (error) {
+      console.error('Failed to fetch conversations', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadHistory = async (conversationId: number) => {
+    if (!userId) return;
+    setLoadingHistory(true);
+    try {
+      const data = await getMessageHistory(conversationId, userId);
+      // Backend returns newest first in Page, we want oldest first for chat bubble display
+      const history = [...data.content].reverse();
+      setMessages(history);
+    } catch (error) {
+      console.error('Failed to load history', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  const handleSelectChat = (conversation: any) => {
+    setSelectedChat(conversation);
+    loadHistory(conversation.id);
+  };
 
   const handleSendMessage = () => {
-    if (messageText.trim()) {
-      const newMessage = {
-        id: messages.length + 1,
-        sender: 'student',
-        text: messageText,
-      };
-      setMessages([...messages, newMessage]);
+    if (messageText.trim() && connected) {
+      sendMessage(messageText.trim());
       setMessageText('');
     }
   };
 
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
+
   if (selectedChat) {
-  return (
-    <View style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-        <Stack.Screen options={{ headerShown: false }} />
+    const otherUserName = selectedChat.user1Id === userId ? selectedChat.user2Name : selectedChat.user1Name;
 
-        {/* Chat Header */}
-        <View style={styles.chatHeader}>
-          <TouchableOpacity onPress={() => setSelectedChat(null)}>
-            <Ionicons name="arrow-back" size={24} color="#2B74B4" />
-          </TouchableOpacity>
-          <View style={styles.chatHeaderContent}>
-            <View style={styles.chatAvatar}>
-              <Ionicons name="person-circle" size={60} color="#2B74B4" />
-            </View>
-            <View>
-              <Text style={styles.chatHeaderName}>Juan Dela Cruz</Text>
-              {/* <Text style={styles.chatHeaderSubtitle}>Computer Science Tutor</Text> */}
-            </View>
-          </View>
-        </View>
-
-        {/* Messages */}
-        <ScrollView
-          style={styles.chatContent}
-          contentContainerStyle={styles.chatContentContainer}
+    return (
+      <View style={styles.container}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          {messages.map((message) => (
-            <View key={message.id} style={styles.messageContainer}>
-              <View
-                style={[
-                  styles.messageBubble,
-                  message.sender === 'student' ? styles.studentBubble : styles.tutorBubble,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.messageText,
-                    message.sender === 'student' ? styles.studentText : styles.tutorText,
-                  ]}
-                >
-                  {message.text}
+          <Stack.Screen options={{ headerShown: false }} />
+
+          {/* Chat Header */}
+          <View style={styles.chatHeader}>
+            <TouchableOpacity onPress={() => setSelectedChat(null)}>
+              <Ionicons name="arrow-back" size={24} color="#2B74B4" />
+            </TouchableOpacity>
+            <View style={styles.chatHeaderContent}>
+              <View style={styles.chatAvatar}>
+                <Ionicons name="person-circle" size={60} color="#2B74B4" />
+              </View>
+              <View>
+                <Text style={styles.chatHeaderName}>{otherUserName}</Text>
+                <Text style={[styles.chatHeaderSubtitle, { color: connected ? '#4CAF50' : '#F44336' }]}>
+                  {connected ? 'Connected' : 'Disconnected'}
                 </Text>
               </View>
             </View>
-          ))}
-        </ScrollView>
+          </View>
 
-        {/* Message Input */}
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="Type something here..."
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholderTextColor="#95CDF2"
-            multiline
-          />
-          <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-            <Ionicons name="send" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
-  );
-}
+          {/* Messages */}
+          {loadingHistory ? (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="#2B74B4" />
+            </View>
+          ) : (
+            <ScrollView
+              ref={scrollViewRef}
+              style={styles.chatContent}
+              contentContainerStyle={styles.chatContentContainer}
+              onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+            >
+              {messages.map((message) => (
+                <View key={message.id} style={styles.messageContainer}>
+                  <View
+                    style={[
+                      styles.messageBubble,
+                      message.senderId === userId ? styles.studentBubble : styles.tutorBubble,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.messageText,
+                        message.senderId === userId ? styles.studentText : styles.tutorText,
+                      ]}
+                    >
+                      {message.content}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
 
+          {/* Message Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Type something here..."
+              value={messageText}
+              onChangeText={setMessageText}
+              placeholderTextColor="#95CDF2"
+              multiline
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!connected || !messageText.trim()) && { opacity: 0.5 }]}
+              onPress={handleSendMessage}
+              disabled={!connected || !messageText.trim()}
+            >
+              <Ionicons name="send" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
@@ -164,28 +182,44 @@ export default function MessagesPage() {
 
       {/* Filter */}
       <View style={styles.filterContainer}>
-        <Text style={styles.filterText}>Newest</Text>
+        <Text style={styles.filterText}>Recent</Text>
       </View>
 
       {/* Conversations List */}
       <ScrollView style={styles.conversationsList} showsVerticalScrollIndicator={false}>
-        {conversations.map((conversation) => (
-          <TouchableOpacity
-            key={conversation.id}
-            style={styles.conversationCard}
-            onPress={() => setSelectedChat(conversation.id)}
-          >
-            <View style={styles.avatar}>
-              <Ionicons name="person-circle" size={85} color="#2B74B4" />
-            </View>
-            <View style={styles.conversationContent}>
-              <Text style={styles.conversationName}>{conversation.name}</Text>
-              <Text style={styles.conversationPreview} numberOfLines={2}>
-                {conversation.preview}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        {loading ? (
+          <ActivityIndicator size="large" color="#2B74B4" style={{ marginTop: 50 }} />
+        ) : conversations.length === 0 ? (
+          <View style={{ alignItems: 'center', marginTop: 50 }}>
+            <Text style={{ color: '#95CDF2', fontFamily: 'Poppins' }}>No conversations yet.</Text>
+          </View>
+        ) : (
+          conversations.map((conversation) => {
+            const otherUserName = conversation.user1Id === userId ? conversation.user2Name : conversation.user1Name;
+            return (
+              <TouchableOpacity
+                key={conversation.id}
+                style={styles.conversationCard}
+                onPress={() => handleSelectChat(conversation)}
+              >
+                <View style={styles.avatar}>
+                  <Ionicons name="person-circle" size={85} color="#2B74B4" />
+                </View>
+                <View style={styles.conversationContent}>
+                  <Text style={styles.conversationName}>{otherUserName}</Text>
+                  <Text style={styles.conversationPreview} numberOfLines={2}>
+                    {conversation.lastMessage?.content || "No messages yet"}
+                  </Text>
+                </View>
+                {conversation.unreadCount > 0 && (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadText}>{conversation.unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })
+        )}
         <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
@@ -258,6 +292,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#95CDF2',
   },
+  unreadBadge: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  unreadText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: 5,
+  },
   bottomSpacing: {
     height: 100,
   },
@@ -285,7 +334,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2B74B4',
   },
-  chatHeaderSubtitle: {            
+  chatHeaderSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
