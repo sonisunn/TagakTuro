@@ -10,9 +10,8 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import TutorBottomNav from '../components/TutorBottomNav';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../src/api/config';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface Notification {
   id: number;
@@ -24,15 +23,26 @@ interface Notification {
 
 export default function NotificationsPage() {
 
-  const [todayNotifications, setTodayNotifications] = useState<Notification[]>([]);
-  const [pastNotifications, setPastNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
   const [isTutor, setIsTutor] = useState(false);
 
+  const { notifications, loading, markAsRead, markAllAsRead } = useNotifications(userId);
+
   useEffect(() => {
-    fetchNotifications();
+    loadUser();
     checkUserRole();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (!userDataString) return;
+      const user = JSON.parse(userDataString);
+      setUserId(user.id);
+    } catch (error) {
+      console.error('Error loading user:', error);
+    }
+  };
 
   const checkUserRole = async () => {
     try {
@@ -43,51 +53,16 @@ export default function NotificationsPage() {
     }
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const userDataString = await AsyncStorage.getItem('userData');
-      if (!userDataString) return;
-
-      const user = JSON.parse(userDataString);
-      const response = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
-      const data: Notification[] = response.data;
-
-      const today = new Date();
-
-      const todayArr: Notification[] = [];
-      const pastArr: Notification[] = [];
-
-      data.forEach(n => {
-        const d = new Date(n.dateSent);
-        if (d.toDateString() === today.toDateString()) {
-          todayArr.push(n);
-        } else {
-          pastArr.push(n);
-        }
-      });
-
-      setTodayNotifications(todayArr);
-      setPastNotifications(pastArr);
-    } catch (error) {
-      console.error('Error fetching notifications: ', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (id: number) => {
-    try {
-      await axios.patch(`${API_BASE_URL}/api/notifications/${id}/read`);
-
-      const updateList = (list: Notification[]) =>
-        list.map(n => n.id === id ? { ...n, read: true } : n);
-
-      setTodayNotifications(updateList(todayNotifications));
-      setPastNotifications(updateList(pastNotifications));
-    } catch (error) {
-      console.error('Failed to mark read', error);
-    }
-  };
+  // Split notifications into today vs past
+  const today = new Date();
+  const todayNotifications = notifications.filter(n => {
+    const d = new Date(n.dateSent);
+    return d.toDateString() === today.toDateString();
+  });
+  const pastNotifications = notifications.filter(n => {
+    const d = new Date(n.dateSent);
+    return d.toDateString() !== today.toDateString();
+  });
 
   const renderNotification = (notification: Notification) => {
     const isRead = notification.read;

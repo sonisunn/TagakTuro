@@ -27,9 +27,9 @@ public class PAMAController {
      * Body: { "moduleIds": [1, 2, 3] }
      */
     @PostMapping("/execute")
-    // DTO CHANGE: Use PAMAExecuteRequest instead of Map<String, Object>
+  // DTO CHANGE: Use PAMAExecuteRequest instead of Map<String, Object>
     public ResponseEntity<Map<String, String>> executePAMA(@RequestBody PAMAExecuteRequest request) {
-        try {
+      try {
             // SAFE ACCESS: No casting or @SuppressWarnings needed
             List<Long> moduleIds = request.getModuleIds();
             

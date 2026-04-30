@@ -17,6 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../../src/api/booking';
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
+import { useNotifications } from '../../hooks/useNotifications';
 
 // TypeScript interfaces
 interface ClassItem {
@@ -44,7 +45,8 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
   const [pastClasses, setPastClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const { unreadCount } = useNotifications(currentUserId);
   const [showMatchNotification, setShowMatchNotification] = useState<boolean>(false);
   const [matchBooking, setMatchBooking] = useState<ClassItem | null>(null);
   const [showRescheduleNotification, setShowRescheduleNotification] = useState<boolean>(false);
@@ -72,6 +74,7 @@ export default function TagakTuroHomepage() {
         const fullName = userData.name || 'User';
         const firstName = fullName.split(' ')[0];
         setUserName(firstName);
+        setCurrentUserId(userData.id);
       }
     };
     fetchUserData();
@@ -140,18 +143,7 @@ export default function TagakTuroHomepage() {
         }
       }
 
-      // Also fetch unread notifications count
-      const userDataString = await AsyncStorage.getItem('userData');
-      if (userDataString) {
-        const user = JSON.parse(userDataString);
-        try {
-          const res = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
-          const unread = res.data.filter((n: any) => !n.read).length;
-          setUnreadCount(unread);
-        } catch (e) {
-          console.warn("Failed to fetch notification count", e);
-        }
-      }
+
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {

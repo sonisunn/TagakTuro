@@ -26,6 +26,7 @@ import {
 import { updateBookingStatus, getPendingBookingsForTutor, getBookingsByTutorName, updateBooking } from "../../src/api/booking.js";
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
+import { useNotifications } from '../../hooks/useNotifications';
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface Booking {
@@ -52,7 +53,7 @@ export default function TagakTuroHomepage() {
   const [displayUserName, setDisplayUserName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [showStudents, setShowStudents] = useState(false);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const { unreadCount } = useNotifications(userId ? Number(userId) : null);
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
@@ -212,13 +213,7 @@ export default function TagakTuroHomepage() {
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
 
-      try {
-        const res = await axios.get(`${API_BASE_URL}/api/notifications?userId=${tutorId}`);
-        const unread = res.data.filter((n: any) => !n.read).length;
-        setUnreadCount(unread);
-      } catch (e) {
-        console.warn("Failed to fetch tutor notification count", e);
-      }
+
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
     }
