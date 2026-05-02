@@ -118,7 +118,7 @@ public class BookingService {
         List<TutorAvailability> availabilities = tutor.getAvailabilities();
 
         if (availabilities == null || availabilities.isEmpty()) {
-            return allPending;
+            return java.util.Collections.emptyList();
         }
 
         return allPending.stream().filter(booking -> {
@@ -137,6 +137,9 @@ public class BookingService {
             LocalTime bEnd = end.toLocalTime();
 
             return availabilities.stream().anyMatch(avail -> {
+                if (avail == null || avail.getDayOfWeek() == null || avail.getStartTime() == null || avail.getEndTime() == null) {
+                    return false;
+                }
                 if (avail.getDayOfWeek() != jsDayOfWeek) {
                     return false;
                 }

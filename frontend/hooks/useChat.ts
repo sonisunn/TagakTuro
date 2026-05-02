@@ -14,7 +14,6 @@ export interface Message {
     messageType: 'TEXT' | 'IMAGE' | 'FILE';
 }
 
-// ── Minimal STOMP helpers ────────────────────────────────────────────
 
 function buildFrame(command: string, headers: Record<string, string> = {}, body = ''): ArrayBuffer {
     let frame = command + '\n';
@@ -54,7 +53,6 @@ function parseFrame(raw: string): StompFrame | null {
     return { command, headers, body };
 }
 
-// ── Hook ─────────────────────────────────────────────────────────────
 let subIdCounter = 0;
 
 export const useChat = (conversationId: number | null, userId: number | null) => {
