@@ -30,6 +30,12 @@ public class TutorApplicationController {
         this.tutorApplicationService = tutorApplicationService;
     }
 
+    @GetMapping("/check-student-id")
+    public ResponseEntity<Map<String, Boolean>> checkStudentId(@RequestParam String studentId) {
+        boolean taken = tutorApplicationService.isStudentIdTaken(studentId);
+        return ResponseEntity.ok(Map.of("taken", taken));
+    }
+
     @PostMapping("/apply")
     public ResponseEntity<?> applyAsTutor(
             @RequestParam("name") String name,

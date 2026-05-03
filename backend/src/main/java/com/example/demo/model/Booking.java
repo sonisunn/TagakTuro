@@ -50,7 +50,6 @@ public class Booking {
 
     // Constructors
     public Booking() {
-        this.status = BookingStatus.PENDING;
     }
 
     public Booking(Student student, String subject, LocalDateTime bookingDateTime, String tutorName, String notes, Integer durationMinutes, String modality, String venue) {

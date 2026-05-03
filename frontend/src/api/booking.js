@@ -140,6 +140,20 @@ export async function updateBookingStatus(id, status) {
 }
 
 /**
+ * Decline a booking (tutor) — reverts to PENDING, unassigns tutor
+ */
+export async function declineBooking(id) {
+  try {
+    const client = await axiosWithAuth();
+    const response = await client.post(`/api/booking/${id}/decline`);
+    return response.data;
+  } catch (error) {
+    console.error('Error in declineBooking:', (error.response && error.response.data) || error.message);
+    throw error;
+  }
+}
+
+/**
  * Delete a booking by ID
  */
 export async function deleteBooking(id) {

@@ -156,6 +156,20 @@ public class BookingController {
     }
 
     /**
+     * Decline a booking — reverts to PENDING and unassigns the tutor
+     * POST /api/booking/{id}/decline
+     */
+    @PostMapping("/{id}/decline")
+    public ResponseEntity<?> declineBooking(@PathVariable Long id) {
+        try {
+            Booking declined = bookingService.declineBooking(id);
+            return ResponseEntity.ok(Map.of("message", "Booking reverted to pending", "booking", declined));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
      * Confirm a booking and send automated tutor greeting message to student
      * POST /api/booking/{id}/confirm
      */

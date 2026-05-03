@@ -35,6 +35,7 @@ export default function AvailabilityPage() {
   const [activeSlotIndex, setActiveSlotIndex] = useState(null);
   const [tempDate, setTempDate] = useState(new Date());
   const [userId, setUserId] = useState(null);
+  const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; body: string }>({ visible: false, title: '', body: '' });
 
   React.useEffect(() => {
     const fetchUserData = async () => {
@@ -131,6 +132,31 @@ export default function AvailabilityPage() {
   };
 
   const saveTimeSelection = () => {
+    const totalMins = tempDate.getHours() * 60 + tempDate.getMinutes();
+
+    if (pickerMode === 'start' && totalMins < 8 * 60) {
+      setShowModal(false);
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'Start time must be at or after 8:00 AM.' });
+      return;
+    }
+    if (pickerMode === 'end' && totalMins > 17 * 60) {
+      setShowModal(false);
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'End time must be at or before 5:00 PM.' });
+      return;
+    }
+
+    const slot = schedule[activeDayIndex].slots[activeSlotIndex];
+    const newStart = pickerMode === 'start' ? tempDate.getTime() : slot.start;
+    const newEnd = pickerMode === 'end' ? tempDate.getTime() : slot.end;
+    const startMins = new Date(newStart).getHours() * 60 + new Date(newStart).getMinutes();
+    const endMins = new Date(newEnd).getHours() * 60 + new Date(newEnd).getMinutes();
+
+    if (endMins <= startMins) {
+      setShowModal(false);
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'End time must be after start time.' });
+      return;
+    }
+
     const newSchedule = [...schedule];
     newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = tempDate.getTime();
     setSchedule(newSchedule);
@@ -304,6 +330,26 @@ export default function AvailabilityPage() {
 
             <TouchableOpacity style={styles.closeModalButton} onPress={saveTimeSelection}>
               <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={alertModal.visible}
+        onRequestClose={() => setAlertModal({ visible: false, title: '', body: '' })}
+      >
+        <BlurView intensity={20} tint="light" style={styles.blurContainer}>
+          <View style={styles.alertCard}>
+            <Text style={styles.alertTitle}>{alertModal.title}</Text>
+            <Text style={styles.alertBody}>{alertModal.body}</Text>
+            <TouchableOpacity
+              style={styles.alertButton}
+              onPress={() => setAlertModal({ visible: false, title: '', body: '' })}
+            >
+              <Text style={styles.alertButtonText}>Return</Text>
             </TouchableOpacity>
           </View>
         </BlurView>
@@ -529,5 +575,47 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontWeight: '600',
     fontSize: 15,
+  },
+  alertCard: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95CDF2',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

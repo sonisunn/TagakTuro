@@ -179,6 +179,7 @@ public class BookingService {
                         "Student not found with id: " + studentId + ". Please log in again to refresh your session."));
 
         booking.setStudent(student);
+        booking.setStatus(Booking.BookingStatus.PENDING);
 
         // Validate booking date is in the future
         if (booking.getBookingDateTime() != null && booking.getBookingDateTime().isBefore(LocalDateTime.now())) {
@@ -203,7 +204,7 @@ public class BookingService {
             LocalDateTime dayStart = bookingStart.toLocalDate().atStartOfDay();
             LocalDateTime dayEnd = bookingStart.toLocalDate().atTime(23, 59, 59);
 
-            List<Booking> existingBookings = bookingRepository.findByBookingDateTimeBetween(dayStart, dayEnd);
+            List<Booking> existingBookings = bookingRepository.findByStudentIdAndBookingDateTimeBetween(studentId, dayStart, dayEnd);
 
             // Check for overlaps with existing bookings (excluding cancelled ones)
             for (Booking existing : existingBookings) {
@@ -227,6 +228,30 @@ public class BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
+        // Notify student that their booking was submitted successfully
+        try {
+            User studentUser = student.getUser();
+            if (studentUser == null && student.getEmail() != null) {
+                studentUser = userRepository.findByEmail(student.getEmail()).orElse(null);
+            }
+            if (studentUser != null) {
+                String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "session";
+                String formattedDate = savedBooking.getBookingDateTime() != null
+                        ? savedBooking.getBookingDateTime()
+                                .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a"))
+                        : "TBD";
+                String modality = savedBooking.getModality() != null ? savedBooking.getModality() : "";
+                String location = "Online".equals(modality) ? "Online"
+                        : (savedBooking.getVenue() != null ? savedBooking.getVenue() : "TBD");
+                int duration = savedBooking.getDurationMinutes() != null ? savedBooking.getDurationMinutes() : 0;
+                String body = "Your " + subject + " session has been submitted for " + formattedDate
+                        + " (" + duration + " mins, " + location + "). We'll notify you once a tutor is matched!";
+                notificationService.createNotification(studentUser, "Booking Submitted!", body);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to send booking notification to student for booking ID " + savedBooking.getId() + ": " + e.getMessage());
+        }
+
         // Send automated tutor greeting when booking is created
         try {
             automatedMessageService.sendTutorGreetingMessage(savedBooking.getId());
@@ -244,14 +269,18 @@ public class BookingService {
     public Booking updateBooking(Long id, Booking bookingDetails) {
         Booking booking = getBookingById(id);
 
+        boolean dateTimeChanged = false;
+
         // Update fields if provided
         if (bookingDetails.getSubject() != null) {
             booking.setSubject(bookingDetails.getSubject());
         }
         if (bookingDetails.getBookingDateTime() != null) {
-            // Validate booking date is in the future
             if (bookingDetails.getBookingDateTime().isBefore(LocalDateTime.now())) {
                 throw new IllegalArgumentException("Booking date cannot be in the past");
+            }
+            if (!bookingDetails.getBookingDateTime().equals(booking.getBookingDateTime())) {
+                dateTimeChanged = true;
             }
             booking.setBookingDateTime(bookingDetails.getBookingDateTime());
         }
@@ -270,7 +299,6 @@ public class BookingService {
         if (bookingDetails.getModality() != null) {
             booking.setModality(bookingDetails.getModality());
         }
-        // Update student if provided and different
         if (bookingDetails.getStudent() != null && bookingDetails.getStudent().getId() != null &&
                 !bookingDetails.getStudent().getId().equals(booking.getStudent().getId())) {
             Long newStudentId = bookingDetails.getStudent().getId();
@@ -280,7 +308,48 @@ public class BookingService {
             booking.setStudent(newStudent);
         }
 
-        return bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+
+        if (dateTimeChanged) {
+            String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "your session";
+            String formattedDate = savedBooking.getBookingDateTime()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a"));
+
+            // Notify student
+            try {
+                Student student = savedBooking.getStudent();
+                if (student != null) {
+                    User studentUser = student.getUser();
+                    if (studentUser == null && student.getEmail() != null) {
+                        studentUser = userRepository.findByEmail(student.getEmail()).orElse(null);
+                    }
+                    if (studentUser != null) {
+                        notificationService.createNotification(studentUser,
+                                "Session Rescheduled",
+                                "Your " + subject + " session has been rescheduled to " + formattedDate + ".");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send reschedule notification to student for booking " + id + ": " + e.getMessage());
+            }
+
+            // Notify tutor
+            try {
+                if (savedBooking.getTutorName() != null) {
+                    tutorRepository.findByName(savedBooking.getTutorName()).ifPresent(tutor -> {
+                        if (tutor.getUser() != null) {
+                            notificationService.createNotification(tutor.getUser(),
+                                    "Session Rescheduled",
+                                    "A " + subject + " session has been rescheduled to " + formattedDate + ".");
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send reschedule notification to tutor for booking " + id + ": " + e.getMessage());
+            }
+        }
+
+        return savedBooking;
     }
 
     // Update booking status
@@ -299,6 +368,42 @@ public class BookingService {
 
         // Send automated messages based on status change
         if (status == Booking.BookingStatus.CONFIRMED) {
+            // Notify student about match
+            try {
+                Student student = savedBooking.getStudent();
+                if (student != null) {
+                    User studentUser = student.getUser();
+                    if (studentUser == null && student.getEmail() != null) {
+                        studentUser = userRepository.findByEmail(student.getEmail()).orElse(null);
+                    }
+                    if (studentUser != null) {
+                        String tutorName = savedBooking.getTutorName() != null ? savedBooking.getTutorName() : "a tutor";
+                        String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "your subject";
+                        notificationService.createNotification(studentUser,
+                                "We found a match!",
+                                "Hey!!! Just a quick reminder about your " + subject + " session with " + tutorName + ".");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send match notification to student for booking " + id + ": " + e.getMessage());
+            }
+
+            // Notify tutor about confirmed session
+            try {
+                if (savedBooking.getTutorName() != null) {
+                    tutorRepository.findByName(savedBooking.getTutorName()).ifPresent(tutor -> {
+                        if (tutor.getUser() != null) {
+                            String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "tutoring";
+                            notificationService.createNotification(tutor.getUser(),
+                                    "New Booking Confirmed!",
+                                    "A student has been matched with you for a " + subject + " session. Check your bookings!");
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send match notification to tutor for booking " + id + ": " + e.getMessage());
+            }
+
             try {
                 automatedMessageService.sendTutorGreetingMessage(savedBooking.getId());
                 logger.info("Automated tutor greeting sent for confirmed booking ID: " + id);
@@ -330,6 +435,43 @@ public class BookingService {
             }
         }
 
+        if (status == Booking.BookingStatus.CANCELLED) {
+            String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "your session";
+
+            // Notify student
+            try {
+                Student student = savedBooking.getStudent();
+                if (student != null) {
+                    User studentUser = student.getUser();
+                    if (studentUser == null && student.getEmail() != null) {
+                        studentUser = userRepository.findByEmail(student.getEmail()).orElse(null);
+                    }
+                    if (studentUser != null) {
+                        notificationService.createNotification(studentUser,
+                                "Session Cancelled",
+                                "Your " + subject + " session has been cancelled.");
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send cancellation notification to student for booking " + id + ": " + e.getMessage());
+            }
+
+            // Notify tutor
+            try {
+                if (savedBooking.getTutorName() != null) {
+                    tutorRepository.findByName(savedBooking.getTutorName()).ifPresent(tutor -> {
+                        if (tutor.getUser() != null) {
+                            notificationService.createNotification(tutor.getUser(),
+                                    "Session Cancelled",
+                                    "A " + subject + " session has been cancelled.");
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to send cancellation notification to tutor for booking " + id + ": " + e.getMessage());
+            }
+        }
+
         return savedBooking;
     }
 
@@ -347,6 +489,14 @@ public class BookingService {
     // Confirm booking
     public Booking confirmBooking(Long id) {
         return updateBookingStatus(id, Booking.BookingStatus.CONFIRMED);
+    }
+
+    // Decline booking — reverts to PENDING and unassigns the tutor
+    public Booking declineBooking(Long id) {
+        Booking booking = getBookingById(id);
+        booking.setStatus(Booking.BookingStatus.PENDING);
+        booking.setTutorName(null);
+        return bookingRepository.save(booking);
     }
 
     // Send diagnostic test

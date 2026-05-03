@@ -28,6 +28,8 @@ export default function TagakTuroSignUp() {
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [noticeErrors, setNoticeErrors] = useState<string[]>([]);
+  const [noticeVisible, setNoticeVisible] = useState(false);
 
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
@@ -53,42 +55,48 @@ export default function TagakTuroSignUp() {
     return passwordRegex.test(password);
   };
 
+  const showNotice = (errors: string[]) => {
+    setNoticeErrors(errors);
+    setNoticeVisible(true);
+  };
+
   const handleSubmit = async () => {
-    if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
-      setError(true);
-      return;
+    const errors: string[] = [];
+
+    if (!name.trim()) {
+      errors.push('Name is required');
+    } else if (!validateName(name)) {
+      errors.push('Name must contain only alphabetic characters');
     }
 
-    // Name validation - alphabetic characters only
-    if (!validateName(name)) {
-      alert('Name must contain only alphabetic characters');
-      setError(true);
-      return;
+    if (!studentId.trim()) {
+      errors.push('Student ID is required. No duplicate student ID allowed');
     }
 
-    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
-    if (!validateEmail(email)) {
-      alert('Error: Only @umak.edu.ph email addresses are allowed!');
-      setError(true);
-      return;
+    if (!courseProgram.trim()) {
+      errors.push('College and Program is required');
     }
 
-    // Phone number validation - must be 11 digits
-    if (!validatePhoneNumber(phoneNumber)) {
-      alert('Must be 11 digits');
-      setError(true);
-      return;
+    if (!email.trim() || !validateEmail(email)) {
+      errors.push('Only @umak.edu.ph email addresses are allowed. No duplicate email allowed');
     }
 
-    // Password validation - 12-16 chars, mix of upper/lower, number, special char
-    if (!validatePassword(password)) {
-      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+    if (!phoneNumber.trim() || !validatePhoneNumber(phoneNumber)) {
+      errors.push('Phone Number must be 11 digits only');
+    }
+
+    if (!password || !validatePassword(password)) {
+      errors.push('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+    }
+
+    if (errors.length > 0) {
       setError(true);
+      showNotice(errors);
       return;
     }
 
     if (!agreedToTerms) {
-      alert('Please agree to the User Agreement and Privacy Policy');
+      showNotice(['Please agree to the User Agreement and Privacy Policy']);
       return;
     }
 
@@ -96,16 +104,14 @@ export default function TagakTuroSignUp() {
     setSubmitting(true);
 
     try {
-      // TODO: Add a role selection UI for student/tutor
       const userData = { name, studentId, courseProgram, email, phoneNumber, password, role: 'STUDENT' };
       await signup(userData);
       setSubmitting(false);
-      alert('Registration successful! You can now log in.');
       router.replace('/');
     } catch (err: any) {
       setSubmitting(false);
-      console.warn('Signup error', err);
-      alert('Registration failed: ' + (err.message || 'An unexpected error occurred.'));
+      const errMsg = err.response?.data?.error || err.message || 'An unexpected error occurred.';
+      showNotice([errMsg]);
     }
   };
 
@@ -414,14 +420,29 @@ export default function TagakTuroSignUp() {
             </BlurView>
           </Modal>
 
-          {error && (
-            <Text style={styles.errorText}>
-              Missing Detail/s is required!
-            </Text>
-          )}
+          {/* Validation Notice Modal */}
+          <Modal
+            visible={noticeVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setNoticeVisible(false)}
+          >
+            <View style={styles.noticeOverlay}>
+              <View style={styles.noticeContainer}>
+                <Text style={styles.noticeTitle}>Notice</Text>
+                <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
+                {noticeErrors.map((err, idx) => (
+                  <Text key={idx} style={styles.noticeErrorItem}>• {err}</Text>
+                ))}
+                <TouchableOpacity style={styles.noticeOkButton} onPress={() => setNoticeVisible(false)}>
+                  <Text style={styles.noticeOkText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
 
-          <TouchableOpacity 
-            style={[styles.submitButton, (error || submitting) && styles.submitButtonDisabled]} 
+          <TouchableOpacity
+            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting}
           >
@@ -685,5 +706,56 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#2B74B4",
     fontWeight: '600',
+  },
+  noticeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  noticeContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  noticeTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 4,
+  },
+  noticeSubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  noticeErrorItem: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 4,
+    paddingHorizontal: 10,
+  },
+  noticeOkButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 50,
+    marginTop: 16,
+  },
+  noticeOkText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });
