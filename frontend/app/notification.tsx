@@ -10,9 +10,8 @@ import {
 } from 'react-native';
 import BottomNav from '../components/BottomNav';
 import TutorBottomNav from '../components/TutorBottomNav';
-import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_BASE_URL } from '../src/api/config';
+import { useNotifications } from '../hooks/useNotifications';
 
 interface Notification {
   id: number;
@@ -24,15 +23,27 @@ interface Notification {
 
 export default function NotificationsPage() {
 
-  const [todayNotifications, setTodayNotifications] = useState<Notification[]>([]);
-  const [pastNotifications, setPastNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<number | null>(null);
   const [isTutor, setIsTutor] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
+  const { notifications, loading, markAsRead, markAllAsRead } = useNotifications(userId);
 
   useEffect(() => {
-    fetchNotifications();
+    loadUser();
     checkUserRole();
   }, []);
+
+  const loadUser = async () => {
+    try {
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (!userDataString) return;
+      const user = JSON.parse(userDataString);
+      setUserId(user.id);
+    } catch (error) {
+      console.error('Error loading user:', error);
+    }
+  };
 
   const checkUserRole = async () => {
     try {
@@ -43,51 +54,20 @@ export default function NotificationsPage() {
     }
   };
 
-  const fetchNotifications = async () => {
-    try {
-      const userDataString = await AsyncStorage.getItem('userData');
-      if (!userDataString) return;
+  const today = new Date();
+  const todayNotifications = notifications.filter(n => {
+    const d = new Date(n.dateSent);
+    return d.toDateString() === today.toDateString();
+  });
+  const pastNotifications = notifications.filter(n => {
+    const d = new Date(n.dateSent);
+    return d.toDateString() !== today.toDateString();
+  });
 
-      const user = JSON.parse(userDataString);
-      const response = await axios.get(`${API_BASE_URL}/api/notifications?userId=${user.id}`);
-      const data: Notification[] = response.data;
-
-      const today = new Date();
-
-      const todayArr: Notification[] = [];
-      const pastArr: Notification[] = [];
-
-      data.forEach(n => {
-        const d = new Date(n.dateSent);
-        if (d.toDateString() === today.toDateString()) {
-          todayArr.push(n);
-        } else {
-          pastArr.push(n);
-        }
-      });
-
-      setTodayNotifications(todayArr);
-      setPastNotifications(pastArr);
-    } catch (error) {
-      console.error('Error fetching notifications: ', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const markAsRead = async (id: number) => {
-    try {
-      await axios.patch(`${API_BASE_URL}/api/notifications/${id}/read`);
-
-      const updateList = (list: Notification[]) =>
-        list.map(n => n.id === id ? { ...n, read: true } : n);
-
-      setTodayNotifications(updateList(todayNotifications));
-      setPastNotifications(updateList(pastNotifications));
-    } catch (error) {
-      console.error('Failed to mark read', error);
-    }
-  };
+  const allNotifications = [...todayNotifications, ...pastNotifications];
+  const visibleNotifications = showAll ? allNotifications : allNotifications.slice(0, 3);
+  const visibleToday = visibleNotifications.filter(n => new Date(n.dateSent).toDateString() === today.toDateString());
+  const visiblePast = visibleNotifications.filter(n => new Date(n.dateSent).toDateString() !== today.toDateString());
 
   const renderNotification = (notification: Notification) => {
     const isRead = notification.read;
@@ -103,7 +83,7 @@ export default function NotificationsPage() {
         }}
       >
         <Text style={styles.notificationTitle}>{notification.title}</Text>
-        <Text numberOfLines={2} ellipsizeMode='tail' style={styles.notificationBody}>{notification.body}</Text>
+        <Text style={styles.notificationBody}>{notification.body}</Text>
       </TouchableOpacity>
     );
   };
@@ -124,27 +104,33 @@ export default function NotificationsPage() {
         ) : (
           <>
             {/* Today Section */}
-            {todayNotifications.length > 0 && (
+            {visibleToday.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Today</Text>
                 <View style={styles.notificationContainer}>
-                  {todayNotifications.map((notification) => renderNotification(notification))}
+                  {visibleToday.map((notification) => renderNotification(notification))}
                 </View>
               </View>
             )}
 
             {/* Past Section */}
-            {pastNotifications.length > 0 && (
+            {visiblePast.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Past</Text>
                 <View style={styles.notificationContainer}>
-                  {pastNotifications.map((notification) => renderNotification(notification))}
+                  {visiblePast.map((notification) => renderNotification(notification))}
                 </View>
               </View>
             )}
 
-            {todayNotifications.length === 0 && pastNotifications.length === 0 && (
+            {allNotifications.length === 0 && (
               <Text style={{ textAlign: 'center', marginTop: 50, color: '#888' }}>No notifications yet!</Text>
+            )}
+
+            {!showAll && allNotifications.length > 3 && (
+              <TouchableOpacity style={styles.viewMoreButton} onPress={() => setShowAll(true)}>
+                <Text style={styles.viewMoreText}>View More</Text>
+              </TouchableOpacity>
             )}
           </>
         )}
@@ -213,15 +199,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#CAE6F9',
     padding: 15,
     borderRadius: 10,
-    color: '#fff',
-    height: 85,
+    width: '100%',
   },
   notificationItemRead: {
     backgroundColor: '#F5F5F5',
     padding: 15,
     borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 85,
     width: '100%',
   },
   notificationTitle: {
@@ -239,5 +222,19 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 15,
+  },
+  viewMoreButton: {
+    alignSelf: 'center',
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    backgroundColor: '#2B74B4',
+    borderRadius: 25,
+  },
+  viewMoreText: {
+    fontFamily: 'Poppins',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
   },
 });

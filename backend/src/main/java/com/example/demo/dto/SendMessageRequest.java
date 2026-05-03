@@ -4,15 +4,17 @@ public class SendMessageRequest {
     private Long conversationId;
     private String content;
     private String messageType;
+    private Long senderId;
 
     public SendMessageRequest() {
         this.messageType = "TEXT";
     }
 
-    public SendMessageRequest(Long conversationId, String content, String messageType) {
+    public SendMessageRequest(Long conversationId, String content, String messageType, Long senderId) {
         this.conversationId = conversationId;
         this.content = content;
         this.messageType = messageType != null ? messageType : "TEXT";
+        this.senderId = senderId;
     }
 
     // Getters and Setters
@@ -38,5 +40,13 @@ public class SendMessageRequest {
 
     public void setMessageType(String messageType) {
         this.messageType = messageType != null ? messageType : "TEXT";
+    }
+
+    public Long getSenderId() {
+        return senderId;
+    }
+
+    public void setSenderId(Long senderId) {
+        this.senderId = senderId;
     }
 }

@@ -14,8 +14,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // Enable simple in-memory message broker
-        // Messages starting with /topic are for broadcasting
-        // Messages starting with /queue are for private messages
         config.enableSimpleBroker("/topic", "/queue");
 
         // Define the prefix for messages sent from client to server
@@ -27,10 +25,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        // Register the WebSocket endpoint
-        // Client will connect to ws://localhost:8080/ws
+        // Register the WebSocket endpoint with SockJS fallback
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("*") // Allow all origins (configure as needed)
-                .withSockJS(); // Enable SockJS fallback for older browsers
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+
+        // Native WebSocket endpoint for React Native/Mobile clients
+        registry.addEndpoint("/ws-native")
+                .setAllowedOriginPatterns("*");
     }
 }
