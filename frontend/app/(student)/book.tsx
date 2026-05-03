@@ -16,6 +16,7 @@ export default function BookingPage() {
   const [subject, setSubject] = useState('');
   const [modality, setModality] = useState('');
   const [venue, setVenue] = useState('');
+  const [alertModal, setAlertModal] = useState({ visible: false, title: '', body: '' });
 
   // -- Date State --
   const [date, setDate] = useState(new Date());
@@ -172,14 +173,36 @@ export default function BookingPage() {
 
     const durationMinutes = Math.round((bookingEnd.getTime() - bookingStart.getTime()) / (1000 * 60));
     if (durationMinutes <= 0) {
-      Alert.alert('Error', 'End time must be after start time.');
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'End time must be after start time.' });
       return;
     }
+
+    const startMins = bookingStart.getHours() * 60 + bookingStart.getMinutes();
+    const endMins = bookingEnd.getHours() * 60 + bookingEnd.getMinutes();
+    if (startMins < 8 * 60) {
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'Sessions must start at or after 8:00 AM.' });
+      return;
+    }
+    if (endMins > 17 * 60) {
+      setAlertModal({ visible: true, title: 'Invalid Time', body: 'Sessions must end by 5:00 PM.' });
+      return;
+    }
+    if (durationMinutes > 180) {
+      setAlertModal({ visible: true, title: 'Invalid Duration', body: 'Sessions cannot exceed 3 hours.' });
+      return;
+    }
+
+    const pad = (n: number) => n < 10 ? '0' + n : String(n);
+    const localIso = bookingStart.getFullYear() + '-' +
+      pad(bookingStart.getMonth() + 1) + '-' +
+      pad(bookingStart.getDate()) + 'T' +
+      pad(bookingStart.getHours()) + ':' +
+      pad(bookingStart.getMinutes()) + ':00';
 
     const bookingData = {
       student: { id: studentId },
       subject: subject,
-      bookingDateTime: bookingStart.toISOString(),
+      bookingDateTime: localIso,
       modality,
       venue: modality === 'In-Person' ? venue : null,
       notes: null,
@@ -258,6 +281,14 @@ export default function BookingPage() {
               zIndexInverse={1000}
             />
           </View>
+
+          {modality === 'Online' && (
+            <View style={styles.onlineInfoBox}>
+              <Text style={styles.onlineInfoText}>
+                The meeting room will be generated once booked and can be seen through the homepage
+              </Text>
+            </View>
+          )}
 
           {modality === 'In-Person' && (
             <View style={styles.inputGroup}>
@@ -360,6 +391,19 @@ export default function BookingPage() {
             />
             <TouchableOpacity style={styles.closeModalButton} onPress={saveDateSelection}>
               <Text style={styles.closeModalText}>Select Date</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* --- ALERT MODAL --- */}
+      <Modal animationType="fade" transparent={true} visible={alertModal.visible} onRequestClose={() => setAlertModal({ visible: false, title: '', body: '' })}>
+        <BlurView intensity={20} tint="light" style={styles.alertOverlay}>
+          <View style={styles.alertCard}>
+            <Text style={styles.alertTitle}>{alertModal.title}</Text>
+            <Text style={styles.alertBody}>{alertModal.body}</Text>
+            <TouchableOpacity style={styles.alertButton} onPress={() => setAlertModal({ visible: false, title: '', body: '' })}>
+              <Text style={styles.alertButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </BlurView>
@@ -548,6 +592,22 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 100,
   },
+  onlineInfoBox: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#95CDF2',
+    borderRadius: 8,
+    backgroundColor: '#f0f7fc',
+    padding: 12,
+    marginBottom: 20,
+  },
+  onlineInfoText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
   dropdown: {
     borderColor: '#2B74B4',
     borderRadius: 8,
@@ -564,6 +624,56 @@ const styles = StyleSheet.create({
     color: '#2B74B4',
     fontWeight: '600'
   },
+  // Alert Modal
+  alertOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
+  alertCard: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95CDF2',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
+  },
+
   // Modal Styles
   blurContainer: {
     flex: 1,

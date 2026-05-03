@@ -5,15 +5,18 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { applyAsTutor } from '../src/api/tutor';
+import { applyAsTutor, checkStudentIdTaken } from '../src/api/tutor';
 import { AxiosError } from 'axios'
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -43,6 +46,10 @@ export default function ApplyTutorPage() {
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   
   const [error, setError] = useState(false);
+  const [noticeErrors, setNoticeErrors] = useState<string[]>([]);
+  const [noticeVisible, setNoticeVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [checkingId, setCheckingId] = useState(false);
 
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
@@ -68,38 +75,57 @@ export default function ApplyTutorPage() {
     return passwordRegex.test(password);
   };
 
-  const handleNext = () => {
-    if (!name || !studentId || !courseProgram || !email || !phoneNumber || !password) {
+  const showNotice = (errors: string[]) => {
+    setNoticeErrors(errors);
+    setNoticeVisible(true);
+  };
+
+  const handleNext = async () => {
+    const errors: string[] = [];
+
+    if (!name.trim()) {
+      errors.push('Name is required');
+    } else if (!validateName(name)) {
+      errors.push('Name must contain only alphabetic characters');
+    }
+
+    if (!studentId.trim()) {
+      errors.push('Student ID is required. No duplicate student ID allowed');
+    }
+
+    if (!courseProgram.trim()) {
+      errors.push('College and Program is required');
+    }
+
+    if (!email.trim() || !validateEmail(email)) {
+      errors.push('Only @umak.edu.ph email addresses are allowed. No duplicate email allowed');
+    }
+
+    if (!phoneNumber.trim() || !validatePhoneNumber(phoneNumber)) {
+      errors.push('Phone Number must be 11 digits only');
+    }
+
+    if (!password || !validatePassword(password)) {
+      errors.push('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
+    }
+
+    if (errors.length > 0) {
       setError(true);
+      showNotice(errors);
       return;
     }
 
-    // Name validation - alphabetic characters only
-    if (!validateName(name)) {
-      alert('Name must contain only alphabetic characters');
-      setError(true);
-      return;
-    }
-
-    // Email validation - must end with @umak.edu.ph and not just @umak.edu.ph
-    if (!validateEmail(email)) {
-      alert('Error: Only @umak.edu.ph email addresses are allowed!');
-      setError(true);
-      return;
-    }
-
-    // Phone number validation - must be 11 digits
-    if (!validatePhoneNumber(phoneNumber)) {
-      alert('Must be 11 digits');
-      setError(true);
-      return;
-    }
-
-    // Password validation - 12-16 chars, mix of upper/lower, number, special char
-    if (!validatePassword(password)) {
-      alert('Password must be 12-16 characters with at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character (^, _, *)');
-      setError(true);
-      return;
+    // Check student ID availability before proceeding
+    setCheckingId(true);
+    try {
+      const taken = await checkStudentIdTaken(studentId.trim());
+      if (taken) {
+        setError(true);
+        showNotice(['Student ID is already registered. No duplicate student ID allowed.']);
+        return;
+      }
+    } finally {
+      setCheckingId(false);
     }
 
     setError(false);
@@ -107,13 +133,25 @@ export default function ApplyTutorPage() {
   };
 
   const handleSubmit = async () => {
-    if (!reportOfGrades || !experience) {
+    const errors: string[] = [];
+    if (!reportOfGrades) {
+      errors.push('Report of Grades (PDF) is required');
+    } else if (reportOfGrades.mimeType !== 'application/pdf') {
+      errors.push('Report of Grades must be a PDF file');
+    }
+    if (certificates && certificates.mimeType !== 'application/pdf') {
+      errors.push('Certificates must be a PDF file');
+    }
+    if (!experience.trim()) errors.push('Experience description is required');
+
+    if (errors.length > 0) {
       setError(true);
+      showNotice(errors);
       return;
     }
 
     if (!agreedToTerms) {
-      alert('Please agree to the User Agreement and Privacy Policy');
+      showNotice(['Please agree to the User Agreement and Privacy Policy']);
       return;
     }
 
@@ -152,21 +190,25 @@ export default function ApplyTutorPage() {
 
     try {
       await applyAsTutor(formData);
-      alert('Application submitted successfully! You will be notified upon approval.');
-      router.replace('/login');
+      setSuccessVisible(true);
     } catch (error) {
       const err = error as AxiosError;
       const errorMessage = (err.response?.data as { error?: string })?.error || err.message;
       console.error('Error submitting application:', errorMessage);
-      alert('Application failed: ' + errorMessage);
+      showNotice(['Application failed: ' + errorMessage]);
     }
   };
 
   const pickDocument = async (setter: React.Dispatch<React.SetStateAction<DocumentPicker.DocumentPickerAsset | null>>) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({});
+      const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        setter(result.assets[0]);
+        const asset = result.assets[0];
+        if (asset.mimeType !== 'application/pdf') {
+          showNotice(['Only PDF files are accepted.']);
+          return;
+        }
+        setter(asset);
       }
     } catch (err) {
       console.warn('Error picking document:', err);
@@ -174,10 +216,11 @@ export default function ApplyTutorPage() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
@@ -282,14 +325,29 @@ export default function ApplyTutorPage() {
                 </View>
               </View>
 
-              {error && (
-                <Text style={styles.errorText}>
-                  Missing Detail/s is required!
-                </Text>
-              )}
+              {/* Validation Notice Modal */}
+              <Modal
+                visible={noticeVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setNoticeVisible(false)}
+              >
+                <View style={styles.noticeOverlay}>
+                  <View style={styles.noticeContainer}>
+                    <Text style={styles.noticeTitle}>Notice</Text>
+                    <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
+                    {noticeErrors.map((err, idx) => (
+                      <Text key={idx} style={styles.noticeErrorItem}>• {err}</Text>
+                    ))}
+                    <TouchableOpacity style={styles.noticeOkButton} onPress={() => setNoticeVisible(false)}>
+                      <Text style={styles.noticeOkText}>OK</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
 
-              <TouchableOpacity style={styles.submitButton} onPress={handleNext}>
-                <Text style={styles.submitButtonText}>Next</Text>
+              <TouchableOpacity style={[styles.submitButton, checkingId && { opacity: 0.6 }]} onPress={handleNext} disabled={checkingId}>
+                <Text style={styles.submitButtonText}>{checkingId ? 'Checking...' : 'Next'}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.submitButton} onPress={() => router.replace('/session-availability')}>
                 <Text style={styles.submitButtonText}>skip</Text>
@@ -313,26 +371,42 @@ export default function ApplyTutorPage() {
                 <Text style={styles.label}>
                   Report of Grades (Last A.Y) <Text style={styles.pdfLabel}>(PDF)</Text>
                 </Text>
-                <TouchableOpacity
-                  style={[styles.uploadButton, error && !reportOfGrades && styles.inputError]}
-                  onPress={() => pickDocument(setReportOfGrades)}
-                >
-                  <Text style={styles.uploadButtonText}>
-                    {reportOfGrades ? reportOfGrades.name : 'UPLOAD DOCUMENT'}
-                  </Text>
-                </TouchableOpacity>
+                {reportOfGrades ? (
+                  <View style={[styles.attachmentRow, error && styles.inputError]}>
+                    <Ionicons name="document-text" size={18} color="#2B74B4" style={{ marginRight: 8 }} />
+                    <Text style={styles.attachmentName} numberOfLines={1}>{reportOfGrades.name}</Text>
+                    <TouchableOpacity onPress={() => setReportOfGrades(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close-circle" size={20} color="#FF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.uploadButton, error && styles.inputError]}
+                    onPress={() => pickDocument(setReportOfGrades)}
+                  >
+                    <Text style={styles.uploadButtonText}>UPLOAD PDF DOCUMENT</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Certificates (if any)</Text>
-                <TouchableOpacity
-                  style={styles.uploadButton}
-                  onPress={() => pickDocument(setCertificates)}
-                >
-                  <Text style={styles.uploadButtonText}>
-                    {certificates ? certificates.name : 'UPLOAD DOCUMENT (OPTIONAL)'}
-                  </Text>
-                </TouchableOpacity>
+                {certificates ? (
+                  <View style={styles.attachmentRow}>
+                    <Ionicons name="document-text" size={18} color="#2B74B4" style={{ marginRight: 8 }} />
+                    <Text style={styles.attachmentName} numberOfLines={1}>{certificates.name}</Text>
+                    <TouchableOpacity onPress={() => setCertificates(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close-circle" size={20} color="#FF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={() => pickDocument(setCertificates)}
+                  >
+                    <Text style={styles.uploadButtonText}>UPLOAD PDF DOCUMENT (OPTIONAL)</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -565,7 +639,36 @@ export default function ApplyTutorPage() {
           )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+
+      {/* Success Modal */}
+      <Modal
+        visible={successVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {}}
+      >
+        <View style={styles.noticeOverlay}>
+          <View style={styles.successContainer}>
+            <Text style={styles.successTitle}>Successfully Registered!</Text>
+            <Text style={styles.successBody}>
+              Welcome to TagakTuro! Your tutor application has been sent and is waiting to be verified.
+              You may try logging in again after you received the approval sent to your email.
+            </Text>
+            <TouchableOpacity
+              style={styles.successButton}
+              onPress={() => {
+                setSuccessVisible(false);
+                router.replace('/');
+              }}
+            >
+              <Text style={styles.successButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -746,6 +849,22 @@ const styles = StyleSheet.create({
     color: '#95BADA',
     fontWeight: '600',
   },
+  attachmentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  attachmentName: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+    fontWeight: '600',
+    flex: 1,
+  },
   textArea: {
     fontFamily: 'Poppins',
     borderWidth: 1,
@@ -913,5 +1032,96 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#2B74B4',
+  },
+  noticeOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  noticeContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+  },
+  noticeTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 4,
+  },
+  noticeSubtitle: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#95CDF2',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  noticeErrorItem: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 4,
+    paddingHorizontal: 10,
+  },
+  noticeOkButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 50,
+    marginTop: 16,
+  },
+  noticeOkText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  successContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    padding: 28,
+    width: '100%',
+    alignItems: 'center',
+  },
+  successTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  successBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#2B74B4',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 6,
+  },
+  successButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 50,
+    width: '100%',
+    alignItems: 'center',
+  },
+  successButtonText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

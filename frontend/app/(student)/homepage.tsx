@@ -56,8 +56,9 @@ export default function TagakTuroHomepage() {
   // --- Modal State Management ---
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
-  const [modalView, setModalView] = useState<string>('details'); // 'details', 'reschedule', 'success', 'cancel', 'cancelSuccess'
+  const [modalView, setModalView] = useState<string>('details');
   const [modalLoading, setModalLoading] = useState<boolean>(false);
+  const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; body: string; closeAll: boolean }>({ visible: false, title: '', body: '', closeAll: false });
 
   // --- Date/Time Picker State ---
   const [tempDate, setTempDate] = useState<Date>(new Date());
@@ -65,6 +66,8 @@ export default function TagakTuroHomepage() {
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [showTimePicker, setShowTimePicker] = useState<boolean>(false);
+  const [tempEndDate, setTempEndDate] = useState<Date>(new Date());
+  const [showEndTimePicker, setShowEndTimePicker] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -186,9 +189,7 @@ export default function TagakTuroHomepage() {
 
   const formatBookingDateTime = (dateTimeString: string) => {
     try {
-      // Force UTC interpretation since backend sends LocalDateTime as ISO string
-      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
-      const date = new Date(utcDateTimeString);
+      const date = new Date(dateTimeString);
       const formattedDate = date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -207,9 +208,7 @@ export default function TagakTuroHomepage() {
 
   const formatSessionTime = (dateTimeString: string, durationMinutes: number = 60) => {
     try {
-      // Force UTC interpretation since backend sends LocalDateTime as ISO string
-      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
-      const startDate = new Date(utcDateTimeString);
+      const startDate = new Date(dateTimeString);
       const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
 
       const startTime = startDate.toLocaleTimeString('en-US', {
@@ -232,9 +231,7 @@ export default function TagakTuroHomepage() {
 
   const formatStartTime = (dateTimeString: string) => {
     try {
-      // Force UTC interpretation since backend sends LocalDateTime as ISO string
-      const utcDateTimeString = dateTimeString.includes('Z') ? dateTimeString : dateTimeString + 'Z';
-      const startDate = new Date(utcDateTimeString);
+      const startDate = new Date(dateTimeString);
       const startTime = startDate.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
@@ -249,8 +246,9 @@ export default function TagakTuroHomepage() {
   // --- Modal Handlers ---
   const handleViewPress = (classItem: ClassItem) => {
     setSelectedClass(classItem);
-    // Initialize picker with current class date or now
-    setTempDate(classItem.rawDate ? new Date(classItem.rawDate) : new Date());
+    const startDate = classItem.rawDate ? new Date(classItem.rawDate) : new Date();
+    setTempDate(startDate);
+    setTempEndDate(new Date(startDate.getTime() + (classItem.duration || 60) * 60000));
     setModalView('details');
     setModalVisible(true);
   };
@@ -262,65 +260,56 @@ export default function TagakTuroHomepage() {
     setModalLoading(false);
     setSelectedDate(null);
     setSelectedTime(null);
+    setShowEndTimePicker(false);
   };
 
   const handleRescheduleSubmit = async () => {
     try {
       setModalLoading(true);
 
-      // Combine selected date and time into a single Date object
-      let newDateTime;
+      const newDateTime = tempDate;
 
-      if (selectedDate && selectedTime) {
-        // Both date and time selected
-        newDateTime = new Date(selectedDate);
-        newDateTime.setHours(selectedTime.getHours());
-        newDateTime.setMinutes(selectedTime.getMinutes());
-        newDateTime.setSeconds(0);
-        newDateTime.setMilliseconds(0);
-      } else if (selectedDate) {
-        // Only date selected, use the time from tempDate
-        newDateTime = new Date(selectedDate);
-        newDateTime.setHours(tempDate.getHours());
-        newDateTime.setMinutes(tempDate.getMinutes());
-        newDateTime.setSeconds(0);
-        newDateTime.setMilliseconds(0);
-      } else if (selectedTime) {
-        // Only time selected, use the date from tempDate
-        newDateTime = new Date(tempDate);
-        newDateTime.setHours(selectedTime.getHours());
-        newDateTime.setMinutes(selectedTime.getMinutes());
-        newDateTime.setSeconds(0);
-        newDateTime.setMilliseconds(0);
-      } else {
-        // No new date/time selected, use tempDate as-is
-        newDateTime = tempDate;
-      }
-
-      // Validate that the new date/time is in the future
       if (newDateTime <= new Date()) {
-        Alert.alert('Error', 'Please select a date and time in the future.');
+        setAlertModal({ visible: true, title: 'Invalid Date', body: 'Please select a date and time in the future.', closeAll: false });
         return;
       }
 
-      // Convert to Local ISO string for API (avoiding UTC shift)
-      const pad = (n: number) => n < 10 ? '0' + n : n;
+      const startMins = newDateTime.getHours() * 60 + newDateTime.getMinutes();
+      const endMins = tempEndDate.getHours() * 60 + tempEndDate.getMinutes();
+      const newDuration = endMins - startMins;
+
+      if (newDuration <= 0) {
+        setAlertModal({ visible: true, title: 'Invalid Time', body: 'End time must be after start time.', closeAll: false });
+        return;
+      }
+      if (startMins < 8 * 60) {
+        setAlertModal({ visible: true, title: 'Invalid Time', body: 'Sessions must start at or after 8:00 AM.', closeAll: false });
+        return;
+      }
+      if (endMins > 17 * 60) {
+        setAlertModal({ visible: true, title: 'Invalid Time', body: 'Sessions must end by 5:00 PM.', closeAll: false });
+        return;
+      }
+      if (newDuration > 180) {
+        setAlertModal({ visible: true, title: 'Invalid Duration', body: 'Sessions cannot exceed 3 hours.', closeAll: false });
+        return;
+      }
+
+      const pad = (n: number) => n < 10 ? '0' + n : String(n);
       const isoDateTime = newDateTime.getFullYear() + '-' +
         pad(newDateTime.getMonth() + 1) + '-' +
         pad(newDateTime.getDate()) + 'T' +
         pad(newDateTime.getHours()) + ':' +
-        pad(newDateTime.getMinutes()) + ':' +
-        pad(newDateTime.getSeconds());
+        pad(newDateTime.getMinutes()) + ':00';
 
-      // Call API to update booking
       await updateBooking(selectedClass!.id, {
-        bookingDateTime: isoDateTime
+        bookingDateTime: isoDateTime,
+        durationMinutes: newDuration,
       });
 
-      // Refresh bookings to show updated data
       await fetchBookings();
-
-      setModalView('success');
+      setModalVisible(false);
+      setAlertModal({ visible: true, title: 'Successfully Rescheduled!', body: 'Your session has been successfully rescheduled.', closeAll: true });
     } catch (error) {
       console.error('Error rescheduling booking:', error);
       Alert.alert('Error', 'Failed to reschedule booking. Please try again.');
@@ -333,13 +322,11 @@ export default function TagakTuroHomepage() {
     try {
       setModalLoading(true);
 
-      // Call API to cancel booking
       await updateBookingStatus(selectedClass!.id, 'CANCELLED');
 
-      // Refresh bookings to show updated data
       await fetchBookings();
-
-      setModalView('cancelSuccess');
+      setModalVisible(false);
+      setAlertModal({ visible: true, title: 'Session Cancelled', body: 'Your session has been successfully cancelled.', closeAll: true });
     } catch (error) {
       console.error('Error canceling booking:', error);
       Alert.alert('Error', 'Failed to cancel booking. Please try again.');
@@ -364,6 +351,13 @@ export default function TagakTuroHomepage() {
     if (event.type !== 'dismissed') {
       setShowTimePicker(false);
       setTempDate(currentTime);
+    }
+  };
+
+  const onEndTimeChange = (event: DateTimePickerEvent, selected: Date | undefined) => {
+    setShowEndTimePicker(false);
+    if (event.type !== 'dismissed' && selected) {
+      setTempEndDate(selected);
     }
   };
 
@@ -515,14 +509,34 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{selectedClass.subject}</Text>
                 <Text style={styles.modalCaption}>{selectedClass.location}</Text>
                 <Text style={styles.modalCaption}>{formatStartTime(selectedClass.rawDate)}</Text>
-                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedClass.status}</Text></Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedClass.status === 'CONFIRMED' ? 'UPCOMING' : selectedClass.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
                   {selectedClass.status !== 'COMPLETED' && selectedClass.status !== 'CANCELLED' && selectedClass.status !== 'DECLINED' && (
                     <>
-                      <TouchableOpacity style={styles.modalChatButton}>
+                      <TouchableOpacity style={styles.modalChatButton} onPress={() => { handleCloseModal(); router.replace('/messages'); }}>
                         <Text style={styles.modalBtnTextWhite}>Chat with your Tutor</Text>
                       </TouchableOpacity>
+
+                      {selectedClass.location === 'Online' && (
+                        <TouchableOpacity
+                          style={styles.modalChatButton}
+                          onPress={() => {
+                            handleCloseModal();
+                            router.push({
+                              pathname: '/meeting-lobby',
+                              params: {
+                                roomId: selectedClass.id,
+                                userId: String(currentUserId),
+                                userName: userName,
+                                isTutor: 'false',
+                              },
+                            });
+                          }}
+                        >
+                          <Text style={styles.modalBtnTextWhite}>Join the meeting link</Text>
+                        </TouchableOpacity>
+                      )}
 
                       <TouchableOpacity
                         style={styles.modalRescheduleButton}
@@ -585,9 +599,8 @@ export default function TagakTuroHomepage() {
                   />
                 )}
 
-                <Text style={[styles.modalSectionTitle, { marginTop: 15 }]}>Preferred Time</Text>
+                <Text style={[styles.modalSectionTitle, { marginTop: 15 }]}>Start Time</Text>
 
-                {/* Custom Time Input Trigger */}
                 <TouchableOpacity onPress={() => setShowTimePicker(true)} style={styles.pickerTrigger}>
                   <Text style={styles.pickerText}>
                     {tempDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -600,6 +613,23 @@ export default function TagakTuroHomepage() {
                     mode="time"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     onChange={onTimeChange}
+                  />
+                )}
+
+                <Text style={[styles.modalSectionTitle, { marginTop: 15 }]}>End Time</Text>
+
+                <TouchableOpacity onPress={() => setShowEndTimePicker(true)} style={styles.pickerTrigger}>
+                  <Text style={styles.pickerText}>
+                    {tempEndDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </Text>
+                </TouchableOpacity>
+
+                {showEndTimePicker && (
+                  <DateTimePicker
+                    value={tempEndDate}
+                    mode="time"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onEndTimeChange}
                   />
                 )}
 
@@ -623,18 +653,6 @@ export default function TagakTuroHomepage() {
                   </TouchableOpacity>
                 </View>
               </>
-            )}
-
-            {/* VIEW 3: Reschedule Success */}
-            {modalView === 'success' && (
-              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                <Text style={styles.successTitle}>Successfully Rescheduled!</Text>
-                <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
-
-                <TouchableOpacity style={[styles.modalReturnButton, { width: '100%', marginTop: 20 }]} onPress={handleCloseModal}>
-                  <Text style={styles.modalBtnTextBlue}>Return</Text>
-                </TouchableOpacity>
-              </View>
             )}
 
             {/* VIEW 4: Cancel Confirmation */}
@@ -666,18 +684,20 @@ export default function TagakTuroHomepage() {
               </View>
             )}
 
-            {/* VIEW 5: Cancel Success */}
-            {modalView === 'cancelSuccess' && (
-              <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-                <Text style={styles.successTitle}>Session Cancelled</Text>
-                <Text style={styles.successCaption}>Click Return to go back to the homepage</Text>
 
-                <TouchableOpacity style={[styles.modalReturnButton, { width: '100%', marginTop: 20 }]} onPress={handleCloseModal}>
-                  <Text style={styles.modalBtnTextBlue}>Return</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+          </View>
+        </BlurView>
+      </Modal>
 
+      {/* --- ALERT MODAL --- */}
+      <Modal animationType="fade" transparent={true} visible={alertModal.visible} onRequestClose={() => { setAlertModal({ visible: false, title: '', body: '', closeAll: false }); if (alertModal.closeAll) handleCloseModal(); }}>
+        <BlurView intensity={20} tint="light" style={styles.absolute}>
+          <View style={styles.alertCard}>
+            <Text style={styles.alertTitle}>{alertModal.title}</Text>
+            <Text style={styles.alertBody}>{alertModal.body}</Text>
+            <TouchableOpacity style={styles.alertButton} onPress={() => { const shouldClose = alertModal.closeAll; setAlertModal({ visible: false, title: '', body: '', closeAll: false }); if (shouldClose) handleCloseModal(); }}>
+              <Text style={styles.alertButtonText}>Return</Text>
+            </TouchableOpacity>
           </View>
         </BlurView>
       </Modal>
@@ -1169,6 +1189,50 @@ const styles = StyleSheet.create({
     fontSize: 12, // Updated
     color: '#95CDF2',
     textAlign: 'center',
+  },
+
+  // Alert Modal
+  alertCard: {
+    backgroundColor: '#fff',
+    width: '80%',
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  alertTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95CDF2',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  alertButton: {
+    backgroundColor: '#2B74B4',
+    borderRadius: 10,
+    paddingVertical: 12,
+    width: '100%',
+    alignItems: 'center',
+  },
+  alertButtonText: {
+    fontFamily: 'Poppins',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#fff',
   },
 
   // Cancel view
