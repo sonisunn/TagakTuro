@@ -8,6 +8,7 @@ import com.example.demo.service.NotificationService;
 import com.example.demo.repository.TutorApplicationRepository;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.repository.TutorRepository;
+import com.example.demo.repository.StudentRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +28,7 @@ public class TutorApplicationService {
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
     private final TutorRepository tutorRepository;
+    private final StudentRepository studentRepository;
     private final NotificationService notificationService;
     private final EmailService emailService;
 
@@ -35,6 +37,7 @@ public class TutorApplicationService {
             FileStorageService fileStorageService,
             UserRepository userRepository,
             TutorRepository tutorRepository,
+            StudentRepository studentRepository,
             NotificationService notificationService,
             EmailService emailService) {
         this.tutorApplicationRepository = tutorApplicationRepository;
@@ -42,6 +45,7 @@ public class TutorApplicationService {
         this.fileStorageService = fileStorageService;
         this.userRepository = userRepository;
         this.tutorRepository = tutorRepository;
+        this.studentRepository = studentRepository;
         this.notificationService = notificationService;
         this.emailService = emailService;
     }
@@ -53,6 +57,15 @@ public class TutorApplicationService {
         }
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new IllegalStateException("Email already registered as a user.");
+        }
+        if (tutorApplicationRepository.existsByStudentId(request.getStudentId())) {
+            throw new IllegalStateException("Student ID is already used in an existing application.");
+        }
+        if (studentRepository.existsByStudentId(request.getStudentId())) {
+            throw new IllegalStateException("Student ID is already registered.");
+        }
+        if (tutorRepository.existsByTutorId(request.getStudentId())) {
+            throw new IllegalStateException("Student ID is already registered as a tutor.");
         }
 
         TutorApplication application = new TutorApplication();
@@ -76,7 +89,29 @@ public class TutorApplicationService {
             application.setCertificatesPath(certificatesPath);
         }
 
-        return tutorApplicationRepository.save(application);
+        TutorApplication saved = tutorApplicationRepository.save(application);
+
+        try {
+            emailService.sendApplicationSubmissionEmail(
+                    request.getEmail(),
+                    request.getName(),
+                    request.getStudentId(),
+                    request.getCourseProgram(),
+                    request.getEmail(),
+                    request.getPhoneNumber(),
+                    request.getPassword()
+            );
+        } catch (Exception e) {
+            System.err.println("Failed to send submission confirmation email: " + e.getMessage());
+        }
+
+        return saved;
+    }
+
+    public boolean isStudentIdTaken(String studentId) {
+        return tutorApplicationRepository.existsByStudentId(studentId)
+                || studentRepository.existsByStudentId(studentId)
+                || tutorRepository.existsByTutorId(studentId);
     }
 
     public TutorApplication getApplicationByEmail(String email) {

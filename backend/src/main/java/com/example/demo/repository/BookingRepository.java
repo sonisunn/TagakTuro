@@ -22,6 +22,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     // Find bookings within a date range
     List<Booking> findByBookingDateTimeBetween(LocalDateTime start, LocalDateTime end);
 
+    // Find bookings for a specific student within a date range (for overlap detection)
+    List<Booking> findByStudentIdAndBookingDateTimeBetween(Long studentId, LocalDateTime start, LocalDateTime end);
+
     // Find bookings by student and status
     List<Booking> findByStudentAndStatus(Student student, Booking.BookingStatus status);
     

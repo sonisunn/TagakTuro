@@ -9,6 +9,7 @@ import com.example.demo.repository.StudentRepository;
 import com.example.demo.dto.SignupRequest;
 import com.example.demo.dto.LoginResponse;
 import com.example.demo.dto.LoginRequest;
+import com.example.demo.service.NotificationService;
 import com.example.demo.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +32,9 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Transactional
     public User registerUser(SignupRequest signupRequest) {
@@ -73,6 +77,14 @@ public class AuthService {
             newStudent.setPhoneNumber(signupRequest.getPhoneNumber());
             newStudent.setUser(savedUser); // Link Student to User
             studentRepository.save(newStudent);
+
+            try {
+                notificationService.createNotification(savedUser.getId(),
+                        "Welcome to TagakTuro!",
+                        "Welcome to TagakTuro! An online tutoring application that caters your needs and schedule.");
+            } catch (Exception e) {
+                // Don't fail registration if notification delivery fails
+            }
 
             return savedUser;
         } else { // TUTOR
