@@ -472,7 +472,7 @@ tutor_applications.student_id UNIQUE
 
 ```properties
 spring.datasource.url=jdbc:mysql://localhost:3306/tagakturo
-spring.datasource.username=tagak_user
+spring.datasource.username=malongdel83@gmail.com
 spring.datasource.password=tagakturo2025
 spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect

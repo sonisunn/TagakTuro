@@ -756,15 +756,37 @@ export default function TagakTuroHomepage() {
                   )}
 
                   {selectedBookingForModal.status === 'COMPLETED' ? (
-                    <TouchableOpacity
-                      style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
-                      onPress={() => {
-                        closeBookingDetailsModal();
-                        router.replace(`/feedback?userId=${selectedBookingForModal.studentUserId}&name=${selectedBookingForModal.studentName}&bookingId=${selectedBookingForModal.id}`);
-                      }}
-                    >
-                      <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity
+                        style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
+                        onPress={() => {
+                          closeBookingDetailsModal();
+                          router.replace(`/feedback?userId=${selectedBookingForModal.studentUserId}&name=${selectedBookingForModal.studentName}&bookingId=${selectedBookingForModal.id}`);
+                        }}
+                      >
+                        <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalChatButton}
+                        onPress={() => {
+                          closeBookingDetailsModal();
+                          router.push({
+                            pathname: '/evaluation',
+                            params: {
+                              bookingId: selectedBookingForModal.id,
+                              evaluationType: 'TUTOR_EVALUATES_STUDENT',
+                              evaluatorId: String(userId),
+                              evaluateeId: String(selectedBookingForModal.studentUserId),
+                              evaluateeName: selectedBookingForModal.studentName,
+                              subject: selectedBookingForModal.subject,
+                            },
+                          });
+                        }}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Evaluate Session</Text>
+                      </TouchableOpacity>
+                    </>
                   ) : null}
 
                   <TouchableOpacity style={styles.modalReturnButton} onPress={closeBookingDetailsModal}>

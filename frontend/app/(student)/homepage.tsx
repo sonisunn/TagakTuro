@@ -555,15 +555,37 @@ export default function TagakTuroHomepage() {
                   )}
 
                   {selectedClass.status === 'COMPLETED' ? (
-                    <TouchableOpacity
-                      style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
-                      onPress={() => {
-                        handleCloseModal();
-                        router.replace(`/tutor-feedback?userId=${selectedClass.tutorUserId}&name=${selectedClass.tutor}&bookingId=${selectedClass.id}`);
-                      }}
-                    >
-                      <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
-                    </TouchableOpacity>
+                    <>
+                      <TouchableOpacity
+                        style={[styles.modalRescheduleButton, { backgroundColor: '#FCC419', borderColor: '#FCC419', marginTop: 10 }]}
+                        onPress={() => {
+                          handleCloseModal();
+                          router.replace(`/tutor-feedback?userId=${selectedClass.tutorUserId}&name=${selectedClass.tutor}&bookingId=${selectedClass.id}`);
+                        }}
+                      >
+                        <Text style={[styles.modalBtnTextWhite, { color: '#2B74B4' }]}>View Profile & Rate</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.modalChatButton}
+                        onPress={() => {
+                          handleCloseModal();
+                          router.push({
+                            pathname: '/evaluation',
+                            params: {
+                              bookingId: selectedClass.id,
+                              evaluationType: 'STUDENT_EVALUATES_TUTOR',
+                              evaluatorId: String(currentUserId),
+                              evaluateeId: String(selectedClass.tutorUserId),
+                              evaluateeName: selectedClass.tutor,
+                              subject: selectedClass.subject,
+                            },
+                          });
+                        }}
+                      >
+                        <Text style={styles.modalBtnTextWhite}>Evaluate Session</Text>
+                      </TouchableOpacity>
+                    </>
                   ) : null}
 
                   <TouchableOpacity style={styles.modalReturnButton} onPress={handleCloseModal}>
