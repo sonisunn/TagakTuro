@@ -71,4 +71,15 @@ public class UserService {
 
         return userRepository.save(user);
     }
+
+    public User getUser(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+
+    public User updateProfilePhoto(Long id, String imageBase64) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) return null;
+        user.setProfilePictureUrl(imageBase64);
+        return userRepository.save(user);
+    }
 }

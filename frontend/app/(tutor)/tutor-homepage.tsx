@@ -613,7 +613,7 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.newClassDetail}>{classItem.subject}</Text>
                 <Text style={styles.newClassDetail}>{classItem.location}</Text>
                 <Text style={styles.newClassDetail}>{formatBookingDateTime(classItem.rawDate || classItem.date)}</Text>
-                <Text style={styles.newStatusText}>
+                <Text style={[styles.newStatusText, { color: classItem.status === 'COMPLETED' ? '#0FE40F' : classItem.status === 'CANCELLED' ? '#FF6B6B' : '#FCC419' }]}>
                   Status: {classItem.status === "CONFIRMED" ? "UPCOMING" : classItem.status}
                 </Text>
               </View>
@@ -624,7 +624,7 @@ export default function TagakTuroHomepage() {
                     showBookingDetailsModal(classItem);
                   }}
                 >
-                  <Text style={styles.newViewButtonText}>View</Text>
+                  <Text style={styles.newViewButtonText}>{classItem.status === 'COMPLETED' ? 'Evaluate' : 'View'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -710,7 +710,7 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{selectedBookingForModal.subject}</Text>
                 <Text style={styles.modalCaption}>{selectedBookingForModal.location}</Text>
                 <Text style={styles.modalCaption}>{formatStartTime(selectedBookingForModal.rawDate || selectedBookingForModal.date)}</Text>
-                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedBookingForModal.status === 'CONFIRMED' ? 'UPCOMING' : selectedBookingForModal.status}</Text></Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: selectedBookingForModal.status === 'COMPLETED' ? '#0FE40F' : selectedBookingForModal.status === 'CANCELLED' ? '#FF6B6B' : '#FCC419', fontWeight: '400' }}>{selectedBookingForModal.status === 'CONFIRMED' ? 'UPCOMING' : selectedBookingForModal.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
                   {selectedBookingForModal.status !== 'COMPLETED' && selectedBookingForModal.status !== 'CANCELLED' && selectedBookingForModal.status !== 'DECLINED' && (
@@ -1090,7 +1090,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins",
     fontSize: 12,
     fontWeight: "600",
-    color: "#FCC419", // Yellow/Gold
     marginTop: 4,
   },
   newButtonCol: {

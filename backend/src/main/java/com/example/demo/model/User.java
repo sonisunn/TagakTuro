@@ -23,6 +23,10 @@ public class User {
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
+    @Lob
+    @Column(name = "profile_picture_url", columnDefinition = "LONGTEXT")
+    private String profilePictureUrl;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "role")
@@ -52,4 +56,7 @@ public class User {
 
     public java.util.Set<String> getRoles() { return roles; }
     public void setRoles(java.util.Set<String> roles) { this.roles = roles; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

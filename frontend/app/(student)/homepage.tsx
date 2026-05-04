@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
@@ -59,6 +59,18 @@ export default function TagakTuroHomepage() {
   const [modalView, setModalView] = useState<string>('details');
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; body: string; closeAll: boolean }>({ visible: false, title: '', body: '', closeAll: false });
+  const [evaluatedBookingIds, setEvaluatedBookingIds] = useState<Set<string>>(new Set());
+
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem('evaluatedBookings').then(raw => {
+        if (raw) {
+          const ids: number[] = JSON.parse(raw);
+          setEvaluatedBookingIds(new Set(ids.map(String)));
+        }
+      }).catch(() => {});
+    }, [])
+  );
 
   // --- Date/Time Picker State ---
   const [tempDate, setTempDate] = useState<Date>(new Date());
@@ -424,13 +436,9 @@ export default function TagakTuroHomepage() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
-            </TouchableOpacity>
-
-            <View style={styles.profilePicture}>
+            <TouchableOpacity style={styles.profilePicture} onPress={() => router.push('/profile')}>
               <Ionicons name="person-circle" size={48} color="#2B74B4" />
-            </View>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -479,12 +487,24 @@ export default function TagakTuroHomepage() {
                 classItem.status === 'UPCOMING' && styles.statusUpcoming,
                 classItem.status === 'CONFIRMED' && styles.statusUpcoming,
                 classItem.status === 'COMPLETED' && styles.statusCompleted,
+                classItem.status === 'CANCELLED' && { color: '#FF6B6B' },
               ]}>
                 Status: {classItem.status === "CONFIRMED" ? "UPCOMING" : classItem.status}
               </Text>
             </View>
-            <TouchableOpacity style={styles.viewButton} onPress={() => handleViewPress(classItem)}>
-              <Text style={styles.viewButtonText}>View</Text>
+            <TouchableOpacity
+              style={[
+                styles.viewButton,
+                classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id) && styles.viewButtonEvaluated,
+              ]}
+              onPress={() => handleViewPress(classItem)}
+              disabled={classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id)}
+            >
+              <Text style={styles.viewButtonText}>
+                {classItem.status === 'COMPLETED'
+                  ? evaluatedBookingIds.has(classItem.id) ? 'Evaluated' : 'Evaluate'
+                  : 'View'}
+              </Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -509,7 +529,7 @@ export default function TagakTuroHomepage() {
                 <Text style={styles.modalCaption}>{selectedClass.subject}</Text>
                 <Text style={styles.modalCaption}>{selectedClass.location}</Text>
                 <Text style={styles.modalCaption}>{formatStartTime(selectedClass.rawDate)}</Text>
-                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: '#95CDF2', fontWeight: '400' }}>{selectedClass.status === 'CONFIRMED' ? 'UPCOMING' : selectedClass.status}</Text></Text>
+                <Text style={[styles.modalStatus, { fontSize: 12 }]}>Status: <Text style={{ color: selectedClass.status === 'COMPLETED' ? '#0FE40F' : selectedClass.status === 'CANCELLED' ? '#FF6B6B' : '#FCC419', fontWeight: '400' }}>{selectedClass.status === 'CONFIRMED' ? 'UPCOMING' : selectedClass.status}</Text></Text>
 
                 <View style={styles.modalButtonContainer}>
                   {selectedClass.status !== 'COMPLETED' && selectedClass.status !== 'CANCELLED' && selectedClass.status !== 'DECLINED' && (
@@ -567,9 +587,20 @@ export default function TagakTuroHomepage() {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.modalChatButton}
+                        style={[
+                          styles.modalChatButton,
+                          evaluatedBookingIds.has(selectedClass.id) && { backgroundColor: '#A8C4E0' },
+                        ]}
+                        disabled={evaluatedBookingIds.has(selectedClass.id)}
                         onPress={() => {
                           handleCloseModal();
+                          const sessionDate = selectedClass.rawDate
+                            ? new Date(selectedClass.rawDate).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })
+                            : 'N/A';
                           router.push({
                             pathname: '/evaluation',
                             params: {
@@ -579,11 +610,14 @@ export default function TagakTuroHomepage() {
                               evaluateeId: String(selectedClass.tutorUserId),
                               evaluateeName: selectedClass.tutor,
                               subject: selectedClass.subject,
+                              sessionDate,
                             },
                           });
                         }}
                       >
-                        <Text style={styles.modalBtnTextWhite}>Evaluate Session</Text>
+                        <Text style={styles.modalBtnTextWhite}>
+                          {evaluatedBookingIds.has(selectedClass.id) ? 'Already Evaluated' : 'Evaluate Session'}
+                        </Text>
                       </TouchableOpacity>
                     </>
                   ) : null}
@@ -970,6 +1004,9 @@ const styles = StyleSheet.create({
   statusCompleted: {
     color: '#0FE40F',
   },
+  statusCancelled: {
+    color: '#FF6B6B',
+  },
   viewButton: {
     backgroundColor: '#2B74B4',
     borderRadius: 10,
@@ -978,6 +1015,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-end',
+  },
+  viewButtonEvaluated: {
+    backgroundColor: '#A8C4E0',
   },
   viewButtonText: {
     fontFamily: 'Poppins',

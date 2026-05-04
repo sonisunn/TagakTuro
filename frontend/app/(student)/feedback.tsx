@@ -1,234 +1,173 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Platform
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFeedbackForUser, submitFeedback, FeedbackResponse } from '../../src/api/feedback';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from 'expo-router';
+import {
+  useFonts,
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+} from '@expo-google-fonts/poppins';
+import { getStudentFeedback, StudentFeedbackResponse } from '../../src/api/feedback';
 
-export default function StudentFeedbackPage() {
+type ErrorType = 'auth' | 'network' | null;
+
+export default function StudentFeedbackTab() {
   const router = useRouter();
-  const params = useLocalSearchParams();
-
-  // The user ID of the student we are viewing
-  const studentUserIdString = params.userId as string;
-  // If the tutor came here directly from a completed class linking to rate
-  const bookingIdString = params.bookingId as string;
-
-  const [feedbacks, setFeedbacks] = useState<FeedbackResponse[]>([]);
+  const [feedbacks, setFeedbacks] = useState<StudentFeedbackResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tutorUserId, setTutorUserId] = useState<number | null>(null);
-  const [activeStudentName, setActiveStudentName] = useState('Student');
-  const [studentRole, setStudentRole] = useState('Student');
+  const [errorType, setErrorType] = useState<ErrorType>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [studentName, setStudentName] = useState('Student');
+  const [currentStudentId, setCurrentStudentId] = useState<number | null>(null);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [comments, setComments] = useState('');
-  const [submitLoading, setSubmitLoading] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Poppins: Poppins_400Regular,
+    'Poppins-Bold': Poppins_700Bold,
+    'Poppins-SemiBold': Poppins_600SemiBold,
+  });
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const storedUserData = await AsyncStorage.getItem('userData');
-        let currentUserId = null;
-        let currentName = 'Student';
-        let currentRole = 'Student';
-        if (storedUserData) {
-          const parsed = JSON.parse(storedUserData);
-          setTutorUserId(parsed.id);
-          currentUserId = parsed.id;
-          currentName = parsed.name || 'Student';
-          currentRole = parsed.role || parsed.year || 'Student';
-        }
+  const handleAuthError = async () => {
+    await AsyncStorage.multiRemove(['authToken', 'userData', 'studentId', 'tutorId']);
+    router.replace('/login');
+  };
 
-        const targetUserId = studentUserIdString ? parseInt(studentUserIdString) : currentUserId;
-        setActiveStudentName((params.name as string) || currentName);
-        setStudentRole(currentRole);
+  const loadFeedback = useCallback(async () => {
+    setLoading(true);
+    setErrorType(null);
+    setErrorMessage('');
 
-        if (targetUserId) {
-          const list = await getFeedbackForUser(targetUserId);
-          setFeedbacks(list);
-        }
-      } catch (e) {
-        console.warn('Failed to load feedback', e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    init();
-  }, [studentUserIdString]);
-
-  const handleSubmitReview = async () => {
-    if (rating === 0) {
-      Alert.alert('Error', 'Please select a star rating first.');
-      return;
-    }
-    if (!tutorUserId || !bookingIdString || !studentUserIdString) {
-      Alert.alert('Error', 'Missing required details to submit feedback.');
-      return;
-    }
-
-    setSubmitLoading(true);
     try {
-      const response = await submitFeedback(tutorUserId, {
-        bookingId: parseInt(bookingIdString),
-        revieweeId: parseInt(studentUserIdString),
-        rating: rating,
-        comments: comments
-      });
-      // Add the new feedback directly to the UI
-      setFeedbacks([response, ...feedbacks]);
-      setModalVisible(false);
-      setRating(0);
-      setComments('');
-      Alert.alert('Success', 'Your review has been published!');
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'Failed to submit your review. Please try again.');
-    } finally {
-      setSubmitLoading(false);
-    }
-  };
+      const storedUserData = await AsyncStorage.getItem('userData');
+      if (storedUserData) {
+        const userData = JSON.parse(storedUserData);
+        setStudentName(userData.name || 'Student');
+        setCurrentStudentId(userData.id);
 
-  const getAverageRating = () => {
-    if (feedbacks.length === 0) return 0;
-    const sum = feedbacks.reduce((acc, f) => acc + f.rating, 0);
-    return (sum / feedbacks.length).toFixed(1);
-  };
+        if (userData.id) {
+          const feedbackList = await getStudentFeedback(userData.id);
+          setFeedbacks(feedbackList || []);
+        }
+      }
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        setErrorType('auth');
+        setErrorMessage('You are not authorized. Please log in again.');
+        await handleAuthError();
+      } else if (!error?.response) {
+        setErrorType('network');
+        setErrorMessage('Unable to connect. Please check your internet connection.');
+      } else {
+        setErrorType('network');
+        setErrorMessage('Failed to load feedback. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFeedback();
+    }, [loadFeedback])
+  );
+
+  if (!fontsLoaded) return null;
+
+  // Loading state
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#2B74B4" />
+          <Text style={styles.loadingText}>Loading feedback...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Network error state
+  if (errorType === 'network') {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centerContainer}>
+          <Ionicons name="wifi-outline" size={56} color="#95CDF2" />
+          <Text style={styles.errorTitle}>No Connection</Text>
+          <Text style={styles.errorBody}>{errorMessage}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadFeedback}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color="#2B74B4" />
-          </TouchableOpacity>
           <View style={styles.profileImageContainer}>
-            <Ionicons name="person-circle" size={150} color="#2B74B4" />
+            <Ionicons name="person-circle" size={100} color="#2B74B4" />
           </View>
-          <Text style={styles.profileName}>{activeStudentName}</Text>
-          <Text style={styles.profileRole}>{studentRole}</Text>
-
-          <View style={styles.ratingContainer}>
-            <View style={styles.starRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Ionicons
-                  key={star}
-                  name="star"
-                  size={24}
-                  color="#FCC419"
-                  style={{ marginHorizontal: 3 }}
-                />
-              ))}
-            </View>
-            <Text style={styles.ratingValue}>
-              ({feedbacks.length > 0 ? getAverageRating() : '0'})
-            </Text>
-          </View>
+          <Text style={styles.profileName}>{studentName}</Text>
+          <Text style={styles.profileRole}>Student</Text>
         </View>
 
-        {/* Feedback Section */}
+        {/* Feedback from Tutor Section */}
         <View style={styles.feedbackSection}>
-          <Text style={styles.feedbackSectionTitle}>Recent Feedback from students</Text>
+          <Text style={styles.feedbackSectionTitle}>Feedback from Tutor</Text>
 
-          <View style={styles.feedbackList}>
-            {loading ? (
-              <ActivityIndicator size="large" color="#2B74B4" style={{ padding: 20 }} />
-            ) : feedbacks.length === 0 ? (
-              <Text style={[styles.feedbackComment, { textAlign: 'center', paddingVertical: 20 }]}>
-                No feedback found for this student.
+          {feedbacks.length === 0 ? (
+            <View style={styles.emptyStateContainer}>
+              <Ionicons name="mail-outline" size={48} color="#B0C4DE" />
+              <Text style={styles.emptyStateText}>No feedback received yet.</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Feedback from your tutors will appear here after sessions.
               </Text>
-            ) : feedbacks.map((feedback, index) => (
-              <View key={feedback.id}>
-                <View style={styles.feedbackItem}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.feedbackName}>{feedback.reviewerName || 'Tutor'}</Text>
-                    <View style={{ flexDirection: 'row' }}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
-                          key={star}
-                          name={star <= feedback.rating ? "star" : "star-outline"}
-                          size={12}
-                          color="#FCC419"
-                        />
-                      ))}
-                    </View>
+            </View>
+          ) : (
+            <View style={styles.feedbackList}>
+              {feedbacks.map((feedback, index) => (
+                <View key={feedback.id || index}>
+                  <View style={styles.feedbackItem}>
+                    <Text style={styles.feedbackTutorName}>{feedback.tutorName}</Text>
+                    <Text style={styles.feedbackComment}>"{feedback.feedback}"</Text>
+                    <Text style={styles.feedbackDate}>
+                      {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </Text>
                   </View>
-                  {feedback.comments ? (
-                    <Text style={styles.feedbackComment}>"{feedback.comments}"</Text>
-                  ) : (
-                    <Text style={[styles.feedbackComment, { opacity: 0.5 }]}>No written comments.</Text>
-                  )}
+                  {index < feedbacks.length - 1 && <View style={styles.divider} />}
                 </View>
-                {index < feedbacks.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.bottomSpacing} />
       </ScrollView>
-
-      {/* Review Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <BlurView intensity={20} tint="dark" style={styles.absolute}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Rate Your Student</Text>
-            <Text style={styles.modalSubTitle}>How was {activeStudentName} during the session?</Text>
-
-            <View style={styles.starsContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                  <Ionicons
-                    name={star <= rating ? "star" : "star-outline"}
-                    size={40}
-                    color="#FCC419"
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <TextInput
-              style={styles.textInput}
-              placeholder="Share details of your experience (optional)"
-              placeholderTextColor="#999"
-              multiline
-              numberOfLines={4}
-              value={comments}
-              onChangeText={setComments}
-            />
-
-            <View style={styles.modalButtonContainer}>
-              <TouchableOpacity
-                style={[styles.modalSubmitButton, submitLoading && styles.disabledButton]}
-                onPress={handleSubmitReview}
-                disabled={submitLoading}
-              >
-                <Text style={styles.modalBtnTextWhite}>
-                  {submitLoading ? 'Submitting...' : 'Submit Review'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalReturnButton, submitLoading && styles.disabledButton]}
-                onPress={() => setModalVisible(false)}
-                disabled={submitLoading}
-              >
-                <Text style={styles.modalBtnTextBlue}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </BlurView>
-      </Modal>
     </View>
   );
 }
@@ -236,220 +175,143 @@ export default function StudentFeedbackPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F2F4F7',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   scrollView: {
     flex: 1,
   },
-  backButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 20,
-    left: 20,
-    zIndex: 10,
-  },
-  profileSection: {
-    backgroundColor: '#fff',
-    paddingTop: 50,
+  scrollContent: {
+    paddingTop: Platform.OS === 'ios' ? 40 : 20,
+    paddingHorizontal: 20,
     paddingBottom: 20,
+  },
+
+  // Profile Section
+  profileSection: {
     alignItems: 'center',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    marginBottom: 32,
   },
   profileImageContainer: {
-    position: 'relative',
-    marginTop: 10,
+    marginBottom: 16,
   },
   profileName: {
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Bold',
     fontSize: 24,
-    fontWeight: '600',
-    color: '#2B74B4',
-    marginBottom: 3,
+    color: '#1B3A5C',
+    marginBottom: 4,
+    textAlign: 'center',
   },
   profileRole: {
     fontFamily: 'Poppins',
     fontSize: 13,
-    color: '#95CDF2',
-    marginBottom: 12,
+    color: '#7A9ABF',
+    textAlign: 'center',
   },
-  ratingContainer: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingValue: {
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    color: '#FCC419',
-    fontSize: 14,
-  },
-  ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0F8FF',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 20,
-    marginTop: 5,
-  },
-  ratingBadgeText: {
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    color: '#2B74B4',
-    marginLeft: 5,
-    fontSize: 14,
-  },
+
+  // Feedback Section
   feedbackSection: {
-    marginTop: 25,
-    marginHorizontal: 20,
-    marginBottom: 100,
+    marginBottom: 20,
   },
   feedbackSectionTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2B74B4',
-    marginBottom: 15,
+    fontFamily: 'Poppins-Bold',
+    fontSize: 18,
+    color: '#1B3A5C',
+    marginBottom: 16,
   },
-  feedbackHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+
+  // Empty State
+  emptyStateContainer: {
     alignItems: 'center',
-    marginBottom: 15,
+    paddingVertical: 40,
   },
-  feedbackTitle: {
+  emptyStateText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 16,
+    color: '#1B3A5C',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  emptyStateSubtext: {
     fontFamily: 'Poppins',
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#2B74B4',
+    fontSize: 13,
+    color: '#7A9ABF',
+    textAlign: 'center',
   },
-  rateButton: {
-    backgroundColor: '#FCC419',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  rateButtonText: {
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    color: '#fff',
-    fontSize: 12,
-  },
+
+  // Feedback List
   feedbackList: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: '#95CDF2',
-    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   feedbackItem: {
-    paddingVertical: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  feedbackName: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2B74B4',
-    marginBottom: 5,
+  feedbackTutorName: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 14,
+    color: '#1B3A5C',
+    marginBottom: 8,
   },
   feedbackComment: {
     fontFamily: 'Poppins',
     fontSize: 13,
-    color: '#777',
+    color: '#5B7A9E',
     fontStyle: 'italic',
-    marginTop: 5,
+    marginBottom: 8,
+    lineHeight: 18,
+  },
+  feedbackDate: {
+    fontFamily: 'Poppins',
+    fontSize: 11,
+    color: '#A8C4E0',
   },
   divider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginVertical: 5,
+    backgroundColor: '#DDE6F0',
   },
-  bottomSpacing: {
-    height: 100,
-  },
-  absolute: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    width: '90%',
-    borderRadius: 25,
-    padding: 25,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontFamily: 'Poppins',
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2B74B4',
-  },
-  modalSubTitle: {
+
+  // Loading and Error States
+  loadingText: {
     fontFamily: 'Poppins',
     fontSize: 14,
-    color: '#95CDF2',
+    color: '#7A9ABF',
+    marginTop: 12,
+  },
+  errorTitle: {
+    fontFamily: 'Poppins-Bold',
+    fontSize: 18,
+    color: '#1B3A5C',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  errorBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#7A9ABF',
     textAlign: 'center',
     marginBottom: 20,
   },
-  starsContainer: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  textInput: {
-    width: '100%',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 15,
-    padding: 15,
-    height: 100,
-    textAlignVertical: 'top',
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 25,
-  },
-  modalButtonContainer: {
-    width: '100%',
-    gap: 10,
-  },
-  modalSubmitButton: {
+  retryButton: {
     backgroundColor: '#2B74B4',
-    paddingVertical: 15,
-    borderRadius: 30,
-    alignItems: 'center',
-    width: '100%',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
   },
-  modalReturnButton: {
-    backgroundColor: '#fff',
-    paddingVertical: 15,
-    borderRadius: 30,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#95CDF2',
-    width: '100%',
+  retryButtonText: {
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 14,
+    color: '#FFFFFF',
   },
-  modalBtnTextWhite: {
-    color: '#fff',
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  modalBtnTextBlue: {
-    color: '#2B74B4',
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  disabledButton: {
-    opacity: 0.6,
+
+  bottomSpacing: {
+    height: 20,
   },
 });

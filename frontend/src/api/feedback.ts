@@ -1,7 +1,19 @@
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from './config';
 
 const BASE_URL = `${API_BASE_URL}/api/feedback`;
+
+const getAuthClient = async () => {
+    const token = await AsyncStorage.getItem('authToken');
+    return axios.create({
+        timeout: 15000,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+    });
+};
 
 export interface FeedbackRequest {
     bookingId: number;
@@ -22,32 +34,36 @@ export interface FeedbackResponse {
     createdAt: string;
 }
 
+export interface StudentFeedbackResponse {
+    id: number;
+    bookingId: number;
+    tutorId: number;
+    tutorName: string;
+    studentId: number;
+    feedback: string;
+    createdAt: string;
+}
+
 export const submitFeedback = async (reviewerId: number, data: FeedbackRequest): Promise<FeedbackResponse> => {
-    try {
-        const response = await axios.post(`${BASE_URL}?reviewerId=${reviewerId}`, data);
-        return response.data;
-    } catch (error) {
-        console.error('Error submitting feedback:', error);
-        throw error;
-    }
+    const client = await getAuthClient();
+    const response = await client.post(`${BASE_URL}?reviewerId=${reviewerId}`, data);
+    return response.data;
 };
 
 export const getFeedbackForBooking = async (bookingId: number): Promise<FeedbackResponse[]> => {
-    try {
-        const response = await axios.get(`${BASE_URL}/booking/${bookingId}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching feedback for booking:', error);
-        throw error;
-    }
+    const client = await getAuthClient();
+    const response = await client.get(`${BASE_URL}/booking/${bookingId}`);
+    return response.data;
 };
 
 export const getFeedbackForUser = async (userId: number): Promise<FeedbackResponse[]> => {
-    try {
-        const response = await axios.get(`${BASE_URL}/user/${userId}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching feedback for user:', error);
-        throw error;
-    }
+    const client = await getAuthClient();
+    const response = await client.get(`${BASE_URL}/user/${userId}`);
+    return response.data;
+};
+
+export const getStudentFeedback = async (studentId: number): Promise<StudentFeedbackResponse[]> => {
+    const client = await getAuthClient();
+    const response = await client.get(`${BASE_URL}/student/${studentId}`);
+    return response.data;
 };

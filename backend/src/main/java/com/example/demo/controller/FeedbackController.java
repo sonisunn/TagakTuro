@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/feedback")
-@CrossOrigin(origins = "http://localhost:8081", maxAge = 3600, allowCredentials = "true")
+@CrossOrigin(origins = "*")
 public class FeedbackController {
 
     @Autowired

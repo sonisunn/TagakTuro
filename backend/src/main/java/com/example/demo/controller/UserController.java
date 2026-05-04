@@ -14,7 +14,15 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // Update user profile (partial updates allowed)
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUser(@PathVariable Long id) {
+        User user = userService.getUser(id);
+        if (user == null) {
+            return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found"));
+        }
+        return ResponseEntity.ok(user);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody User incoming) {
         User updatedUser = userService.updateUser(id, incoming);
@@ -22,5 +30,14 @@ public class UserController {
             return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found"));
         }
         return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/{id}/photo")
+    public ResponseEntity<?> updateProfilePhoto(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        User updated = userService.updateProfilePhoto(id, body.get("imageBase64"));
+        if (updated == null) {
+            return ResponseEntity.status(404).body(java.util.Map.of("error", "User not found"));
+        }
+        return ResponseEntity.ok(updated);
     }
 }

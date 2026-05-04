@@ -1,5 +1,6 @@
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   View,
   Text,
@@ -8,32 +9,42 @@ import {
   ScrollView,
   TextInput,
   Modal,
+  Platform,
+  KeyboardAvoidingView,
 } from "react-native";
 import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
 import {
   useFonts,
   Poppins_400Regular,
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-import * as SplashScreen from "expo-splash-screen";
 import { submitEvaluation, checkEvaluated } from "../src/api/evaluation";
 
-const RATING_OPTIONS = [
-  { value: "A", label: "Excellent" },
-  { value: "B", label: "Good" },
-  { value: "C", label: "Fair" },
-  { value: "D", label: "Poor" },
-  { value: "E", label: "Very Poor" },
+// ── Student evaluates tutor ──────────────────────────────────────────────────
+const STUDENT_MCQ_OPTIONS = [
+  { value: "A", label: "Outstanding" },
+  { value: "B", label: "Satisfactory" },
+  { value: "C", label: "Needs Improvement" },
+  { value: "D", label: "Unsatisfactory" },
 ];
 
-const STUDENT_QUESTIONS = [
-  "How would you rate your tutor's teaching effectiveness?",
-  "How would you rate your tutor's communication and helpfulness?",
+const STUDENT_MCQ_QUESTIONS = [
+  "How consistent is the student's effort and motivation to learn?",
+  "How effectively does the student manage time and focus during the session?",
 ];
 
-const TUTOR_QUESTIONS = [
+const STUDENT_TEXT_QUESTION = "How would you describe your tutor?";
+
+// ── Tutor evaluates student ──────────────────────────────────────────────────
+const TUTOR_MCQ_OPTIONS = [
+  { value: "A", label: "Outstanding" },
+  { value: "B", label: "Satisfactory" },
+  { value: "C", label: "Needs Improvement" },
+  { value: "D", label: "Unsatisfactory" },
+];
+
+const TUTOR_MCQ_QUESTIONS = [
   "How would you rate the student's participation and engagement?",
   "How would you rate the student's preparedness for the session?",
   "How would you rate the student's overall attitude and cooperation?",
@@ -49,13 +60,20 @@ export default function EvaluationScreen() {
   const evaluateeId = Number(params.evaluateeId);
   const evaluateeName = params.evaluateeName as string;
   const subject = params.subject as string;
+  const sessionDate = params.sessionDate as string; // e.g., "September 5, 2026"
 
-  const isTutorEvaluating = evaluationType === "TUTOR_EVALUATES_STUDENT";
-  const questions = isTutorEvaluating ? TUTOR_QUESTIONS : STUDENT_QUESTIONS;
+  const isStudent = evaluationType === "STUDENT_EVALUATES_TUTOR";
+  const mcqOptions = isStudent ? STUDENT_MCQ_OPTIONS : TUTOR_MCQ_OPTIONS;
+  const mcqQuestions = isStudent ? STUDENT_MCQ_QUESTIONS : TUTOR_MCQ_QUESTIONS;
 
   const [loading, setLoading] = useState(true);
   const [alreadyEvaluated, setAlreadyEvaluated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [successData, setSuccessData] = useState<{
+    tutorName?: string;
+    sessionDate?: string;
+    evaluatedDate?: string;
+  } | null>(null);
   const [alertModal, setAlertModal] = useState<{
     visible: boolean;
     title: string;
@@ -63,10 +81,11 @@ export default function EvaluationScreen() {
     isSuccess: boolean;
   }>({ visible: false, title: "", body: "", isSuccess: false });
 
+  // MCQ answers — indexed 0, 1 (and 2 for tutor's 3rd MCQ question)
   const [q1, setQ1] = useState<string | null>(null);
   const [q2, setQ2] = useState<string | null>(null);
-  const [q3, setQ3] = useState<string | null>(null);
-  const [comment, setComment] = useState("");
+  const [q3, setQ3] = useState<string | null>(null); // tutor only (3rd MCQ)
+  const [openText, setOpenText] = useState(""); // student's text question
 
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
@@ -75,20 +94,12 @@ export default function EvaluationScreen() {
   });
 
   useEffect(() => {
-    SplashScreen.preventAutoHideAsync();
-  }, []);
-
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
-
-  useEffect(() => {
     const checkStatus = async () => {
       try {
         const evaluated = await checkEvaluated(bookingId, evaluationType);
         setAlreadyEvaluated(evaluated);
       } catch {
-        // treat as not yet evaluated if the check fails
+        // treat as not yet evaluated if check fails
       } finally {
         setLoading(false);
       }
@@ -96,24 +107,22 @@ export default function EvaluationScreen() {
     if (bookingId && evaluationType) checkStatus();
   }, [bookingId, evaluationType]);
 
-  const getAnswer = (index: number) => (index === 0 ? q1 : index === 1 ? q2 : q3);
-  const setAnswer = (index: number, value: string) => {
+  const getMcqAnswer = (index: number) =>
+    index === 0 ? q1 : index === 1 ? q2 : q3;
+
+  const setMcqAnswer = (index: number, value: string) => {
     if (index === 0) setQ1(value);
     else if (index === 1) setQ2(value);
     else setQ3(value);
   };
 
+  // Submit is enabled only when every visible question has an answer
+  const canSubmit = isStudent
+    ? !!q1 && !!q2 && openText.trim().length > 0
+    : !!q1 && !!q2 && !!q3;
+
   const handleSubmit = async () => {
-    const allAnswered = q1 && q2 && (!isTutorEvaluating || q3);
-    if (!allAnswered) {
-      setAlertModal({
-        visible: true,
-        title: "Incomplete Form",
-        body: "Please answer all required questions before submitting.",
-        isSuccess: false,
-      });
-      return;
-    }
+    if (!canSubmit) return;
 
     setSubmitting(true);
     try {
@@ -124,317 +133,369 @@ export default function EvaluationScreen() {
         evaluationType,
         q1Answer: q1,
         q2Answer: q2,
-        q3Answer: isTutorEvaluating ? q3 : undefined,
-        openComment: comment.trim() || undefined,
+        q3Answer: isStudent ? undefined : q3,
+        openComment: isStudent ? openText.trim() : undefined,
       });
-      setAlreadyEvaluated(true);
-      setAlertModal({
-        visible: true,
-        title: "Evaluation Submitted!",
-        body: "Your evaluation has been recorded. Thank you for your feedback.",
-        isSuccess: true,
+
+      // Show the success UI immediately (before any awaits to avoid stale renders)
+      const today = new Date();
+      const evaluatedDate = today.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
+
+      if (isStudent) {
+        setSuccessData({
+          tutorName: evaluateeName,
+          sessionDate: sessionDate || "N/A",
+          evaluatedDate,
+        });
+      } else {
+        setSuccessData({});
+      }
+
+      // Persist evaluated booking so the homepage can mark it as "Evaluated"
+      try {
+        const raw = await AsyncStorage.getItem("evaluatedBookings");
+        const ids: number[] = raw ? JSON.parse(raw) : [];
+        if (!ids.includes(bookingId)) {
+          ids.push(bookingId);
+          await AsyncStorage.setItem("evaluatedBookings", JSON.stringify(ids));
+        }
+      } catch {}
     } catch (e: any) {
       const msg =
         e?.response?.data?.error ||
         "Failed to submit evaluation. Please try again.";
-      setAlertModal({ visible: true, title: "Error", body: msg, isSuccess: false });
+      setAlertModal({
+        visible: true,
+        title: "Error",
+        body: msg,
+        isSuccess: false,
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleAlertClose = () => {
-    const wasSuccess = alertModal.isSuccess;
-    setAlertModal({ visible: false, title: "", body: "", isSuccess: false });
-    if (wasSuccess) router.back();
+  const handleSuccessModalClose = () => {
+    setSuccessData(null);
+    router.back();
   };
 
   if (!fontsLoaded || loading) return null;
 
+  // ── Main form ──────────────────────────────────────────────────────────────
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#2B74B4" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.headerTitle}>Evaluate Session</Text>
-          <Text style={styles.headerSubtitle}>
-            {isTutorEvaluating ? "Evaluating Student" : "Evaluating Tutor"}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── Page header ── */}
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>
+            {isStudent ? "Tutor Evaluation" : "Student Evaluation"}
+          </Text>
+          <Text style={styles.pageSubtitle}>
+            {isStudent
+              ? "Give some feedback to your tutor"
+              : `Evaluate ${evaluateeName}'s performance`}
           </Text>
         </View>
-      </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.sessionCard}>
-          <Text style={styles.sessionName}>{evaluateeName}</Text>
-          <Text style={styles.sessionSubject}>{subject}</Text>
-        </View>
-
-        {alreadyEvaluated ? (
-          <View style={styles.doneCard}>
-            <Ionicons name="checkmark-circle" size={56} color="#0FE40F" />
-            <Text style={styles.doneTitle}>Already Evaluated</Text>
-            <Text style={styles.doneBody}>
-              You have already submitted an evaluation for this session.
+        {/* ── MCQ questions ── */}
+        {mcqQuestions.map((question, index) => (
+          <View key={index} style={styles.questionBlock}>
+            <Text style={styles.questionText}>
+              {index + 1}. {question}
             </Text>
-            <TouchableOpacity style={styles.submitButton} onPress={() => router.back()}>
-              <Text style={styles.submitButtonText}>Return</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            {questions.map((question, index) => (
-              <View key={index} style={styles.questionBlock}>
-                <Text style={styles.questionNumber}>Question {index + 1}</Text>
-                <Text style={styles.questionText}>{question}</Text>
-                <View style={styles.optionsContainer}>
-                  {RATING_OPTIONS.map((opt) => {
-                    const selected = getAnswer(index) === opt.value;
-                    return (
-                      <TouchableOpacity
-                        key={opt.value}
-                        style={[styles.optionButton, selected && styles.optionButtonSelected]}
-                        onPress={() => setAnswer(index, opt.value)}
-                      >
-                        <Text
-                          style={[styles.optionValue, selected && styles.optionValueSelected]}
-                        >
-                          {opt.value}
-                        </Text>
-                        <Text
-                          style={[styles.optionLabel, selected && styles.optionLabelSelected]}
-                        >
-                          {opt.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            ))}
-
-            <View style={styles.questionBlock}>
-              <Text style={styles.questionNumber}>Additional Comments</Text>
-              <Text style={styles.questionText}>
-                Optional: Leave any additional feedback below.
-              </Text>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="Write your comments here..."
-                placeholderTextColor="#95CDF2"
-                multiline
-                numberOfLines={4}
-                value={comment}
-                onChangeText={setComment}
-                maxLength={1000}
-              />
+            <View style={styles.optionsStack}>
+              {mcqOptions.map((opt) => {
+                const selected = getMcqAnswer(index) === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.optionRow, selected && styles.optionRowSelected]}
+                    onPress={() => setMcqAnswer(index, opt.value)}
+                    activeOpacity={0.75}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selected && styles.optionTextSelected,
+                      ]}
+                    >
+                      {opt.value}. {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+          </View>
+        ))}
 
-            <TouchableOpacity
-              style={[styles.submitButton, submitting && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={submitting}
-            >
-              <Text style={styles.submitButtonText}>
-                {submitting ? "Submitting..." : "Submit Evaluation"}
-              </Text>
-            </TouchableOpacity>
-
-            <View style={styles.bottomSpacing} />
-          </>
+        {/* ── Student-only text question (Q3) ── */}
+        {isStudent && (
+          <View style={styles.questionBlock}>
+            <Text style={styles.questionText}>
+              {mcqQuestions.length + 1}. {STUDENT_TEXT_QUESTION}
+            </Text>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Type something here...."
+              placeholderTextColor="#B0C4DE"
+              multiline
+              numberOfLines={4}
+              value={openText}
+              onChangeText={setOpenText}
+              maxLength={1000}
+              textAlignVertical="top"
+            />
+          </View>
         )}
+
+        <View style={styles.scrollPadding} />
       </ScrollView>
 
+      {/* ── Sticky footer ── */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => router.back()}
+          activeOpacity={0.75}
+        >
+          <Text style={styles.backBtnText}>Back</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, !canSubmit && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={!canSubmit || submitting}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.submitBtnText}>
+            {submitting ? "Submitting..." : "Submit"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Alert modal ── */}
       <Modal
         animationType="fade"
         transparent={true}
         visible={alertModal.visible}
-        onRequestClose={handleAlertClose}
+        onRequestClose={() => {
+          const wasSuccess = alertModal.isSuccess;
+          setAlertModal({ visible: false, title: "", body: "", isSuccess: false });
+          if (wasSuccess) router.back();
+        }}
       >
         <BlurView intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>
-            <TouchableOpacity style={styles.alertButton} onPress={handleAlertClose}>
+            <TouchableOpacity
+              style={styles.alertButton}
+              onPress={() => {
+                const wasSuccess = alertModal.isSuccess;
+                setAlertModal({ visible: false, title: "", body: "", isSuccess: false });
+                if (wasSuccess) router.back();
+              }}
+            >
               <Text style={styles.alertButtonText}>OK</Text>
             </TouchableOpacity>
           </View>
         </BlurView>
       </Modal>
-    </View>
+
+      {/* ── Success modal (student + tutor) ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={successData !== null}
+        onRequestClose={handleSuccessModalClose}
+      >
+        <BlurView intensity={20} tint="light" style={styles.absolute}>
+          <View style={styles.overlayCard}>
+            <Text style={styles.overlayTitle}>
+              {isStudent ? "Successfully evaluated your tutor!" : "Successfully evaluated your student!"}
+            </Text>
+            {isStudent ? (
+              <>
+                <Text style={styles.overlayDetail}>Tutor: {successData?.tutorName}</Text>
+                <Text style={styles.overlayDetail}>Session Date: {successData?.sessionDate}</Text>
+                <Text style={styles.overlayDetail}>Evaluated on {successData?.evaluatedDate}</Text>
+              </>
+            ) : (
+              <Text style={styles.overlayDetail}>Click Return to go back to the homepage</Text>
+            )}
+            <TouchableOpacity style={styles.overlayReturnBtn} onPress={handleSuccessModalClose}>
+              <Text style={styles.overlayReturnBtnText}>Return</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+
+      {/* ── Already evaluated modal ── */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={alreadyEvaluated && successData === null}
+        onRequestClose={() => router.back()}
+      >
+        <BlurView intensity={20} tint="light" style={styles.absolute}>
+          <View style={styles.overlayCard}>
+            <Text style={styles.overlayTitle}>Already Evaluated</Text>
+            <Text style={styles.overlayDetail}>
+              You have already submitted an evaluation for this session.
+            </Text>
+            <TouchableOpacity style={styles.overlayReturnBtn} onPress={() => router.back()}>
+              <Text style={styles.overlayReturnBtnText}>Return</Text>
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </Modal>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#F2F4F7",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 20,
-    paddingTop: 50,
-    backgroundColor: "#fff",
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontFamily: "Poppins",
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#2B74B4",
-  },
-  headerSubtitle: {
-    fontFamily: "Poppins",
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#95CDF2",
-  },
+
+  // ── Scroll area ───────────────────────────────────────────────────────────
   scrollView: {
     flex: 1,
   },
-  sessionCard: {
-    backgroundColor: "#2B74B4",
-    margin: 20,
-    marginBottom: 10,
-    padding: 20,
-    borderRadius: 15,
+  scrollContent: {
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  sessionName: {
-    fontFamily: "Poppins",
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#fff",
+  scrollPadding: {
+    height: 20,
+  },
+
+  // ── Page header ───────────────────────────────────────────────────────────
+  pageHeader: {
+    marginBottom: 24,
+  },
+  pageTitle: {
+    fontFamily: "Poppins-Bold",
+    fontSize: 26,
+    color: "#1B3A5C",
     marginBottom: 4,
   },
-  sessionSubject: {
+  pageSubtitle: {
     fontFamily: "Poppins",
     fontSize: 13,
-    color: "#fff",
-    opacity: 0.85,
+    color: "#7A9ABF",
   },
-  doneCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 10,
-    padding: 30,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#2B74B4",
-    alignItems: "center",
-    gap: 12,
-  },
-  doneTitle: {
-    fontFamily: "Poppins",
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#2B74B4",
-    textAlign: "center",
-  },
-  doneBody: {
-    fontFamily: "Poppins",
-    fontSize: 13,
-    color: "#95CDF2",
-    textAlign: "center",
-    marginBottom: 8,
-  },
+
+  // ── Question blocks ───────────────────────────────────────────────────────
   questionBlock: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 10,
-    padding: 18,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: "#2B74B4",
-  },
-  questionNumber: {
-    fontFamily: "Poppins",
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#95CDF2",
-    marginBottom: 4,
+    marginBottom: 24,
   },
   questionText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
+    color: "#2B74B4",
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+
+  // ── MCQ option rows ───────────────────────────────────────────────────────
+  optionsStack: {
+    gap: 10,
+  },
+  optionRow: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#A8C4E0",
+    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  optionRowSelected: {
+    backgroundColor: "#5B9BD5",
+    borderColor: "#5B9BD5",
+  },
+  optionText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 14,
+    color: "#2B74B4",
+  },
+  optionTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  // ── Open text input ───────────────────────────────────────────────────────
+  textInput: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#A8C4E0",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontFamily: "Poppins",
     fontSize: 14,
-    fontWeight: "600",
-    color: "#2B74B4",
-    marginBottom: 14,
-  },
-  optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  optionButton: {
-    borderWidth: 1,
-    borderColor: "#2B74B4",
-    borderRadius: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    minWidth: 60,
-  },
-  optionButtonSelected: {
-    backgroundColor: "#2B74B4",
-  },
-  optionValue: {
-    fontFamily: "Poppins",
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#2B74B4",
-  },
-  optionValueSelected: {
-    color: "#fff",
-  },
-  optionLabel: {
-    fontFamily: "Poppins",
-    fontSize: 10,
-    color: "#95CDF2",
-  },
-  optionLabelSelected: {
-    color: "#fff",
-    opacity: 0.9,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: "#2B74B4",
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 13,
-    fontFamily: "Poppins",
-    color: "#2B74B4",
+    color: "#1B3A5C",
     minHeight: 100,
-    textAlignVertical: "top",
   },
-  submitButton: {
-    backgroundColor: "#2B74B4",
-    marginHorizontal: 20,
-    marginTop: 20,
+
+  // ── Sticky footer ─────────────────────────────────────────────────────────
+  footer: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: Platform.OS === "ios" ? 32 : 16,
+    backgroundColor: "#F2F4F7",
+    borderTopWidth: 1,
+    borderTopColor: "#DDE6F0",
+  },
+  backBtn: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#1B3A5C",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
   },
-  submitButtonText: {
-    fontFamily: "Poppins",
+  backBtnText: {
+    fontFamily: "Poppins-SemiBold",
     fontSize: 15,
-    fontWeight: "600",
-    color: "#fff",
+    color: "#1B3A5C",
   },
-  disabledButton: {
-    opacity: 0.6,
+  submitBtn: {
+    flex: 1,
+    backgroundColor: "#1B3A5C",
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: "center",
   },
-  bottomSpacing: {
-    height: 60,
+  submitBtnText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 15,
+    color: "#FFFFFF",
   },
+  submitBtnDisabled: {
+    backgroundColor: "#A8C4E0",
+  },
+
+  // ── Alert modal ───────────────────────────────────────────────────────────
   absolute: {
     position: "absolute",
     top: 0,
@@ -446,7 +507,7 @@ const styles = StyleSheet.create({
   },
   alertCard: {
     backgroundColor: "#fff",
-    width: "80%",
+    width: "82%",
     borderRadius: 20,
     padding: 28,
     alignItems: "center",
@@ -455,35 +516,78 @@ const styles = StyleSheet.create({
     elevation: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   alertTitle: {
-    fontFamily: "Poppins",
+    fontFamily: "Poppins-Bold",
     fontSize: 18,
-    fontWeight: "700",
-    color: "#2B74B4",
+    color: "#1B3A5C",
     textAlign: "center",
     marginBottom: 10,
   },
   alertBody: {
     fontFamily: "Poppins",
     fontSize: 13,
-    color: "#95CDF2",
+    color: "#7A9ABF",
     textAlign: "center",
     marginBottom: 24,
   },
   alertButton: {
-    backgroundColor: "#2B74B4",
+    backgroundColor: "#1B3A5C",
     borderRadius: 10,
     paddingVertical: 12,
     width: "100%",
     alignItems: "center",
   },
   alertButtonText: {
-    fontFamily: "Poppins",
+    fontFamily: "Poppins-SemiBold",
     fontSize: 15,
-    fontWeight: "600",
     color: "#fff",
+  },
+
+  // ── Shared overlay modal (success + already-evaluated) ───────────────────
+  overlayCard: {
+    backgroundColor: "#fff",
+    width: "82%",
+    borderRadius: 20,
+    padding: 28,
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: "#2B74B4",
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    gap: 6,
+  },
+  overlayTitle: {
+    fontFamily: "Poppins-Bold",
+    fontSize: 18,
+    color: "#1B3A5C",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  overlayDetail: {
+    fontFamily: "Poppins",
+    fontSize: 13,
+    color: "#2B74B4",
+    textAlign: "center",
+  },
+  overlayReturnBtn: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "#2B74B4",
+    borderRadius: 10,
+    paddingVertical: 14,
+    width: "100%",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  overlayReturnBtnText: {
+    fontFamily: "Poppins-SemiBold",
+    fontSize: 15,
+    color: "#1B3A5C",
   },
 });
