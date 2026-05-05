@@ -10,6 +10,7 @@ public class EvaluationRequest {
     private String q2Answer;
     private String q3Answer;   // nullable for forms with only 2 MCQ questions
     private String openComment;
+    private Integer starRating;
 
     public Long getBookingId() { return bookingId; }
     public void setBookingId(Long bookingId) { this.bookingId = bookingId; }
@@ -34,4 +35,7 @@ public class EvaluationRequest {
 
     public String getOpenComment() { return openComment; }
     public void setOpenComment(String openComment) { this.openComment = openComment; }
+
+    public Integer getStarRating() { return starRating; }
+    public void setStarRating(Integer starRating) { this.starRating = starRating; }
 }

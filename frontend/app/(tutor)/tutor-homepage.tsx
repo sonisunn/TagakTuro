@@ -1,5 +1,5 @@
-import { Stack, useRouter } from "expo-router";
-import React, { useState, useEffect, useRef } from "react";
+import { Stack, useRouter, useFocusEffect } from "expo-router";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   Alert,
   Modal,
   Platform,
+  Image,
+  useWindowDimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,7 +28,7 @@ import {
 import { updateBookingStatus, getPendingBookingsForTutor, getBookingsByTutorName, updateBooking, declineBooking } from "../../src/api/booking.js";
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useNotifications } from '../../constants/hooks/useNotifications';
 const AnimatedView = Animated.createAnimatedComponent(View);
 
 interface Booking {
@@ -48,11 +50,13 @@ interface Booking {
 
 export default function TagakTuroHomepage() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState("upcoming");
   const [userName, setUserName] = useState("");
   const [displayUserName, setDisplayUserName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [showStudents, setShowStudents] = useState(false);
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
   const { unreadCount } = useNotifications(userId ? Number(userId) : null);
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
@@ -238,9 +242,12 @@ export default function TagakTuroHomepage() {
         const userData = JSON.parse(userDataString);
         const fullName = userData.name || "User";
         const firstName = fullName.split(' ')[0];
-        setUserName(fullName); // Use full name for filtering
-        setDisplayUserName(firstName); // Use first name for display
-        setUserId(userData.id); // Assuming userData contains the tutor's ID
+        setUserName(fullName);
+        setDisplayUserName(firstName);
+        setUserId(userData.id);
+        if (userData.profilePictureUrl) {
+          setProfileImageUri(userData.profilePictureUrl);
+        }
       } else {
         console.log('No user data found in AsyncStorage');
       }
@@ -283,6 +290,17 @@ export default function TagakTuroHomepage() {
       };
     }
   }, [userId, userName]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem('userData').then(raw => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setProfileImageUri(data.profilePictureUrl || null);
+        }
+      }).catch(() => {});
+    }, [])
+  );
 
   if (!fontsLoaded) {
     return null;
@@ -527,13 +545,13 @@ export default function TagakTuroHomepage() {
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={28} color="#2B74B4" />
+            <TouchableOpacity style={styles.profilePicture} onPress={() => router.push('/(tutor)/profile')}>
+              {profileImageUri ? (
+                <Image source={{ uri: profileImageUri }} style={{ width: 48, height: 48, borderRadius: 24 }} />
+              ) : (
+                <Ionicons name="person-circle" size={48} color="#2B74B4" />
+              )}
             </TouchableOpacity>
-
-            <View style={styles.profilePicture}>
-              <Ionicons name="person-circle" size={48} color="#2B74B4" />
-            </View>
           </View>
         </View>
 
@@ -567,7 +585,7 @@ export default function TagakTuroHomepage() {
         <View style={styles.classesHeader}>
           <Text style={styles.classesTitle}>Classes</Text>
 
-          <View style={styles.tabContainer}>
+          <View style={[styles.tabContainer, { width: screenWidth * 0.46 }]}>
             <TouchableOpacity
               style={[
                 styles.tab,
@@ -621,7 +639,27 @@ export default function TagakTuroHomepage() {
                 <TouchableOpacity
                   style={styles.newViewButton}
                   onPress={() => {
-                    showBookingDetailsModal(classItem);
+                    if (classItem.status === 'COMPLETED') {
+                      const sessionDate = classItem.rawDate
+                        ? new Date(classItem.rawDate).toLocaleDateString('en-US', {
+                            year: 'numeric', month: 'long', day: 'numeric',
+                          })
+                        : 'N/A';
+                      router.push({
+                        pathname: '/evaluation',
+                        params: {
+                          bookingId: classItem.id,
+                          evaluationType: 'TUTOR_EVALUATES_STUDENT',
+                          evaluatorId: String(userId),
+                          evaluateeId: String(classItem.studentUserId),
+                          evaluateeName: classItem.studentName,
+                          subject: classItem.subject,
+                          sessionDate,
+                        },
+                      });
+                    } else {
+                      showBookingDetailsModal(classItem);
+                    }
                   }}
                 >
                   <Text style={styles.newViewButtonText}>{classItem.status === 'COMPLETED' ? 'Evaluate' : 'View'}</Text>
@@ -1029,15 +1067,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 25,
     height: 35,
-    width: 175,
     alignItems: 'center',
     borderColor: '#2B74B4',
     borderWidth: 1,
   },
   tab: {
+    flex: 1,
     height: 35,
     paddingVertical: 6,
-    paddingHorizontal: 16.5,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1101,7 +1138,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 25,
     borderRadius: 10,
-    width: 100,
+    width: 'max-content',
     alignItems: "center",
   },
   newViewButtonText: {

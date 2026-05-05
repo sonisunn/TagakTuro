@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { API_BASE_URL } from '../src/api/config';
+import { API_BASE_URL } from '../../src/api/config';
 
 const BASE_WS_URL = API_BASE_URL.replace('http', 'ws') + '/ws-native';
 

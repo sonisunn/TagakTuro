@@ -55,6 +55,7 @@ public class EvaluationService {
         evaluation.setQ2Answer(req.getQ2Answer());
         evaluation.setQ3Answer(req.getQ3Answer());
         evaluation.setOpenComment(req.getOpenComment());
+        evaluation.setStarRating(req.getStarRating() != null ? req.getStarRating() : 0);
 
         return evaluationRepository.save(evaluation);
     }

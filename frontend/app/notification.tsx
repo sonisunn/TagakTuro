@@ -11,7 +11,7 @@ import {
 import BottomNav from '../components/BottomNav';
 import TutorBottomNav from '../components/TutorBottomNav';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNotifications } from '../hooks/useNotifications';
+import { useNotifications } from '../constants/hooks/useNotifications';
 
 interface Notification {
   id: number;

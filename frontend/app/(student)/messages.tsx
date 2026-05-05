@@ -10,11 +10,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useChat } from '../../hooks/useChat';
+import { useChat } from '../../constants/hooks/useChat';
 import { getUserConversations, getMessageHistory } from '../../src/api/chat';
+import { getUser } from '../../src/api/user';
 
 export default function MessagesPage() {
   const [userId, setUserId] = useState<number | null>(null);
@@ -23,6 +25,7 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [userProfilePhotos, setUserProfilePhotos] = useState<Record<number, string | null>>({});
 
   const { messages, setMessages, sendMessage, connected } = useChat(selectedChat?.id || null, userId);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -42,7 +45,20 @@ export default function MessagesPage() {
   const fetchConversations = async (id: number) => {
     try {
       const data = await getUserConversations(id);
-      setConversations(data.content || []);
+      const convs = data.content || [];
+      setConversations(convs);
+
+      const otherIds = [...new Set<number>(
+        convs.map((c: any) => c.user1Id === id ? c.user2Id : c.user1Id).filter(Boolean)
+      )];
+      const photos: Record<number, string | null> = {};
+      await Promise.all(otherIds.map(async (uid) => {
+        try {
+          const u = await getUser(uid);
+          photos[uid] = u.profilePictureUrl || null;
+        } catch {}
+      }));
+      setUserProfilePhotos(photos);
     } catch (error) {
       console.error('Failed to fetch conversations', error);
     } finally {
@@ -102,7 +118,14 @@ export default function MessagesPage() {
             </TouchableOpacity>
             <View style={styles.chatHeaderContent}>
               <View style={styles.chatAvatar}>
-                <Ionicons name="person-circle" size={60} color="#2B74B4" />
+                {userProfilePhotos[selectedChat.user1Id === userId ? selectedChat.user2Id : selectedChat.user1Id] ? (
+                  <Image
+                    source={{ uri: userProfilePhotos[selectedChat.user1Id === userId ? selectedChat.user2Id : selectedChat.user1Id]! }}
+                    style={{ width: 50, height: 50, borderRadius: 25, margin: 5 }}
+                  />
+                ) : (
+                  <Ionicons name="person-circle" size={60} color="#2B74B4" />
+                )}
               </View>
               <View>
                 <Text style={styles.chatHeaderName}>{otherUserName}</Text>
@@ -203,7 +226,14 @@ export default function MessagesPage() {
                 onPress={() => handleSelectChat(conversation)}
               >
                 <View style={styles.avatar}>
-                  <Ionicons name="person-circle" size={85} color="#2B74B4" />
+                  {userProfilePhotos[conversation.user1Id === userId ? conversation.user2Id : conversation.user1Id] ? (
+                    <Image
+                      source={{ uri: userProfilePhotos[conversation.user1Id === userId ? conversation.user2Id : conversation.user1Id]! }}
+                      style={{ width: 70, height: 70, borderRadius: 35, margin: 7 }}
+                    />
+                  ) : (
+                    <Ionicons name="person-circle" size={85} color="#2B74B4" />
+                  )}
                 </View>
                 <View style={styles.conversationContent}>
                   <Text style={styles.conversationName}>{otherUserName}</Text>

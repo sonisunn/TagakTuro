@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useWebRTC, RemoteParticipant } from '../hooks/useWebRTC';
+import { useWebRTC, RemoteParticipant } from '../constants/hooks/useWebRTC';
 
 let RTCView: any = null;
 try {

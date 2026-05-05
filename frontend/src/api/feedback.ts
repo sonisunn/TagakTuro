@@ -62,7 +62,7 @@ export const getFeedbackForUser = async (userId: number): Promise<FeedbackRespon
     return response.data;
 };
 
-export const getStudentFeedback = async (studentId: number): Promise<StudentFeedbackResponse[]> => {
+export const getStudentFeedback = async (studentId: number): Promise<FeedbackResponse[]> => {
     const client = await getAuthClient();
     const response = await client.get(`${BASE_URL}/student/${studentId}`);
     return response.data;

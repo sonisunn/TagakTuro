@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Modal, TextInput, Platform,
+  ActivityIndicator, Modal, TextInput, Platform, Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -13,6 +13,7 @@ import {
   submitFeedback,
   FeedbackResponse,
 } from '../../src/api/feedback';
+import { getUser } from '../../src/api/user';
 
 type ErrorType = 'auth' | 'notFound' | 'network' | null;
 
@@ -31,6 +32,7 @@ export default function TutorFeedbackPage() {
   const [activeTutorName, setActiveTutorName] = useState('Tutor');
   const [tutorRole, setTutorRole] = useState('Tutor');
   const [alreadyRated, setAlreadyRated] = useState(false);
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
@@ -95,6 +97,17 @@ export default function TutorFeedbackPage() {
 
       setActiveTutorName((params.name as string) || currentName);
       setTutorRole(currentRole);
+
+      // Load profile photo: fetch from API if viewing another tutor, else from own stored data
+      if (tutorIdString) {
+        try {
+          const tutorUser = await getUser(parseInt(tutorIdString));
+          setProfileImageUri(tutorUser.profilePictureUrl || null);
+        } catch {}
+      } else if (storedUserData) {
+        const parsed = JSON.parse(storedUserData);
+        setProfileImageUri(parsed.profilePictureUrl || null);
+      }
 
       const targetUserId = tutorIdString ? parseInt(tutorIdString) : currentReviewerId;
       if (targetUserId) {
@@ -165,12 +178,6 @@ export default function TutorFeedbackPage() {
     }
   };
 
-  const getAverageRating = () => {
-    if (feedbacks.length === 0) return 0;
-    const sum = feedbacks.reduce((acc, f) => acc + f.rating, 0);
-    return Math.round((sum / feedbacks.length) * 10) / 10;
-  };
-
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -215,34 +222,20 @@ export default function TutorFeedbackPage() {
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.profileSection}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={28} color="#2B74B4" />
-          </TouchableOpacity>
+          {(tutorIdString || bookingIdString) && (
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={28} color="#2B74B4" />
+            </TouchableOpacity>
+          )}
 
           <View style={styles.profileImageContainer}>
-            <Ionicons name="person-circle" size={150} color="#2B74B4" />
+            {profileImageUri ? (
+              <Image source={{ uri: profileImageUri }} style={styles.profileImage} />
+            ) : (
+              <Ionicons name="person-circle" size={120} color="#2B74B4" />
+            )}
           </View>
           <Text style={styles.profileName}>{activeTutorName}</Text>
-          <Text style={styles.profileRole}>{tutorRole}</Text>
-
-          <View style={styles.ratingContainer}>
-            <View style={styles.starRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Ionicons
-                  key={star}
-                  name={feedbacks.length > 0 && star <= getAverageRating() ? 'star' : 'star-outline'}
-                  size={24}
-                  color="#FCC419"
-                  style={{ marginHorizontal: 3 }}
-                />
-              ))}
-            </View>
-            <Text style={styles.ratingValue}>
-              {feedbacks.length > 0
-                ? `${getAverageRating()} (${feedbacks.length} review${feedbacks.length !== 1 ? 's' : ''})`
-                : 'No reviews yet'}
-            </Text>
-          </View>
 
           {bookingIdString && (
             alreadyRated ? (
@@ -259,7 +252,7 @@ export default function TutorFeedbackPage() {
         </View>
 
         <View style={styles.feedbackSection}>
-          <Text style={styles.feedbackSectionTitle}>Reviews from students</Text>
+          <Text style={styles.feedbackSectionTitle}>Feedback from Student</Text>
           <View style={styles.feedbackList}>
             {feedbacks.length === 0 ? (
               <Text style={[styles.feedbackComment, { textAlign: 'center', paddingVertical: 20 }]}>
@@ -268,19 +261,7 @@ export default function TutorFeedbackPage() {
             ) : feedbacks.map((feedback, index) => (
               <View key={feedback.id}>
                 <View style={styles.feedbackItem}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={styles.feedbackName}>{feedback.reviewerName || 'Student'}</Text>
-                    <View style={{ flexDirection: 'row' }}>
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Ionicons
-                          key={star}
-                          name={star <= feedback.rating ? 'star' : 'star-outline'}
-                          size={12}
-                          color="#FCC419"
-                        />
-                      ))}
-                    </View>
-                  </View>
+                  <Text style={styles.feedbackName}>{feedback.reviewerName || 'Student'}</Text>
                   {feedback.comments ? (
                     <Text style={styles.feedbackComment}>"{feedback.comments}"</Text>
                   ) : (
@@ -455,33 +436,17 @@ const styles = StyleSheet.create({
   profileImageContainer: {
     marginTop: 10,
   },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
   profileName: {
     fontFamily: 'Poppins',
     fontSize: 24,
     fontWeight: '600',
     color: '#2B74B4',
     marginBottom: 3,
-  },
-  profileRole: {
-    fontFamily: 'Poppins',
-    fontSize: 13,
-    color: '#95CDF2',
-    marginBottom: 12,
-  },
-  ratingContainer: {
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 14,
-  },
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  ratingValue: {
-    fontFamily: 'Poppins',
-    fontWeight: '600',
-    color: '#FCC419',
-    fontSize: 13,
   },
   rateButton: {
     backgroundColor: '#FCC419',

@@ -20,6 +20,7 @@ import {
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { submitEvaluation, checkEvaluated } from "../src/api/evaluation";
+import { submitFeedback } from "../src/api/feedback";
 
 // ── Student evaluates tutor ──────────────────────────────────────────────────
 const STUDENT_MCQ_OPTIONS = [
@@ -37,6 +38,7 @@ const STUDENT_MCQ_QUESTIONS = [
 const STUDENT_TEXT_QUESTION = "How would you describe your tutor?";
 
 // ── Tutor evaluates student ──────────────────────────────────────────────────
+const TUTOR_TEXT_QUESTION = "How would you describe your student?";
 const TUTOR_MCQ_OPTIONS = [
   { value: "A", label: "Outstanding" },
   { value: "B", label: "Satisfactory" },
@@ -86,6 +88,7 @@ export default function EvaluationScreen() {
   const [q2, setQ2] = useState<string | null>(null);
   const [q3, setQ3] = useState<string | null>(null); // tutor only (3rd MCQ)
   const [openText, setOpenText] = useState(""); // student's text question
+  const [starRating, setStarRating] = useState(0);
 
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
@@ -116,10 +119,10 @@ export default function EvaluationScreen() {
     else setQ3(value);
   };
 
-  // Submit is enabled only when every visible question has an answer
+  // Submit is enabled only when every visible question has an answer and a star rating is set
   const canSubmit = isStudent
-    ? !!q1 && !!q2 && openText.trim().length > 0
-    : !!q1 && !!q2 && !!q3;
+    ? !!q1 && !!q2 && openText.trim().length > 0 && starRating > 0
+    : !!q1 && !!q2 && !!q3 && openText.trim().length > 0 && starRating > 0;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -134,8 +137,19 @@ export default function EvaluationScreen() {
         q1Answer: q1,
         q2Answer: q2,
         q3Answer: isStudent ? undefined : q3,
-        openComment: isStudent ? openText.trim() : undefined,
+        openComment: openText.trim(),
+        starRating,
       });
+
+      // Mirror the star rating into the feedback system so it appears on feedback pages
+      try {
+        await submitFeedback(evaluatorId, {
+          bookingId,
+          revieweeId: evaluateeId,
+          rating: starRating,
+          comments: openText.trim(),
+        });
+      } catch { /* silently ignore if feedback entry already exists */ }
 
       // Show the success UI immediately (before any awaits to avoid stale renders)
       const today = new Date();
@@ -207,8 +221,8 @@ export default function EvaluationScreen() {
           </Text>
           <Text style={styles.pageSubtitle}>
             {isStudent
-              ? "Give some feedback to your tutor"
-              : `Evaluate ${evaluateeName}'s performance`}
+              ? `Give some feedback to your tutor · ${subject}`
+              : `Evaluate ${evaluateeName}'s performance · ${subject}`}
           </Text>
         </View>
 
@@ -243,25 +257,44 @@ export default function EvaluationScreen() {
           </View>
         ))}
 
-        {/* ── Student-only text question (Q3) ── */}
-        {isStudent && (
-          <View style={styles.questionBlock}>
-            <Text style={styles.questionText}>
-              {mcqQuestions.length + 1}. {STUDENT_TEXT_QUESTION}
-            </Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Type something here...."
-              placeholderTextColor="#B0C4DE"
-              multiline
-              numberOfLines={4}
-              value={openText}
-              onChangeText={setOpenText}
-              maxLength={1000}
-              textAlignVertical="top"
-            />
+        {/* ── Star rating ── */}
+        <View style={styles.questionBlock}>
+          <Text style={styles.questionText}>
+            {mcqQuestions.length + 1}. Overall Rating
+          </Text>
+          <View style={styles.starsRow}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setStarRating(star)}
+                activeOpacity={0.75}
+                style={styles.starBtn}
+              >
+                <Text style={[styles.starIcon, star <= starRating && styles.starIconFilled]}>
+                  ★
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
+        </View>
+
+        {/* ── Open text question (both sides) ── */}
+        <View style={styles.questionBlock}>
+          <Text style={styles.questionText}>
+            {mcqQuestions.length + 2}. {isStudent ? STUDENT_TEXT_QUESTION : TUTOR_TEXT_QUESTION}
+          </Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Type something here...."
+            placeholderTextColor="#B0C4DE"
+            multiline
+            numberOfLines={4}
+            value={openText}
+            onChangeText={setOpenText}
+            maxLength={1000}
+            textAlignVertical="top"
+          />
+        </View>
 
         <View style={styles.scrollPadding} />
       </ScrollView>
@@ -393,64 +426,81 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     fontFamily: "Poppins-Bold",
-    fontSize: 26,
-    color: "#1B3A5C",
+    fontSize: 24,
+    color: "#2B74B4",
     marginBottom: 4,
   },
   pageSubtitle: {
     fontFamily: "Poppins",
     fontSize: 13,
-    color: "#7A9ABF",
+    color: "#95CDF2",
   },
 
   // ── Question blocks ───────────────────────────────────────────────────────
   questionBlock: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   questionText: {
     fontFamily: "Poppins-SemiBold",
     fontSize: 14,
     color: "#2B74B4",
-    marginBottom: 12,
+    marginBottom: 10,
     lineHeight: 20,
   },
 
   // ── MCQ option rows ───────────────────────────────────────────────────────
   optionsStack: {
-    gap: 10,
+    gap: 8,
   },
   optionRow: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#A8C4E0",
+    borderColor: "#2B74B4",
     borderRadius: 10,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
+    paddingVertical: 13,
+    paddingHorizontal: 16,
   },
   optionRowSelected: {
-    backgroundColor: "#5B9BD5",
-    borderColor: "#5B9BD5",
+    backgroundColor: "#2B74B4",
+    borderColor: "#2B74B4",
   },
   optionText: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 14,
+    fontSize: 13,
     color: "#2B74B4",
   },
   optionTextSelected: {
     color: "#FFFFFF",
   },
 
+  // ── Star rating ───────────────────────────────────────────────────────────
+  starsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 4,
+  },
+  starBtn: {
+    padding: 4,
+  },
+  starIcon: {
+    fontSize: 40,
+    color: "#D0DCE8",
+  },
+  starIconFilled: {
+    color: "#FCC419",
+  },
+
   // ── Open text input ───────────────────────────────────────────────────────
   textInput: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#A8C4E0",
+    borderColor: "#2B74B4",
     borderRadius: 10,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
     fontFamily: "Poppins",
-    fontSize: 14,
-    color: "#1B3A5C",
+    fontSize: 13,
+    color: "#2B74B4",
     minHeight: 100,
   },
 
@@ -469,26 +519,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
-    borderColor: "#1B3A5C",
+    borderColor: "#2B74B4",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
   },
   backBtnText: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 15,
-    color: "#1B3A5C",
+    fontSize: 14,
+    color: "#2B74B4",
   },
   submitBtn: {
     flex: 1,
-    backgroundColor: "#1B3A5C",
+    backgroundColor: "#2B74B4",
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: "center",
   },
   submitBtnText: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 15,
+    fontSize: 14,
     color: "#FFFFFF",
   },
   submitBtnDisabled: {
@@ -511,7 +561,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 28,
     alignItems: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#2B74B4",
     elevation: 10,
     shadowColor: "#000",
@@ -522,19 +572,19 @@ const styles = StyleSheet.create({
   alertTitle: {
     fontFamily: "Poppins-Bold",
     fontSize: 18,
-    color: "#1B3A5C",
+    color: "#2B74B4",
     textAlign: "center",
     marginBottom: 10,
   },
   alertBody: {
     fontFamily: "Poppins",
     fontSize: 13,
-    color: "#7A9ABF",
+    color: "#95CDF2",
     textAlign: "center",
     marginBottom: 24,
   },
   alertButton: {
-    backgroundColor: "#1B3A5C",
+    backgroundColor: "#2B74B4",
     borderRadius: 10,
     paddingVertical: 12,
     width: "100%",
@@ -542,7 +592,7 @@ const styles = StyleSheet.create({
   },
   alertButtonText: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 15,
+    fontSize: 14,
     color: "#fff",
   },
 
@@ -565,14 +615,14 @@ const styles = StyleSheet.create({
   overlayTitle: {
     fontFamily: "Poppins-Bold",
     fontSize: 18,
-    color: "#1B3A5C",
+    color: "#2B74B4",
     textAlign: "center",
     marginBottom: 4,
   },
   overlayDetail: {
     fontFamily: "Poppins",
     fontSize: 13,
-    color: "#2B74B4",
+    color: "#95CDF2",
     textAlign: "center",
   },
   overlayReturnBtn: {
@@ -587,7 +637,7 @@ const styles = StyleSheet.create({
   },
   overlayReturnBtnText: {
     fontFamily: "Poppins-SemiBold",
-    fontSize: 15,
-    color: "#1B3A5C",
+    fontSize: 14,
+    color: "#2B74B4",
   },
 });

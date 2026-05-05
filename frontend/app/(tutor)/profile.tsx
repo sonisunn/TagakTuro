@@ -1,54 +1,44 @@
-import { Stack, useRouter } from 'expo-router';
-import React, { useState, useEffect } from 'react';
+import { Stack, useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
+  TouchableOpacity,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
-  TextInput,
+  Image,
   Modal,
-  Alert,
   Platform,
-  ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BlurView } from 'expo-blur';
 import {
   useFonts,
   Poppins_400Regular,
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from '@expo-google-fonts/poppins';
-import * as SplashScreen from 'expo-splash-screen';
-import { updateUser } from '../../src/api/user';
+import { getUser, updateUser, uploadProfilePhoto } from '../../src/api/user';
 
-interface UserData {
-  id: number;
-  name: string;
-  email: string;
-  phoneNumber?: string;
-  courseProgram?: string;
-  profilePictureUrl?: string;
-  role?: string;
-}
-
-export default function ProfilePage() {
+export default function TutorProfile() {
   const router = useRouter();
-  const [userData, setUserData] = useState<UserData | null>(null);
-  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [noticeModal, setNoticeModal] = useState({ visible: false, message: '' });
 
-  // Modal States
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [successModal, setSuccessModal] = useState<{
-    visible: boolean;
-    message: string;
-  }>({ visible: false, message: '' });
+  const [profileData, setProfileData] = useState({
+    id: null as number | null,
+    name: '',
+    email: '',
+    course: '',
+    phone: '',
+    imageBase64: null as string | null,
+  });
+  const [tempPhone, setTempPhone] = useState('');
 
   const [fontsLoaded] = useFonts({
     Poppins: Poppins_400Regular,
@@ -56,624 +46,347 @@ export default function ProfilePage() {
     'Poppins-SemiBold': Poppins_600SemiBold,
   });
 
-  useEffect(() => {
-    SplashScreen.preventAutoHideAsync();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [])
+  );
 
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
-
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const userDataString = await AsyncStorage.getItem('userData');
-        if (userDataString) {
-          const data = JSON.parse(userDataString);
-          setUserData(data);
-          setPhoneNumber(data.phoneNumber || '');
-          if (data.profilePictureUrl) {
-            setProfileImageUri(data.profilePictureUrl);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUserData();
-  }, []);
-
-  const handlePickImage = async () => {
+  const loadProfile = async () => {
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) {
-        Alert.alert('Permission Required', 'Gallery access is required to upload a profile picture.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
+      const stored = await AsyncStorage.getItem('userData');
+      if (!stored) return;
+      const p = JSON.parse(stored);
+      setProfileData({
+        id: p.id || null,
+        name: p.name || '',
+        email: p.email || '',
+        course: p.courseProgram || '',
+        phone: p.phoneNumber || '',
+        imageBase64: p.profilePictureUrl || null,
       });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadProfilePicture(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
-  };
-
-  const uploadProfilePicture = async (imageUri: string) => {
-    try {
-      setUpdating(true);
-
-      const formData = new FormData();
-      const imageName = imageUri.split('/').pop() || 'profile.jpg';
-      const imageType = imageName.endsWith('.png') ? 'image/png' : 'image/jpeg';
-
-      formData.append('file', {
-        uri: imageUri,
-        type: imageType,
-        name: imageName,
-      } as any);
-
-      // Note: This assumes the backend has an endpoint for uploading profile pictures
-      // If not, we'll update the user data locally for now
-      const token = await AsyncStorage.getItem('authToken');
-      const API_BASE_URL = 'http://localhost:8080';
-
-      const uploadResponse = await fetch(`${API_BASE_URL}/api/upload/profile-picture`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (uploadResponse.ok) {
-        const uploadedData = await uploadResponse.json();
-        setProfileImageUri(imageUri);
-
-        // Update userData with new picture URL
-        if (userData) {
-          const updatedData = {
-            ...userData,
-            profilePictureUrl: uploadedData.pictureUrl || imageUri,
+      if (p.id) {
+        try {
+          const fresh = await getUser(p.id);
+          const merged = {
+            id: fresh.id,
+            name: fresh.name || p.name,
+            email: fresh.email || p.email,
+            course: fresh.courseProgram || p.courseProgram,
+            phone: fresh.phoneNumber || p.phoneNumber,
+            imageBase64: fresh.profilePictureUrl || p.profilePictureUrl || null,
           };
-          setUserData(updatedData);
-          await AsyncStorage.setItem('userData', JSON.stringify(updatedData));
-        }
-
-        setSuccessModal({
-          visible: true,
-          message: 'Successfully changed your profile picture!',
-        });
-      } else {
-        // Fallback: store locally if endpoint doesn't exist
-        setProfileImageUri(imageUri);
-        setSuccessModal({
-          visible: true,
-          message: 'Successfully changed your profile picture!',
-        });
+          setProfileData(merged);
+          await AsyncStorage.setItem('userData', JSON.stringify({
+            ...p,
+            name: merged.name,
+            email: merged.email,
+            courseProgram: merged.course,
+            phoneNumber: merged.phone,
+            profilePictureUrl: merged.imageBase64,
+          }));
+        } catch { /* use cached */ }
       }
-    } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      // Still show success for local storage
-      setProfileImageUri(imageUri);
-      setSuccessModal({
-        visible: true,
-        message: 'Successfully changed your profile picture!',
-      });
-    } finally {
-      setUpdating(false);
+    } catch (e) {
+      console.warn('Failed to load profile', e);
     }
   };
 
-  const handleUpdatePhoneNumber = async () => {
-    if (!phoneNumber.trim()) {
-      Alert.alert('Error', 'Please enter a phone number.');
+  const handleLogout = async () => {
+    await AsyncStorage.multiRemove(['authToken', 'userData', 'studentId', 'tutorId', 'evaluatedBookings']);
+    router.replace('/login');
+  };
+
+  const handleUpdateClick = () => {
+    setTempPhone(profileData.phone);
+    setIsEditing(true);
+  };
+
+  const handleBackFromEdit = () => {
+    setIsEditing(false);
+  };
+
+  const handleSave = async () => {
+    if (!/^\d{11}$/.test(tempPhone)) {
+      setNoticeModal({ visible: true, message: 'Phone number must be exactly 11 digits.' });
       return;
     }
-
+    setSaving(true);
     try {
-      setUpdating(true);
-
-      if (userData) {
-        const updatedData = {
-          ...userData,
-          phoneNumber: phoneNumber.trim(),
-        };
-
-        await updateUser(userData.id, { phoneNumber: phoneNumber.trim() });
-        setUserData(updatedData);
-        await AsyncStorage.setItem('userData', JSON.stringify(updatedData));
-
-        setEditModalVisible(false);
-        setSuccessModal({
-          visible: true,
-          message: 'Successfully changed your phone number!',
-        });
+      const updated = await updateUser(profileData.id, {
+        name: profileData.name,
+        email: profileData.email,
+        phoneNumber: tempPhone,
+        courseProgram: profileData.course,
+      });
+      setProfileData(prev => ({ ...prev, phone: updated.phoneNumber || tempPhone }));
+      const stored = await AsyncStorage.getItem('userData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.phoneNumber = updated.phoneNumber || tempPhone;
+        await AsyncStorage.setItem('userData', JSON.stringify(parsed));
       }
-    } catch (error) {
-      console.error('Error updating phone number:', error);
-      Alert.alert('Error', 'Failed to update phone number. Please try again.');
+      setIsEditing(false);
+      setNoticeModal({ visible: true, message: 'Successfully changed your phone number!' });
+    } catch {
+      setNoticeModal({ visible: true, message: 'Failed to save. Please try again.' });
     } finally {
-      setUpdating(false);
+      setSaving(false);
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem('authToken');
-              await AsyncStorage.removeItem('userData');
-              await AsyncStorage.removeItem('studentId');
-              await AsyncStorage.removeItem('tutorId');
-              router.replace('/login');
-            } catch (error) {
-              console.error('Error during logout:', error);
-              Alert.alert('Error', 'Failed to logout. Please try again.');
-            }
-          },
-        },
-      ]
-    );
+  const handlePickImage = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      setNoticeModal({ visible: true, message: 'Gallery permission is required to change your photo.' });
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+    if (result.canceled) return;
+
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType || 'image/jpeg';
+    const imageBase64 = `data:${mimeType};base64,${asset.base64}`;
+
+    setSaving(true);
+    try {
+      await uploadProfilePhoto(profileData.id, imageBase64);
+      setProfileData(prev => ({ ...prev, imageBase64 }));
+      const stored = await AsyncStorage.getItem('userData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        parsed.profilePictureUrl = imageBase64;
+        await AsyncStorage.setItem('userData', JSON.stringify(parsed));
+      }
+      setNoticeModal({ visible: true, message: 'Successfully changed your profile picture!' });
+    } catch {
+      setNoticeModal({ visible: true, message: 'Failed to upload photo. Please try again.' });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (!fontsLoaded || loading) return null;
+  const dismissNotice = () => setNoticeModal({ visible: false, message: '' });
 
-  if (!userData) {
-    return (
-      <View style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>Failed to load profile</Text>
-        </View>
+  if (!fontsLoaded) return null;
+
+  const AvatarDisplay = ({ dimmed = false }: { dimmed?: boolean }) =>
+    profileData.imageBase64 ? (
+      <Image
+        source={{ uri: profileData.imageBase64 }}
+        style={[styles.avatar, dimmed && { opacity: 0.65 }]}
+      />
+    ) : (
+      <View style={[styles.avatarPlaceholder, dimmed && { opacity: 0.65 }]}>
+        <Ionicons name="person" size={65} color="#cbd5e1" />
       </View>
+    );
+
+  const NoticeModal = () => (
+    <Modal animationType="fade" transparent visible={noticeModal.visible} onRequestClose={dismissNotice}>
+      <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <View style={styles.noticeCard}>
+          <Text style={styles.noticeTitle}>Notice</Text>
+          <Text style={styles.noticeBody}>{noticeModal.message}</Text>
+          <TouchableOpacity style={styles.noticeBtn} onPress={dismissNotice}>
+            <Text style={styles.noticeBtnText}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
+    </Modal>
+  );
+
+  // ── Edit view ──────────────────────────────────────────────────────────────
+  if (isEditing) {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.headerSection}>
+            <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper} disabled={saving}>
+              <AvatarDisplay dimmed />
+              <View style={styles.editIconOverlay}>
+                <MaterialIcons name="edit" size={30} color="#2B74B4" />
+              </View>
+            </TouchableOpacity>
+            <Text style={styles.h1Name}>{profileData.name}</Text>
+          </View>
+
+          <View style={styles.formSection}>
+            <Text style={styles.h2Title}>Change information</Text>
+            <View style={styles.divider} />
+
+            <Text style={styles.label}>Phone Number</Text>
+            <TextInput
+              style={styles.input}
+              value={tempPhone}
+              onChangeText={setTempPhone}
+              keyboardType="phone-pad"
+              maxLength={11}
+              placeholderTextColor="#B0C4DE"
+              placeholder="09XXXXXXXXX"
+            />
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={[styles.btn, styles.btnOutline]} onPress={handleBackFromEdit} disabled={saving}>
+                <Text style={[styles.btnText, styles.textBlue]}>Back</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.btn, styles.btnGreen]} onPress={handleSave} disabled={saving}>
+                <Text style={[styles.btnText, styles.textWhite]}>{saving ? 'Saving...' : 'Save'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={[styles.btn, styles.btnRed, styles.btnFull]} onPress={handleLogout}>
+              <Text style={[styles.btnText, styles.textWhite]}>Log out</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ height: 100 }} />
+        </ScrollView>
+        <NoticeModal />
+      </KeyboardAvoidingView>
     );
   }
 
+  // ── Profile view ───────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerSection}>
+          <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper} disabled={saving}>
+            <AvatarDisplay />
+            <View style={styles.editIconOverlay}>
+              <MaterialIcons name="edit" size={30} color="#2B74B4" />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.h1Name}>{profileData.name}</Text>
+        </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Profile Picture Section */}
-        <View style={styles.profileSection}>
-          <View style={styles.profileImageContainer}>
-            {profileImageUri ? (
-              <View style={styles.profileImage}>
-                {/* Placeholder for actual image - using icon for now */}
-                <Ionicons name="person-circle" size={120} color="#2B74B4" />
-              </View>
-            ) : (
-              <View style={styles.profileImage}>
-                <Ionicons name="person-circle" size={120} color="#2B74B4" />
-              </View>
-            )}
+        <View style={styles.formSection}>
+          <Text style={styles.h2Title}>Account information</Text>
+          <View style={styles.divider} />
 
-            <TouchableOpacity
-              style={styles.editIconContainer}
-              onPress={handlePickImage}
-              disabled={updating}
-            >
-              <Ionicons name="pencil" size={20} color="#FFFFFF" />
+          {[
+            { label: 'Name', value: profileData.name },
+            { label: 'Email', value: profileData.email },
+            { label: 'Course & Program', value: profileData.course },
+            { label: 'Phone Number', value: profileData.phone },
+          ].map(({ label, value }) => (
+            <View key={label} style={styles.inputGroup}>
+              <Text style={styles.label}>{label}</Text>
+              <View style={styles.readonlyBox}>
+                <Text style={styles.readonlyText}>{value}</Text>
+              </View>
+            </View>
+          ))}
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity style={[styles.btn, styles.btnOutline]} onPress={() => router.back()}>
+              <Text style={[styles.btnText, styles.textBlue]}>Back</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.btn, styles.btnBlue]} onPress={handleUpdateClick}>
+              <Text style={[styles.btnText, styles.textWhite]}>Update</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.userName}>{userData.name}</Text>
-          <Text style={styles.userRole}>{userData.role || 'Tutor'}</Text>
-        </View>
-
-        {/* Account Information Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account information</Text>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Name</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={userData.name}
-                editable={false}
-                placeholderTextColor="#B0C4DE"
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={userData.email}
-                editable={false}
-                placeholderTextColor="#B0C4DE"
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Course & Program</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={userData.courseProgram || 'N/A'}
-                editable={false}
-                placeholderTextColor="#B0C4DE"
-              />
-            </View>
-          </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Phone Number</Text>
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                value={userData.phoneNumber || 'Not provided'}
-                editable={false}
-                placeholderTextColor="#B0C4DE"
-              />
-            </View>
-          </View>
-
-          <View style={styles.buttonGroup}>
-            <TouchableOpacity
-              style={styles.updateButton}
-              onPress={() => setEditModalVisible(true)}
-            >
-              <Text style={styles.updateButtonText}>Update</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={styles.logoutSection}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Text style={styles.logoutButtonText}>Log out</Text>
+          <TouchableOpacity style={[styles.btn, styles.btnRed, styles.btnFull]} onPress={handleLogout}>
+            <Text style={[styles.btnText, styles.textWhite]}>Log out</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.bottomSpacing} />
+        <View style={{ height: 100 }} />
       </ScrollView>
-
-      {/* Edit Phone Number Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={editModalVisible}
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <BlurView intensity={20} tint="light" style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Change information</Text>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Phone Number</Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="Enter new phone number"
-                placeholderTextColor="#B0C4DE"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                editable={!updating}
-              />
-            </View>
-
-            <View style={styles.modalButtonGroup}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => setEditModalVisible(false)}
-                disabled={updating}
-              >
-                <Text style={styles.backButtonText}>Back</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.saveButton, updating && styles.disabledButton]}
-                onPress={handleUpdatePhoneNumber}
-                disabled={updating}
-              >
-                <Text style={styles.saveButtonText}>
-                  {updating ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </BlurView>
-      </Modal>
-
-      {/* Success Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={successModal.visible}
-        onRequestClose={() => setSuccessModal({ visible: false, message: '' })}
-      >
-        <BlurView intensity={20} tint="light" style={styles.modalOverlay}>
-          <View style={styles.noticeCard}>
-            <View style={styles.noticeIconContainer}>
-              <Ionicons name="checkmark-circle" size={48} color="#0FE40F" />
-            </View>
-            <Text style={styles.noticeTitle}>Notice</Text>
-            <Text style={styles.noticeMessage}>{successModal.message}</Text>
-            <TouchableOpacity
-              style={styles.noticeButton}
-              onPress={() => setSuccessModal({ visible: false, message: '' })}
-            >
-              <Text style={styles.noticeButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </BlurView>
-      </Modal>
+      <NoticeModal />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F2F4F7',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    color: '#7A9ABF',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: Platform.OS === 'ios' ? 40 : 20,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+  container: { flex: 1, backgroundColor: '#F2F4F7' },
+  scroll: { flex: 1 },
+  absolute: {
+    position: 'absolute', top: 0, left: 0, bottom: 0, right: 0,
+    justifyContent: 'center', alignItems: 'center',
   },
 
-  // Profile Section
-  profileSection: {
+  // Header
+  headerSection: {
+    backgroundColor: '#fff',
     alignItems: 'center',
-    marginBottom: 32,
+    paddingTop: Platform.OS === 'ios' ? 60 : 50,
+    paddingBottom: 24,
   },
-  profileImageContainer: {
-    position: 'relative',
-    marginBottom: 16,
+  avatarWrapper: {
+    width: 120, height: 120, borderRadius: 60,
+    marginBottom: 12, position: 'relative',
   },
-  profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#2B74B4',
+  avatar: { width: '100%', height: '100%', borderRadius: 60 },
+  avatarPlaceholder: {
+    width: '100%', height: '100%', borderRadius: 60,
+    backgroundColor: '#F0F2F5', justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: '#DDE6F0',
   },
-  editIconContainer: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#2B74B4',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
+  editIconOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.45)',
+    justifyContent: 'center', alignItems: 'center',
   },
-  userName: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 24,
-    color: '#1B3A5C',
-    marginBottom: 4,
-  },
-  userRole: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#7A9ABF',
-  },
+  h1Name: { fontFamily: 'Poppins-Bold', fontSize: 22, color: '#2B74B4' },
 
-  // Section
-  section: {
-    marginBottom: 28,
-  },
-  sectionTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 16,
-    color: '#1B3A5C',
-    marginBottom: 16,
-  },
-
-  // Form Group
-  formGroup: {
-    marginBottom: 16,
-  },
-  label: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 13,
-    color: '#1B3A5C',
-    marginBottom: 8,
-  },
-  inputContainer: {
-    borderWidth: 1.5,
-    borderColor: '#A8C4E0',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
+  // Form
+  formSection: { padding: 24 },
+  h2Title: { fontFamily: 'Poppins-Bold', fontSize: 20, color: '#2B74B4', marginBottom: 4 },
+  divider: { height: 1, backgroundColor: '#2B74B4', marginBottom: 20 },
+  inputGroup: { marginBottom: 14 },
+  label: { fontFamily: 'Poppins-SemiBold', fontSize: 14, color: '#2B74B4', marginBottom: 5 },
   input: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#1B3A5C',
+    borderWidth: 1.5, borderColor: '#2B74B4', borderRadius: 8,
+    paddingVertical: 12, paddingHorizontal: 14,
+    fontFamily: 'Poppins', fontSize: 13, color: '#2B74B4',
+    backgroundColor: '#fff', marginBottom: 14,
   },
-  textInput: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#1B3A5C',
-    borderWidth: 1.5,
-    borderColor: '#A8C4E0',
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+  readonlyBox: {
+    borderWidth: 1.5, borderColor: '#2B74B4', borderRadius: 8,
+    paddingVertical: 12, paddingHorizontal: 14, backgroundColor: '#fff',
   },
+  readonlyText: { fontFamily: 'Poppins', fontSize: 13, color: '#95CDF2' },
 
   // Buttons
-  buttonGroup: {
-    marginTop: 20,
-  },
-  updateButton: {
-    backgroundColor: '#2B74B4',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  updateButtonText: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
+  buttonRow: { flexDirection: 'row', gap: 12, marginTop: 8, marginBottom: 10 },
+  btn: { flex: 1, height: 50, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  btnFull: { flex: 0, width: '100%', marginTop: 4 },
+  btnOutline: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#2B74B4' },
+  btnBlue: { backgroundColor: '#2B74B4' },
+  btnGreen: { backgroundColor: '#1bd71b' },
+  btnRed: { backgroundColor: '#FF0000' },
+  btnText: { fontFamily: 'Poppins-SemiBold', fontSize: 15 },
+  textBlue: { color: '#2B74B4' },
+  textWhite: { color: '#fff' },
 
-  logoutSection: {
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  logoutButton: {
-    backgroundColor: '#FF6B6B',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  logoutButtonText: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-
-  // Modal
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 28,
-    width: '88%',
-    maxWidth: 400,
-  },
-  modalTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 18,
-    color: '#1B3A5C',
-    marginBottom: 20,
-  },
-  modalButtonGroup: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  backButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1.5,
-    borderColor: '#1B3A5C',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  backButtonText: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
-    color: '#1B3A5C',
-  },
-  saveButton: {
-    flex: 1,
-    backgroundColor: '#0FE40F',
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-  disabledButton: {
-    opacity: 0.6,
-  },
-
-  // Notice Card
+  // Notice modal
   noticeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 28,
-    width: '85%',
-    maxWidth: 380,
-    alignItems: 'center',
+    backgroundColor: '#fff', width: '80%', borderRadius: 16,
+    padding: 24, alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#2B74B4',
+    elevation: 10, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4,
   },
-  noticeIconContainer: {
-    marginBottom: 12,
+  noticeTitle: { fontFamily: 'Poppins-Bold', fontSize: 18, color: '#2B74B4', marginBottom: 8 },
+  noticeBody: {
+    fontFamily: 'Poppins', fontSize: 13,
+    color: '#7A9ABF', textAlign: 'center', marginBottom: 20,
   },
-  noticeTitle: {
-    fontFamily: 'Poppins-Bold',
-    fontSize: 18,
-    color: '#1B3A5C',
-    marginBottom: 8,
+  noticeBtn: {
+    backgroundColor: '#2B74B4', borderRadius: 10,
+    paddingVertical: 12, width: '100%', alignItems: 'center',
   },
-  noticeMessage: {
-    fontFamily: 'Poppins',
-    fontSize: 14,
-    color: '#7A9ABF',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  noticeButton: {
-    backgroundColor: '#2B74B4',
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    width: '100%',
-    alignItems: 'center',
-  },
-  noticeButtonText: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 15,
-    color: '#FFFFFF',
-  },
-
-  bottomSpacing: {
-    height: 40,
-  },
+  noticeBtnText: { fontFamily: 'Poppins-SemiBold', fontSize: 15, color: '#fff' },
 });

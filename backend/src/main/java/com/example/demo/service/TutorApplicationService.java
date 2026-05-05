@@ -172,8 +172,11 @@ public class TutorApplicationService {
             // Create User and Tutor accounts only now!
             createTutorAccounts(application);
 
-            // Send Email Notification
-            emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
+            try {
+                emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
+            } catch (Exception e) {
+                System.err.println("Failed to send approval email: " + e.getMessage());
+            }
 
             // Send notification to the applicant's User account
             try {
@@ -201,8 +204,11 @@ public class TutorApplicationService {
             application.setStatus("REJECTED");
             tutorApplicationRepository.save(application);
 
-            // Send Email Notification
-            emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "REJECTED");
+            try {
+                emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "REJECTED");
+            } catch (Exception e) {
+                System.err.println("Failed to send rejection email: " + e.getMessage());
+            }
 
             // Send notification logic would fail here because there's no User account yet
             // But we can record the rejection status for future reference
@@ -221,8 +227,11 @@ public class TutorApplicationService {
                 // Create accounts for batch approval
                 createTutorAccounts(application);
 
-                // Send Email Notification
-                emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
+                try {
+                    emailService.sendApplicationStatusEmail(application.getEmail(), application.getName(), "APPROVED");
+                } catch (Exception e) {
+                    System.err.println("Failed to send approval email for " + application.getEmail() + ": " + e.getMessage());
+                }
 
                 try {
                     Optional<User> userOpt = userRepository.findByEmail(application.getEmail());

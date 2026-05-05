@@ -14,7 +14,7 @@ export default function StudentLayout() {
       <Tabs.Screen name="book" />
       <Tabs.Screen name="messages" />
       <Tabs.Screen name="feedback" />
-      <Tabs.Screen name="profile" />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }

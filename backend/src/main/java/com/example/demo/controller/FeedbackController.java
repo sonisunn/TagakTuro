@@ -33,4 +33,9 @@ public class FeedbackController {
     public ResponseEntity<List<FeedbackResponse>> getFeedbackForUser(@PathVariable Long userId) {
         return ResponseEntity.ok(feedbackService.getFeedbackForUser(userId));
     }
+
+    @GetMapping("/student/{userId}")
+    public ResponseEntity<List<FeedbackResponse>> getFeedbackForStudent(@PathVariable Long userId) {
+        return ResponseEntity.ok(feedbackService.getFeedbackForUser(userId));
+    }
 }

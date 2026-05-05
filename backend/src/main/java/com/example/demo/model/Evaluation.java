@@ -47,6 +47,9 @@ public class Evaluation {
     @Column(name = "open_comment", length = 1000)
     private String openComment;
 
+    @Column(name = "star_rating", nullable = false)
+    private Integer starRating = 0;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -83,6 +86,9 @@ public class Evaluation {
 
     public String getOpenComment() { return openComment; }
     public void setOpenComment(String openComment) { this.openComment = openComment; }
+
+    public Integer getStarRating() { return starRating; }
+    public void setStarRating(Integer starRating) { this.starRating = starRating; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

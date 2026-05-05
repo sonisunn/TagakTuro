@@ -14,6 +14,7 @@ export default function TutorLayout() {
       <Tabs.Screen name="session-availability" />
       <Tabs.Screen name="tutor-messages" />
       <Tabs.Screen name="tutor-feedback" />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }

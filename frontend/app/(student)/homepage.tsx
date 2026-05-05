@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   Platform,
+  Image,
+  useWindowDimensions,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../../src/api/booking';
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useNotifications } from '../../constants/hooks/useNotifications';
 
 // TypeScript interfaces
 interface ClassItem {
@@ -40,12 +42,14 @@ interface DateTimePickerEvent {
 
 export default function TagakTuroHomepage() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState<string>('upcoming');
   const [userName, setUserName] = useState<string>('');
   const [upcomingClasses, setUpcomingClasses] = useState<ClassItem[]>([]);
   const [pastClasses, setPastClasses] = useState<ClassItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
   const { unreadCount } = useNotifications(currentUserId);
   const [showMatchNotification, setShowMatchNotification] = useState<boolean>(false);
   const [matchBooking, setMatchBooking] = useState<ClassItem | null>(null);
@@ -67,6 +71,12 @@ export default function TagakTuroHomepage() {
         if (raw) {
           const ids: number[] = JSON.parse(raw);
           setEvaluatedBookingIds(new Set(ids.map(String)));
+        }
+      }).catch(() => {});
+      AsyncStorage.getItem('userData').then(raw => {
+        if (raw) {
+          const data = JSON.parse(raw);
+          setProfileImageUri(data.profilePictureUrl || null);
         }
       }).catch(() => {});
     }, [])
@@ -437,7 +447,11 @@ export default function TagakTuroHomepage() {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.profilePicture} onPress={() => router.push('/profile')}>
-              <Ionicons name="person-circle" size={48} color="#2B74B4" />
+              {profileImageUri ? (
+                <Image source={{ uri: profileImageUri }} style={{ width: 48, height: 48, borderRadius: 24 }} />
+              ) : (
+                <Ionicons name="person-circle" size={48} color="#2B74B4" />
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -454,7 +468,7 @@ export default function TagakTuroHomepage() {
         {/* Classes List */}
         <View style={styles.classesHeader}>
           <Text style={styles.classesTitle}>Classes</Text>
-          <View style={styles.tabContainer}>
+          <View style={[styles.tabContainer, { width: screenWidth * 0.46 }]}>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
               onPress={() => setActiveTab('upcoming')}
@@ -497,7 +511,29 @@ export default function TagakTuroHomepage() {
                 styles.viewButton,
                 classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id) && styles.viewButtonEvaluated,
               ]}
-              onPress={() => handleViewPress(classItem)}
+              onPress={() => {
+                if (classItem.status === 'COMPLETED' && !evaluatedBookingIds.has(classItem.id)) {
+                  const sessionDate = classItem.rawDate
+                    ? new Date(classItem.rawDate).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric',
+                      })
+                    : 'N/A';
+                  router.push({
+                    pathname: '/evaluation',
+                    params: {
+                      bookingId: classItem.id,
+                      evaluationType: 'STUDENT_EVALUATES_TUTOR',
+                      evaluatorId: String(currentUserId),
+                      evaluateeId: String(classItem.tutorUserId),
+                      evaluateeName: classItem.tutor,
+                      subject: classItem.subject,
+                      sessionDate,
+                    },
+                  });
+                } else {
+                  handleViewPress(classItem);
+                }
+              }}
               disabled={classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id)}
             >
               <Text style={styles.viewButtonText}>
@@ -902,6 +938,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-end',
+    marginTop: -10,
+    marginRight: -10,
   },
   bookButtonText: {
     fontFamily: 'Poppins',
@@ -927,15 +965,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 25,
     height: 35,
-    width: 175,
     alignItems: 'center',
     borderColor: '#2B74B4',
     borderWidth: 1,
   },
   tab: {
+    flex: 1,
     height: 35,
     paddingVertical: 6,
-    paddingHorizontal: 16.5,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1005,7 +1042,7 @@ const styles = StyleSheet.create({
     color: '#0FE40F',
   },
   statusCancelled: {
-    color: '#FF6B6B',
+    color: '#FF0000',
   },
   viewButton: {
     backgroundColor: '#2B74B4',

@@ -28,7 +28,7 @@ public class EmailService {
             helper.setText(body, true);
 
             mailSender.send(message);
-        } catch (MessagingException e) {
+        } catch (Exception e) {
             System.err.println("Failed to send email to " + to + ": " + e.getMessage());
         }
     }

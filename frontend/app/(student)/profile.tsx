@@ -264,9 +264,12 @@ export default function StudentProfile() {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.headerSection}>
-          <View style={styles.avatarWrapper}>
+          <TouchableOpacity onPress={handlePickImage} style={styles.avatarWrapper} disabled={saving}>
             <AvatarDisplay />
-          </View>
+            <View style={styles.editIconOverlay}>
+              <MaterialIcons name="edit" size={30} color="#2B74B4" />
+            </View>
+          </TouchableOpacity>
           <Text style={styles.h1Name}>{profileData.name}</Text>
         </View>
 
