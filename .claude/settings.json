@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem \"c:\\\\Users\\\\Jayson Huub Partido\\\\source\\\\repos\\\\TagakTuro\" -Name)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
