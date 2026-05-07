@@ -48,7 +48,5 @@ node_modules/
 ### Uploads (user-generated content) ###
 uploads/
 
-src/main/resources/application.properties
-application.properties
-
 *.properties
+!src/main/resources/application.properties
