@@ -1,1 +1,0 @@
-ALTER TABLE tutors ADD COLUMN is_cert_issued BOOLEAN DEFAULT FALSE;
