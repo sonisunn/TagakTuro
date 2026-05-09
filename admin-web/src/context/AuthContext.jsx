@@ -2,6 +2,8 @@ import { createContext, useContext, useState } from 'react';
 
 const AuthContext = createContext(null);
 
+export const API_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') || '';
+
 const TOKEN_KEY = 'tagakturo_token';
 const USER_KEY = 'tagakturo_user';
 const ROLE_KEY = 'tagakturo_role';
@@ -24,7 +26,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -89,7 +91,7 @@ export function AuthProvider({ children }) {
       headers['Content-Type'] = 'application/json';
     }
 
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(`${API_URL}${url}`, { ...options, headers });
 
     if (res.status === 401 || res.status === 403) {
       logout();

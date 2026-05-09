@@ -1,2 +1,0 @@
-ALTER TABLE `evaluations`
-  MODIFY COLUMN `star_rating` INT NOT NULL DEFAULT 0;
