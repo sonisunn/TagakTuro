@@ -270,6 +270,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#2B74B4',
+    marginBottom: -5,
   },
   subtitle: {
     fontFamily: 'Poppins',

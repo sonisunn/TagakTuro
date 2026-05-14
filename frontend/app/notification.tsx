@@ -191,9 +191,7 @@ const styles = StyleSheet.create({
     height: 'auto',
     alignSelf: 'center',
     alignItems: 'center',
-  },
-  notificationItem: {
-    marginBottom: 5,
+    gap: 5,
   },
   notificationItemUnread: {
     backgroundColor: '#CAE6F9',

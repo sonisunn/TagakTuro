@@ -12,12 +12,16 @@ axios.defaults.timeout = 15000; // 15 seconds
 export async function signup(user) {
   try {
     const res = await axios.post(`${API_BASE_URL}/api/auth/signup`, user, { timeout: 15000 });
+    console.log(res);
     return res.data;
   } catch (error) {
     if (error.code === 'ECONNABORTED') {
       console.error('Sign up timeout: Request exceeded 15 seconds');
     } else if (error.message === 'Network Error') {
       console.error('Network error: Cannot reach backend server');
+      console.log(API_BASE_URL);
+      console.log(error);
+      
     } else {
       console.error('Error in signup:', error.response?.data || error.message);
     }

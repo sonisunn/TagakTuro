@@ -15,6 +15,62 @@ import { signup } from '../src/api/auth';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 
+const PROGRAMS = [
+  'CBFS - BS Business Administration Major in Building and Property Management',
+  'CBFS - BS Business Administration Major in Supply Management',
+  'CBFS - BS Entrepreneurial Management',
+  'CBFS - BS Business Administration Major in Marketing Management',
+  'CBFS - BS Office Administration',
+  'CBFS - BS Business Administration Major in Human Resource Management',
+  'CBFS - BS Financial Management',
+  'CBFS - Associate in Building and Property Management',
+  'CBFS - Associate in Supply Management',
+  'CBFS - Associate in Entrepreneurship',
+  'CBFS - Associate in Sales Management',
+  'CBFS - Associate in Office Management Technology',
+  'IOA - BS Accountancy',
+  'IOA - BS Management Accounting',
+  'CCIS - BS Computer Science Major in Application Development',
+  'CCIS - BS Information Technology Major in Information and Network Security',
+  'CCIS - Diploma in Application Development',
+  'CCIS - Diploma in Computer Network Administration',
+  'CCSE - BS Civil Engineering Major in Construction Engineering and Management',
+  'CHK - BS Exercise and Sports Science Major in Fitness and Sports Management',
+  'CGPP - BA Political Science Major in Paralegal Studies',
+  'CGPP - BA Political Science Major in Policy Management',
+  'CGPP - BA Political Science Major in Local Government Administration',
+  'ION - Master of Arts in Nursing',
+  'ION - BS Nursing',
+  'IOP - BS Pharmacy',
+  'IOP - Associate in Applied Science in Pharmacy Technology',
+  'IIHS - MS Radiologic Technology',
+  'IIHS - BS Radiologic Technology',
+  'CITE - Bachelor of Elementary Education',
+  'CITE - Bachelor of Secondary Education Major in English',
+  'CITE - Bachelor of Secondary Education Major in Mathematics',
+  'CITE - Bachelor of Secondary Education Major in Social Studies',
+  'IOPsy - BS Psychology',
+  'CTHM - BS Hospitality Management',
+  'CTHM - BS Tourism Management',
+  'CTHM - Associate in Hospitality Management',
+  'IDEM - BS Disaster Risk Management',
+  'ISW - BS Social Work',
+  'CET - Bachelor of Engineering Technology Major in Electrical Technology',
+  'CET - Bachelor of Engineering Technology Major in Electronics Technology',
+  'CET - Bachelor in Automotive Technology',
+  'CET - Diploma in Electrical Technology',
+  'CET - Diploma in Industrial Facilities Technology',
+  'CET - Diploma in Industrial Facilities Technology Major in Service Mechanics',
+  'CET - Associate in Electronics Technology',
+  'SOL - Juris Doctor with Thesis',
+  'HSU - Technical-Vocational Livelihood Track',
+  'HSU - Arts and Design Track',
+  'HSU - Sports Track',
+  'HSU - STEM',
+  'HSU - HUMSS',
+  'HSU - ABM',
+];
+
 export default function TagakTuroSignUp() {
   const router = useRouter();
   const [name, setName] = useState('');
@@ -30,6 +86,8 @@ export default function TagakTuroSignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [noticeErrors, setNoticeErrors] = useState<string[]>([]);
   const [noticeVisible, setNoticeVisible] = useState(false);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [programPickerVisible, setProgramPickerVisible] = useState(false);
 
   const validateName = (name: string): boolean => {
     if (!name.trim()) return false;
@@ -107,7 +165,7 @@ export default function TagakTuroSignUp() {
       const userData = { name, studentId, courseProgram, email, phoneNumber, password, role: 'STUDENT' };
       await signup(userData);
       setSubmitting(false);
-      router.replace('/');
+      setSuccessVisible(true);
     } catch (err: any) {
       setSubmitting(false);
       const errMsg = err.response?.data?.error || err.message || 'An unexpected error occurred.';
@@ -157,14 +215,58 @@ export default function TagakTuroSignUp() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Course and Program</Text>
-            <TextInput
-              style={[styles.input, error && !courseProgram && styles.inputError]}
-              placeholder="CCIS - BS COMPUTER SCIENCE"
-              value={courseProgram}
-              onChangeText={setCourseProgram}
-              placeholderTextColor="#95CDF2"
-            />
+            <TouchableOpacity
+              style={[styles.dropdownTrigger, error && !courseProgram && styles.inputError]}
+              onPress={() => setProgramPickerVisible(true)}
+            >
+              <Text style={courseProgram ? styles.dropdownValueText : styles.dropdownPlaceholderText} numberOfLines={1}>
+                {courseProgram || 'Select your college and program'}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color="#2B74B4" />
+            </TouchableOpacity>
           </View>
+
+          {/* Program Picker Modal */}
+          <Modal
+            visible={programPickerVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setProgramPickerVisible(false)}
+          >
+            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+              <View style={styles.programPickerContainer}>
+                <Text style={styles.programPickerTitle}>Select College and Program</Text>
+                <ScrollView style={styles.programPickerScroll}>
+                  {PROGRAMS.map((program) => (
+                    <TouchableOpacity
+                      key={program}
+                      style={[
+                        styles.programPickerItem,
+                        courseProgram === program && styles.programPickerItemSelected,
+                      ]}
+                      onPress={() => {
+                        setCourseProgram(program);
+                        setProgramPickerVisible(false);
+                      }}
+                    >
+                      <Text style={[
+                        styles.programPickerItemText,
+                        courseProgram === program && styles.programPickerItemTextSelected,
+                      ]}>
+                        {program}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.returnButton}
+                  onPress={() => setProgramPickerVisible(false)}
+                >
+                  <Text style={styles.returnButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
+          </Modal>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
@@ -427,7 +529,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => setNoticeVisible(false)}
           >
-            <View style={styles.noticeOverlay}>
+            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
               <View style={styles.noticeContainer}>
                 <Text style={styles.noticeTitle}>Notice</Text>
                 <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
@@ -438,7 +540,30 @@ export default function TagakTuroSignUp() {
                   <Text style={styles.noticeOkText}>OK</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </BlurView>
+          </Modal>
+
+          {/* Success Modal */}
+          <Modal
+            visible={successVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => { setSuccessVisible(false); router.replace('/'); }}
+          >
+            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+              <View style={styles.noticeContainer}>
+                <Text style={styles.successTitle}>Successfully registered!</Text>
+                <Text style={styles.successBody}>
+                  Welcome to TagakTuro! You may now sign in using these credentials.
+                </Text>
+                <TouchableOpacity
+                  style={styles.noticeOkButton}
+                  onPress={() => { setSuccessVisible(false); router.replace('/'); }}
+                >
+                  <Text style={styles.noticeOkText}>OK</Text>
+                </TouchableOpacity>
+              </View>
+            </BlurView>
           </Modal>
 
           <TouchableOpacity
@@ -757,5 +882,84 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontWeight: '600',
     fontSize: 15,
+  },
+  successTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  successBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95CDF2',
+    textAlign: 'center',
+    marginBottom: 4,
+    paddingHorizontal: 10,
+  },
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  },
+  dropdownValueText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2B74B4',
+    flex: 1,
+    marginRight: 8,
+  },
+  dropdownPlaceholderText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#95CDF2',
+    flex: 1,
+    marginRight: 8,
+  },
+  programPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    padding: 20,
+    width: '100%',
+    maxHeight: '80%',
+  },
+  programPickerTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  programPickerScroll: {
+    maxHeight: 400,
+  },
+  programPickerItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0eef8',
+  },
+  programPickerItemSelected: {
+    backgroundColor: '#e8f3fc',
+  },
+  programPickerItemText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+  },
+  programPickerItemTextSelected: {
+    fontWeight: '600',
   },
 });

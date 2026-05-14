@@ -7,9 +7,10 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTutorAvailabilityByUserId, updateTutorAvailabilityByUserId } from '../../src/api/tutor';
@@ -118,10 +119,26 @@ export default function AvailabilityPage() {
 
   const openTimePicker = (dayIndex, slotIndex, type) => {
     const currentTimestamp = schedule[dayIndex].slots[slotIndex][type];
-    setTempDate(new Date(currentTimestamp));
+    const initial = new Date(currentTimestamp);
     setActiveDayIndex(dayIndex);
     setActiveSlotIndex(slotIndex);
     setPickerMode(type);
+
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: initial,
+        mode: 'time',
+        is24Hour: false,
+        onChange: (event, selectedDate) => {
+          if (event.type === 'set' && selectedDate) {
+            commitTimeSelection(selectedDate, dayIndex, slotIndex, type);
+          }
+        },
+      });
+      return;
+    }
+
+    setTempDate(initial);
     setShowModal(true);
   };
 
@@ -131,23 +148,25 @@ export default function AvailabilityPage() {
     }
   };
 
-  const saveTimeSelection = () => {
-    const totalMins = tempDate.getHours() * 60 + tempDate.getMinutes();
+  // Validates and commits the chosen time. Used by both iOS modal flow
+  // and Android imperative flow.
+  const commitTimeSelection = (chosen, dayIndex, slotIndex, type) => {
+    const totalMins = chosen.getHours() * 60 + chosen.getMinutes();
 
-    if (pickerMode === 'start' && totalMins < 8 * 60) {
+    if (type === 'start' && totalMins < 8 * 60) {
       setShowModal(false);
       setAlertModal({ visible: true, title: 'Invalid Time', body: 'Start time must be at or after 8:00 AM.' });
       return;
     }
-    if (pickerMode === 'end' && totalMins > 17 * 60) {
+    if (type === 'end' && totalMins > 17 * 60) {
       setShowModal(false);
       setAlertModal({ visible: true, title: 'Invalid Time', body: 'End time must be at or before 5:00 PM.' });
       return;
     }
 
-    const slot = schedule[activeDayIndex].slots[activeSlotIndex];
-    const newStart = pickerMode === 'start' ? tempDate.getTime() : slot.start;
-    const newEnd = pickerMode === 'end' ? tempDate.getTime() : slot.end;
+    const slot = schedule[dayIndex].slots[slotIndex];
+    const newStart = type === 'start' ? chosen.getTime() : slot.start;
+    const newEnd = type === 'end' ? chosen.getTime() : slot.end;
     const startMins = new Date(newStart).getHours() * 60 + new Date(newStart).getMinutes();
     const endMins = new Date(newEnd).getHours() * 60 + new Date(newEnd).getMinutes();
 
@@ -158,9 +177,13 @@ export default function AvailabilityPage() {
     }
 
     const newSchedule = [...schedule];
-    newSchedule[activeDayIndex].slots[activeSlotIndex][pickerMode] = tempDate.getTime();
+    newSchedule[dayIndex].slots[slotIndex][type] = chosen.getTime();
     setSchedule(newSchedule);
     setShowModal(false);
+  };
+
+  const saveTimeSelection = () => {
+    commitTimeSelection(tempDate, activeDayIndex, activeSlotIndex, pickerMode);
   };
 
   const formatTime = (timestamp) => {
@@ -364,23 +387,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   headerSection: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    padding: 20,
+    paddingTop: 50,
     backgroundColor: '#fff',
   },
   headerTitle: {
     fontFamily: 'Poppins',
     fontSize: 24,
-    fontWeight: '700',
+    fontWeight: '600',
+    marginBottom: -5,
     color: '#2B74B4',
-    marginBottom: 5,
   },
   headerSubtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,

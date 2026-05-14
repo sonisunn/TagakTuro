@@ -77,9 +77,6 @@ export default function TagakTuroLogin() {
     });
   };
 
-  const handleSkip = () => {
-    router.replace('/homepage');
-  }
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -153,10 +150,6 @@ export default function TagakTuroLogin() {
 
           <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>{submitting ? 'Signing in...' : 'Submit'}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.submitButton} onPress={handleSkip}>
-            <Text style={styles.submitButtonText}>Skip</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>

@@ -30,10 +30,21 @@ public class TutorApplicationController {
         this.tutorApplicationService = tutorApplicationService;
     }
 
+    @GetMapping("/check-email-is-student")
+    public ResponseEntity<?> checkEmailIsStudent(@RequestParam String email) {
+        boolean isStudent = tutorApplicationService.isEmailRegisteredAsStudent(email);
+        return ResponseEntity.ok(Map.of("isStudent", isStudent));
+    }
+
     @GetMapping("/check-student-id")
-    public ResponseEntity<Map<String, Boolean>> checkStudentId(@RequestParam String studentId) {
+    public ResponseEntity<?> checkStudentId(
+            @RequestParam String studentId,
+            @RequestParam(required = false) String email) {
+        if (email != null && !email.isEmpty()) {
+            return ResponseEntity.ok(tutorApplicationService.checkStudentIdStatus(studentId, email));
+        }
         boolean taken = tutorApplicationService.isStudentIdTaken(studentId);
-        return ResponseEntity.ok(Map.of("taken", taken));
+        return ResponseEntity.ok(Map.of("taken", taken, "canSwitch", false));
     }
 
     @PostMapping("/apply")

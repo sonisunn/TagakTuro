@@ -6,7 +6,7 @@ const config = getDefaultConfig(__dirname);
 config.server = {
   port: 8081,
   // Bind to the specific IP address
-  rejectUnauthorized: false,
+  rejectUnauthorized: true,
 };
 
 // Optional: Configure to use the specified IP

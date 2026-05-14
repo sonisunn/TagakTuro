@@ -3,10 +3,10 @@ import React, { useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
-  Alert, Modal
+  Alert, Modal, Platform
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { BlurView } from 'expo-blur';
 import { createBooking } from '../../src/api/booking.js';
 import { getStudentById } from '../../src/api/student.js';
@@ -115,7 +115,17 @@ export default function BookingPage() {
 
   // --- Date Picker Handlers ---
   const openDatePicker = () => {
-    setTempDate(date); // Initialize temp date with current selection
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: date,
+        mode: 'date',
+        onChange: (event, selectedDate) => {
+          if (event.type === 'set' && selectedDate) setDate(selectedDate);
+        },
+      });
+      return;
+    }
+    setTempDate(date);
     setShowDateModal(true);
   };
 
@@ -128,10 +138,23 @@ export default function BookingPage() {
     setShowDateModal(false);
   };
 
-  // --- Time Picker Handlers (Fixed Missing Functions) ---
+  // --- Time Picker Handlers ---
   const openTimePicker = (mode) => {
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: mode === 'start' ? startTime : endTime,
+        mode: 'time',
+        is24Hour: false,
+        onChange: (event, selectedTime) => {
+          if (event.type === 'set' && selectedTime) {
+            if (mode === 'start') setStartTime(selectedTime);
+            else setEndTime(selectedTime);
+          }
+        },
+      });
+      return;
+    }
     setTimePickerMode(mode);
-    // Initialize temp time based on which box was clicked
     setTempTime(mode === 'start' ? startTime : endTime);
     setShowTimeModal(true);
   };
@@ -450,7 +473,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    justifyContent: 'space-between',
     padding: 20,
     paddingTop: 50,
     backgroundColor: '#fff',
@@ -460,12 +482,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#2B74B4',
-    marginBottom: 5,
+    marginBottom: -5,
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
+    fontWeight: '600',
   },
   infoCard: {
     backgroundColor: '#2B74B4',

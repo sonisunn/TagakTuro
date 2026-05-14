@@ -52,20 +52,66 @@ public class TutorApplicationService {
 
     public TutorApplication apply(TutorApplicationRequest request, MultipartFile reportOfGrades,
             MultipartFile certificates) {
-        if (tutorApplicationRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalStateException("Email already used for an application.");
+        // Step 1: Resolve the existing User (if any) and decide if this is a switch.
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+        boolean isSwitchingFromStudent = false;
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            boolean isStudent = user.getRoles() != null && user.getRoles().contains("ROLE_STUDENT");
+            if (!isStudent) {
+                throw new IllegalStateException("Email already registered as a user.");
+            }
+            isSwitchingFromStudent = true;
         }
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new IllegalStateException("Email already registered as a user.");
+
+        // Step 2: Handle prior applications. A switching student is allowed to
+        // re-submit (their old application gets replaced). Anyone else is blocked.
+        Optional<TutorApplication> existingAppByEmail = tutorApplicationRepository.findByEmail(request.getEmail());
+        if (existingAppByEmail.isPresent()) {
+            if (!isSwitchingFromStudent) {
+                throw new IllegalStateException("Email already used for an application.");
+            }
+            tutorApplicationRepository.delete(existingAppByEmail.get());
         }
+
+        // Step 3: Now check student-ID uniqueness against OTHER applications.
+        // Our own prior application (if any) was just deleted above, so any
+        // remaining match means a different person has this student ID.
         if (tutorApplicationRepository.existsByStudentId(request.getStudentId())) {
             throw new IllegalStateException("Student ID is already used in an existing application.");
         }
-        if (studentRepository.existsByStudentId(request.getStudentId())) {
-            throw new IllegalStateException("Student ID is already registered.");
-        }
         if (tutorRepository.existsByTutorId(request.getStudentId())) {
             throw new IllegalStateException("Student ID is already registered as a tutor.");
+        }
+        // For a switch, allow the same student ID; block only if it belongs to someone else.
+        // We treat it as the "same student" if the existing student record matches via
+        // ANY of these (some legacy student rows have null/inconsistent email columns,
+        // so the User FK is the source of truth):
+        //   - the student's user FK points to the same User as the email lookup
+        //   - the student's email column matches the request email (case/whitespace-insensitive)
+        //   - the student's User entity email matches the request email
+        if (studentRepository.existsByStudentId(request.getStudentId())) {
+            final String reqEmail = request.getEmail() == null ? "" : request.getEmail().trim();
+            final Long existingUserId = existingUser.map(User::getId).orElse(null);
+            boolean sameStudent = studentRepository.findByStudentId(request.getStudentId())
+                    .map(s -> {
+                        if (existingUserId != null && s.getUser() != null
+                                && existingUserId.equals(s.getUser().getId())) {
+                            return true;
+                        }
+                        if (s.getEmail() != null && s.getEmail().trim().equalsIgnoreCase(reqEmail)) {
+                            return true;
+                        }
+                        if (s.getUser() != null && s.getUser().getEmail() != null
+                                && s.getUser().getEmail().trim().equalsIgnoreCase(reqEmail)) {
+                            return true;
+                        }
+                        return false;
+                    })
+                    .orElse(false);
+            if (!sameStudent) {
+                throw new IllegalStateException("Student ID is already registered.");
+            }
         }
 
         TutorApplication application = new TutorApplication();
@@ -108,10 +154,75 @@ public class TutorApplicationService {
         return saved;
     }
 
+    public boolean isEmailRegisteredAsStudent(String email) {
+        return userRepository.findByEmail(email)
+                .map(u -> u.getRoles() != null && u.getRoles().contains("ROLE_STUDENT"))
+                .orElse(false);
+    }
+
     public boolean isStudentIdTaken(String studentId) {
         return tutorApplicationRepository.existsByStudentId(studentId)
                 || studentRepository.existsByStudentId(studentId)
                 || tutorRepository.existsByTutorId(studentId);
+    }
+
+    // Returns { taken, canSwitch } so the frontend knows whether to hard-block
+    // or show the "switch to tutor?" prompt.
+    //
+    // canSwitch=true means "this student ID is taken, but the request is from
+    // the same person — allow them to re-apply or switch from student → tutor".
+    // It's true when EITHER:
+    //   - The existing tutor application has the same email (re-applying), or
+    //   - The existing student record belongs to the same person (matched via
+    //     User FK, student.email, or user.email)
+    // Tutors (existsByTutorId) are always a hard block — they've already
+    // completed the switch and shouldn't be re-applying via this flow.
+    public java.util.Map<String, Object> checkStudentIdStatus(String studentId, String email) {
+        if (tutorRepository.existsByTutorId(studentId)) {
+            return java.util.Map.of("taken", true, "canSwitch", false);
+        }
+
+        final String trimmedEmail = email == null ? "" : email.trim();
+        boolean appExistsForId = tutorApplicationRepository.existsByStudentId(studentId);
+        boolean studentExistsForId = studentRepository.existsByStudentId(studentId);
+
+        if (!appExistsForId && !studentExistsForId) {
+            return java.util.Map.of("taken", false, "canSwitch", false);
+        }
+
+        // Existing application: same applicant if email matches AND the application
+        // has the same student ID we're checking.
+        boolean sameApplicant = false;
+        if (appExistsForId && !trimmedEmail.isEmpty()) {
+            sameApplicant = tutorApplicationRepository.findByEmail(trimmedEmail)
+                    .map(a -> studentId.equals(a.getStudentId()))
+                    .orElse(false);
+        }
+
+        // Existing student record: same student via any of the three signals.
+        boolean sameStudent = false;
+        if (studentExistsForId && !trimmedEmail.isEmpty()) {
+            final Long userIdForEmail = userRepository.findByEmail(trimmedEmail)
+                    .map(User::getId).orElse(null);
+            sameStudent = studentRepository.findByStudentId(studentId)
+                    .map(s -> {
+                        if (userIdForEmail != null && s.getUser() != null
+                                && userIdForEmail.equals(s.getUser().getId())) {
+                            return true;
+                        }
+                        if (s.getEmail() != null && s.getEmail().trim().equalsIgnoreCase(trimmedEmail)) {
+                            return true;
+                        }
+                        if (s.getUser() != null && s.getUser().getEmail() != null
+                                && s.getUser().getEmail().trim().equalsIgnoreCase(trimmedEmail)) {
+                            return true;
+                        }
+                        return false;
+                    })
+                    .orElse(false);
+        }
+
+        return java.util.Map.of("taken", true, "canSwitch", sameApplicant || sameStudent);
     }
 
     public TutorApplication getApplicationByEmail(String email) {
@@ -129,29 +240,43 @@ public class TutorApplicationService {
     }
 
     private void createTutorAccounts(TutorApplication application) {
-        // Check if user already exists (safety check)
-        if (userRepository.findByEmail(application.getEmail()).isPresent()) {
-            return;
+        Optional<User> existingUserOpt = userRepository.findByEmail(application.getEmail());
+        User savedUser;
+
+        if (existingUserOpt.isPresent()) {
+            User existingUser = existingUserOpt.get();
+            boolean isStudent = existingUser.getRoles() != null && existingUser.getRoles().contains("ROLE_STUDENT");
+            if (!isStudent) {
+                // Already a tutor or admin — skip
+                return;
+            }
+            // Upgrade student → tutor
+            studentRepository.findByUser_Id(existingUser.getId()).ifPresent(studentRepository::delete);
+            existingUser.getRoles().clear();
+            existingUser.getRoles().add("ROLE_TUTOR");
+            existingUser.setPassword(application.getPassword());
+            existingUser.setStudentId(application.getStudentId());
+            existingUser.setCourseProgram(application.getCourseProgram());
+            savedUser = userRepository.save(existingUser);
+        } else {
+            // Create a new User for the tutor
+            User newUser = new User();
+            newUser.setName(application.getName());
+            newUser.setStudentId(application.getStudentId());
+            newUser.setCourseProgram(application.getCourseProgram());
+            newUser.setEmail(application.getEmail());
+            newUser.setPhoneNumber(application.getPhoneNumber());
+            newUser.setPassword(application.getPassword());
+            newUser.setRoles(Collections.singleton("ROLE_TUTOR"));
+            savedUser = userRepository.save(newUser);
         }
 
-        // Create a new User for the tutor
-        User newUser = new User();
-        newUser.setName(application.getName());
-        newUser.setStudentId(application.getStudentId());
-        newUser.setCourseProgram(application.getCourseProgram());
-        newUser.setEmail(application.getEmail());
-        newUser.setPhoneNumber(application.getPhoneNumber());
-        newUser.setPassword(application.getPassword()); // Already hashed in apply()
-        newUser.setRoles(Collections.singleton("ROLE_TUTOR"));
-        User savedUser = userRepository.save(newUser);
-
-        // Create a new Tutor profile
+        // Create Tutor profile
         Tutor newTutor = new Tutor();
         newTutor.setName(application.getName());
         newTutor.setEmail(application.getEmail());
         newTutor.setPhoneNumber(application.getPhoneNumber());
         newTutor.setCourseProgram(application.getCourseProgram());
-        // Use student ID as tutor ID
         newTutor.setTutorId(application.getStudentId());
         newTutor.setUser(savedUser);
         tutorRepository.save(newTutor);

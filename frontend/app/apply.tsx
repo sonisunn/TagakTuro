@@ -16,11 +16,65 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import { applyAsTutor, checkStudentIdTaken } from '../src/api/tutor';
+import { applyAsTutor, checkStudentIdTaken, checkEmailIsStudent } from '../src/api/tutor';
 import { AxiosError } from 'axios'
 import { BlurView } from 'expo-blur';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
+const PROGRAMS = [
+  'CBFS - BS Business Administration Major in Building and Property Management',
+  'CBFS - BS Business Administration Major in Supply Management',
+  'CBFS - BS Entrepreneurial Management',
+  'CBFS - BS Business Administration Major in Marketing Management',
+  'CBFS - BS Office Administration',
+  'CBFS - BS Business Administration Major in Human Resource Management',
+  'CBFS - BS Financial Management',
+  'CBFS - Associate in Building and Property Management',
+  'CBFS - Associate in Supply Management',
+  'CBFS - Associate in Entrepreneurship',
+  'CBFS - Associate in Sales Management',
+  'CBFS - Associate in Office Management Technology',
+  'IOA - BS Accountancy',
+  'IOA - BS Management Accounting',
+  'CCIS - BS Computer Science Major in Application Development',
+  'CCIS - BS Information Technology Major in Information and Network Security',
+  'CCIS - Diploma in Application Development',
+  'CCIS - Diploma in Computer Network Administration',
+  'CCSE - BS Civil Engineering Major in Construction Engineering and Management',
+  'CHK - BS Exercise and Sports Science Major in Fitness and Sports Management',
+  'CGPP - BA Political Science Major in Paralegal Studies',
+  'CGPP - BA Political Science Major in Policy Management',
+  'CGPP - BA Political Science Major in Local Government Administration',
+  'ION - Master of Arts in Nursing',
+  'ION - BS Nursing',
+  'IOP - BS Pharmacy',
+  'IOP - Associate in Applied Science in Pharmacy Technology',
+  'IIHS - MS Radiologic Technology',
+  'IIHS - BS Radiologic Technology',
+  'CITE - Bachelor of Elementary Education',
+  'CITE - Bachelor of Secondary Education Major in English',
+  'CITE - Bachelor of Secondary Education Major in Mathematics',
+  'CITE - Bachelor of Secondary Education Major in Social Studies',
+  'IOPsy - BS Psychology',
+  'CTHM - BS Hospitality Management',
+  'CTHM - BS Tourism Management',
+  'CTHM - Associate in Hospitality Management',
+  'IDEM - BS Disaster Risk Management',
+  'ISW - BS Social Work',
+  'CET - Bachelor of Engineering Technology Major in Electrical Technology',
+  'CET - Bachelor of Engineering Technology Major in Electronics Technology',
+  'CET - Bachelor in Automotive Technology',
+  'CET - Diploma in Electrical Technology',
+  'CET - Diploma in Industrial Facilities Technology',
+  'CET - Diploma in Industrial Facilities Technology Major in Service Mechanics',
+  'CET - Associate in Electronics Technology',
+  'SOL - Juris Doctor with Thesis',
+  'HSU - Technical-Vocational Livelihood Track',
+  'HSU - Arts and Design Track',
+  'HSU - Sports Track',
+  'HSU - STEM',
+  'HSU - HUMSS',
+  'HSU - ABM',
+];
 
 export default function ApplyTutorPage() {
   const router = useRouter();
@@ -45,10 +99,13 @@ export default function ApplyTutorPage() {
   const [termsModalVisible, setTermsModalVisible] = useState(false);
   const [privacyModalVisible, setPrivacyModalVisible] = useState(false);
   
+  const [programPickerVisible, setProgramPickerVisible] = useState(false);
   const [error, setError] = useState(false);
   const [noticeErrors, setNoticeErrors] = useState<string[]>([]);
   const [noticeVisible, setNoticeVisible] = useState(false);
   const [successVisible, setSuccessVisible] = useState(false);
+  const [switchAccountModalVisible, setSwitchAccountModalVisible] = useState(false);
+  const [isSwitchingFromStudent, setIsSwitchingFromStudent] = useState(false);
   const [checkingId, setCheckingId] = useState(false);
 
   const validateName = (name: string): boolean => {
@@ -115,15 +172,35 @@ export default function ApplyTutorPage() {
       return;
     }
 
-    // Check student ID availability before proceeding
     setCheckingId(true);
     try {
-      const taken = await checkStudentIdTaken(studentId.trim());
-      if (taken) {
-        setError(true);
-        showNotice(['Student ID is already registered. No duplicate student ID allowed.']);
+      // Check email first.
+      // null = endpoint not deployed yet; true/false = definitive answer.
+      const emailIsStudent = await checkEmailIsStudent(email.trim());
+      console.log('[apply] checkEmailIsStudent =>', emailIsStudent);
+
+      if (emailIsStudent === true) {
+        // Confirmed student account — offer the switch right away
+        setSwitchAccountModalVisible(true);
         return;
       }
+
+      if (emailIsStudent === false) {
+        // Endpoint is live and email is free — safe to check student ID now
+        const { taken, canSwitch } = await checkStudentIdTaken(studentId.trim(), email.trim());
+        if (canSwitch) {
+          setSwitchAccountModalVisible(true);
+          return;
+        }
+        if (taken) {
+          setError(true);
+          showNotice(['Student ID is already registered. No duplicate student ID allowed.']);
+          return;
+        }
+      }
+
+      // emailIsStudent === null means the endpoint isn't available yet.
+      // Skip the student ID block and let the backend validate at submission.
     } finally {
       setCheckingId(false);
     }
@@ -132,31 +209,7 @@ export default function ApplyTutorPage() {
     setStep(2);
   };
 
-  const handleSubmit = async () => {
-    const errors: string[] = [];
-    if (!reportOfGrades) {
-      errors.push('Report of Grades (PDF) is required');
-    } else if (reportOfGrades.mimeType !== 'application/pdf') {
-      errors.push('Report of Grades must be a PDF file');
-    }
-    if (certificates && certificates.mimeType !== 'application/pdf') {
-      errors.push('Certificates must be a PDF file');
-    }
-    if (!experience.trim()) errors.push('Experience description is required');
-
-    if (errors.length > 0) {
-      setError(true);
-      showNotice(errors);
-      return;
-    }
-
-    if (!agreedToTerms) {
-      showNotice(['Please agree to the User Agreement and Privacy Policy']);
-      return;
-    }
-
-    setError(false);
-
+  const submitApplication = async () => {
     const formData = new FormData();
     formData.append('name', name);
     formData.append('studentId', studentId);
@@ -165,11 +218,9 @@ export default function ApplyTutorPage() {
     formData.append('phoneNumber', phoneNumber);
     formData.append('password', password);
     formData.append('experience', experience);
-    
-    // Set default values for backend non-nullable fields
+
     const startStr = timeAvailableStart ? timeAvailableStart.toTimeString().split(' ')[0] : "00:00:00";
     const endStr = timeAvailableEnd ? timeAvailableEnd.toTimeString().split(' ')[0] : "23:59:59";
-    
     formData.append('timeAvailableStart', startStr);
     formData.append('timeAvailableEnd', endStr);
 
@@ -197,6 +248,33 @@ export default function ApplyTutorPage() {
       console.error('Error submitting application:', errorMessage);
       showNotice(['Application failed: ' + errorMessage]);
     }
+  };
+
+  const handleSubmit = async () => {
+    const errors: string[] = [];
+    if (!reportOfGrades) {
+      errors.push('Report of Grades (PDF) is required');
+    } else if (reportOfGrades.mimeType !== 'application/pdf') {
+      errors.push('Report of Grades must be a PDF file');
+    }
+    if (certificates && certificates.mimeType !== 'application/pdf') {
+      errors.push('Certificates must be a PDF file');
+    }
+    if (!experience.trim()) errors.push('Experience description is required');
+
+    if (errors.length > 0) {
+      setError(true);
+      showNotice(errors);
+      return;
+    }
+
+    if (!agreedToTerms) {
+      showNotice(['Please agree to the User Agreement and Privacy Policy']);
+      return;
+    }
+
+    setError(false);
+    await submitApplication();
   };
 
   const pickDocument = async (setter: React.Dispatch<React.SetStateAction<DocumentPicker.DocumentPickerAsset | null>>) => {
@@ -258,14 +336,58 @@ export default function ApplyTutorPage() {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Course and Program</Text>
-                <TextInput
-                  style={[styles.input, error && !courseProgram && styles.inputError]}
-                  placeholder="CCIS - BS COMPUTER SCIENCE"
-                  value={courseProgram}
-                  onChangeText={setCourseProgram}
-                  placeholderTextColor="#95BADA"
-                />
+                <TouchableOpacity
+                  style={[styles.dropdownTrigger, error && !courseProgram && styles.inputError]}
+                  onPress={() => setProgramPickerVisible(true)}
+                >
+                  <Text style={courseProgram ? styles.dropdownValueText : styles.dropdownPlaceholderText} numberOfLines={1}>
+                    {courseProgram || 'Select your college and program'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#2B74B4" />
+                </TouchableOpacity>
               </View>
+
+              {/* Program Picker Modal */}
+              <Modal
+                visible={programPickerVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setProgramPickerVisible(false)}
+              >
+                <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+                  <View style={styles.programPickerContainer}>
+                    <Text style={styles.programPickerTitle}>Select College and Program</Text>
+                    <ScrollView style={styles.programPickerScroll}>
+                      {PROGRAMS.map((program) => (
+                        <TouchableOpacity
+                          key={program}
+                          style={[
+                            styles.programPickerItem,
+                            courseProgram === program && styles.programPickerItemSelected,
+                          ]}
+                          onPress={() => {
+                            setCourseProgram(program);
+                            setProgramPickerVisible(false);
+                          }}
+                        >
+                          <Text style={[
+                            styles.programPickerItemText,
+                            courseProgram === program && styles.programPickerItemTextSelected,
+                          ]}>
+                            {program}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                    <TouchableOpacity
+                      style={styles.returnButton}
+                      onPress={() => setProgramPickerVisible(false)}
+                    >
+                      <Text style={styles.returnButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </BlurView>
+              </Modal>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Email</Text>
@@ -332,7 +454,7 @@ export default function ApplyTutorPage() {
                 animationType="fade"
                 onRequestClose={() => setNoticeVisible(false)}
               >
-                <View style={styles.noticeOverlay}>
+                <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
                   <View style={styles.noticeContainer}>
                     <Text style={styles.noticeTitle}>Notice</Text>
                     <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
@@ -343,14 +465,11 @@ export default function ApplyTutorPage() {
                       <Text style={styles.noticeOkText}>OK</Text>
                     </TouchableOpacity>
                   </View>
-                </View>
+                </BlurView>
               </Modal>
 
               <TouchableOpacity style={[styles.submitButton, checkingId && { opacity: 0.6 }]} onPress={handleNext} disabled={checkingId}>
                 <Text style={styles.submitButtonText}>{checkingId ? 'Checking...' : 'Next'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.submitButton} onPress={() => router.replace('/session-availability')}>
-                <Text style={styles.submitButtonText}>skip</Text>
               </TouchableOpacity>
 
               <View style={styles.footer}>
@@ -640,6 +759,45 @@ export default function ApplyTutorPage() {
         </View>
       </ScrollView>
 
+      {/* Switch Account Modal */}
+      <Modal
+        visible={switchAccountModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSwitchAccountModalVisible(false)}
+      >
+        <BlurView intensity={20} style={styles.blurBackground}>
+          <View style={styles.switchModalContainer}>
+            <Text style={styles.switchModalTitle}>Email Already in Use</Text>
+            <Text style={styles.switchModalBody}>
+              This email is currently associated with an existing student account. Do you want to switch to a Tutor Account?
+            </Text>
+            <View style={styles.switchModalButtons}>
+              <TouchableOpacity
+                style={styles.switchNoButton}
+                onPress={() => setSwitchAccountModalVisible(false)}
+              >
+                <Text style={styles.switchNoText}>No</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.switchYesButton}
+                onPress={() => {
+                  setSwitchAccountModalVisible(false);
+                  setIsSwitchingFromStudent(true);
+                  if (step === 2) {
+                    submitApplication();
+                  } else {
+                    setStep(2);
+                  }
+                }}
+              >
+                <Text style={styles.switchYesText}>Yes</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </BlurView>
+      </Modal>
+
       {/* Success Modal */}
       <Modal
         visible={successVisible}
@@ -647,7 +805,7 @@ export default function ApplyTutorPage() {
         animationType="fade"
         onRequestClose={() => {}}
       >
-        <View style={styles.noticeOverlay}>
+        <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
           <View style={styles.successContainer}>
             <Text style={styles.successTitle}>Successfully Registered!</Text>
             <Text style={styles.successBody}>
@@ -664,7 +822,7 @@ export default function ApplyTutorPage() {
               <Text style={styles.successButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </BlurView>
       </Modal>
 
       </KeyboardAvoidingView>
@@ -706,6 +864,7 @@ const styles = StyleSheet.create({
     marginTop: -30,
     borderRadius: 20,
     padding: 30,
+    paddingBottom: 50,
     width: '100%',
     alignSelf: 'center',
     alignContent: 'center',
@@ -1119,6 +1278,126 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   successButtonText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+  },
+  dropdownValueText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2B74B4',
+    flex: 1,
+    marginRight: 8,
+  },
+  dropdownPlaceholderText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#95BADA',
+    flex: 1,
+    marginRight: 8,
+  },
+  programPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#2B74B4',
+    padding: 20,
+    width: '100%',
+    maxHeight: '80%',
+  },
+  programPickerTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2B74B4',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  programPickerScroll: {
+    maxHeight: 400,
+  },
+  programPickerItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0eef8',
+  },
+  programPickerItemSelected: {
+    backgroundColor: '#e8f3fc',
+  },
+  programPickerItemText: {
+    fontFamily: 'Poppins',
+    fontSize: 12,
+    color: '#2B74B4',
+  },
+  programPickerItemTextSelected: {
+    fontWeight: '600',
+  },
+  switchModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: '#2B74B4',
+    padding: 24,
+    width: '90%',
+    alignItems: 'center',
+  },
+  switchModalTitle: {
+    fontFamily: 'Poppins',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2B74B4',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  switchModalBody: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#95BADA',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 6,
+    lineHeight: 20,
+  },
+  switchModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  switchNoButton: {
+    flex: 1,
+    backgroundColor: '#C0392B',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  switchNoText: {
+    color: '#fff',
+    fontFamily: 'Poppins',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  switchYesButton: {
+    flex: 1,
+    backgroundColor: '#27AE60',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  switchYesText: {
     color: '#fff',
     fontFamily: 'Poppins',
     fontWeight: '600',
