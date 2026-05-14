@@ -1,7 +1,7 @@
 package com.example.demo.model;
 
 public class SignalMessage {
-    private String type;        // JOIN, OFFER, ANSWER, ICE_CANDIDATE, LEAVE, MEDIA_STATE
+    private String type;        // JOIN, OFFER, ANSWER, ICE_CANDIDATE, LEAVE, MEDIA_STATE, CHAT
     private String senderId;
     private String senderName;
     private String targetId;    // null = broadcast; set for OFFER, ANSWER, ICE_CANDIDATE
@@ -11,6 +11,7 @@ public class SignalMessage {
     private String id;          // ICE_CANDIDATE — sdpMid
     private Boolean isMicOn;    // MEDIA_STATE
     private Boolean isCameraOn; // MEDIA_STATE
+    private String text;        // CHAT — message body
 
     public SignalMessage() {}
 
@@ -43,4 +44,7 @@ public class SignalMessage {
 
     public Boolean getIsCameraOn() { return isCameraOn; }
     public void setIsCameraOn(Boolean isCameraOn) { this.isCameraOn = isCameraOn; }
+
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
 }

@@ -8,7 +8,7 @@ import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
 
 /**
- * Relays WebRTC signaling messages (JOIN, OFFER, ANSWER, ICE_CANDIDATE, LEAVE, MEDIA_STATE)
+ * Relays WebRTC signaling messages (JOIN, OFFER, ANSWER, ICE_CANDIDATE, LEAVE, MEDIA_STATE, CHAT)
  * between participants in a meeting room identified by bookingId.
  *
  * Client sends to:   /app/meeting/{roomId}/signal
