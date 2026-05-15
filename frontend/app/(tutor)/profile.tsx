@@ -70,10 +70,12 @@ export default function TutorProfile() {
           const fresh = await getUser(p.id);
           const merged = {
             id: fresh.id,
-            name: fresh.name || p.name,
-            email: fresh.email || p.email,
-            course: fresh.courseProgram || p.courseProgram,
-            phone: fresh.phoneNumber || p.phoneNumber,
+            name: fresh.name || p.name || '',
+            email: fresh.email || p.email || '',
+            course: fresh.courseProgram || p.courseProgram || '',
+            // Phone can come back as null from the server; preserve cached value
+            // when fresh returns nothing, and coerce to a string for the preview.
+            phone: (fresh.phoneNumber ?? p.phoneNumber ?? '') as string,
             imageBase64: fresh.profilePictureUrl || p.profilePictureUrl || null,
           };
           setProfileData(merged);
@@ -190,7 +192,7 @@ export default function TutorProfile() {
 
   const NoticeModal = () => (
     <Modal animationType="fade" transparent visible={noticeModal.visible} onRequestClose={dismissNotice}>
-      <BlurView intensity={20} tint="light" style={styles.absolute}>
+      <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
         <View style={styles.noticeCard}>
           <Text style={styles.noticeTitle}>Notice</Text>
           <Text style={styles.noticeBody}>{noticeModal.message}</Text>
@@ -327,8 +329,9 @@ const styles = StyleSheet.create({
   avatarWrapper: {
     width: 120, height: 120, borderRadius: 60,
     marginBottom: 12, position: 'relative',
+    overflow: 'hidden',
   },
-  avatar: { width: '100%', height: '100%', borderRadius: 60 },
+  avatar: { width: '100%', height: '100%', borderRadius: 60, resizeMode: 'cover' },
   avatarPlaceholder: {
     width: '100%', height: '100%', borderRadius: 60,
     backgroundColor: '#F0F2F5', justifyContent: 'center', alignItems: 'center',

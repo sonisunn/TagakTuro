@@ -60,7 +60,9 @@ export default function CcedTutorsPage() {
                     <td>{t.sessionsDone ?? 0}</td>
                     <td>{(t.totalHours || 0).toFixed(1)} hrs</td>
                     <td>{(t.rating || 0).toFixed(1)}</td>
-                    <td className="status-green">Active</td>
+                    <td className={t.isActive === false ? 'status-gray' : 'status-green'}>
+                      {t.isActive === false ? 'Inactive' : 'Active'}
+                    </td>
                     <td>
                       <Link 
                         to={`/cced/tutors/${t.id}`} 

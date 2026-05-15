@@ -1,10 +1,12 @@
 import { Stack } from "expo-router";
 import React from 'react';
 import { loadTokenToHeader } from '../src/api/auth';
+// Imported for its registerForegroundService side-effect — must run before any
+// meeting starts so Notifee can resume the service task on cold start.
+import '../src/meetingForegroundService';
 
 export default function Layout() {
   React.useEffect(() => {
-    // load stored JWT (if any) into axios default header
     loadTokenToHeader().catch((e) => console.warn('Failed to load token', e));
   }, []);
 

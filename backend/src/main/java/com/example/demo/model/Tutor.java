@@ -31,6 +31,12 @@ public class Tutor {
     @Column(name = "is_cert_issued")
     private Boolean isCertIssued = false;
 
+    // Transient — computed at read time in TutorService.enrichTutorStats().
+    // A tutor is "active" if they have at least one booking (any status) in the
+    // INACTIVITY_THRESHOLD_DAYS window (default 30 days). Not persisted.
+    @Transient
+    private Boolean isActive = true;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", unique = true)
     @JsonIgnore
@@ -134,6 +140,14 @@ public class Tutor {
 
     public void setIsCertIssued(Boolean isCertIssued) {
         this.isCertIssued = isCertIssued;
+    }
+
+    public Boolean getIsActive() {
+        return isActive;
+    }
+
+    public void setIsActive(Boolean isActive) {
+        this.isActive = isActive;
     }
 
     public User getUser() {

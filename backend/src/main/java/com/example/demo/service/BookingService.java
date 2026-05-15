@@ -44,6 +44,9 @@ public class BookingService {
     @Autowired
     private TutorRepository tutorRepository;
 
+    @Autowired
+    private EmailService emailService;
+
     private Booking enrichBookingWithUserIds(Booking booking) {
         if (booking == null) return null;
         
@@ -244,9 +247,9 @@ public class BookingService {
                 String location = "Online".equals(modality) ? "Online"
                         : (savedBooking.getVenue() != null ? savedBooking.getVenue() : "TBD");
                 int duration = savedBooking.getDurationMinutes() != null ? savedBooking.getDurationMinutes() : 0;
-                String body = "Your " + subject + " session has been submitted for " + formattedDate
-                        + " (" + duration + " mins, " + location + "). We'll notify you once a tutor is matched!";
-                notificationService.createNotification(studentUser, "Booking Submitted!", body);
+                String body = "Woohoo! Your " + subject + " session is locked in for " + formattedDate
+                        + " (" + duration + " mins, " + location + "). Hang tight — we'll ping you the moment a tutor accepts!";
+                notificationService.createNotification(studentUser, "🎉 Booking sent!", body);
             }
         } catch (Exception e) {
             logger.warn("Failed to send booking notification to student for booking ID " + savedBooking.getId() + ": " + e.getMessage());
@@ -325,8 +328,8 @@ public class BookingService {
                     }
                     if (studentUser != null) {
                         notificationService.createNotification(studentUser,
-                                "Session Rescheduled",
-                                "Your " + subject + " session has been rescheduled to " + formattedDate + ".");
+                                "📅 Heads up — session moved!",
+                                "Your " + subject + " session has a new date: " + formattedDate + ". Mark your calendar!");
                     }
                 }
             } catch (Exception e) {
@@ -339,8 +342,8 @@ public class BookingService {
                     tutorRepository.findByName(savedBooking.getTutorName()).ifPresent(tutor -> {
                         if (tutor.getUser() != null) {
                             notificationService.createNotification(tutor.getUser(),
-                                    "Session Rescheduled",
-                                    "A " + subject + " session has been rescheduled to " + formattedDate + ".");
+                                    "📅 Heads up — session moved!",
+                                    "A " + subject + " session was rescheduled to " + formattedDate + ".");
                         }
                     });
                 }
@@ -355,6 +358,11 @@ public class BookingService {
     // Update booking status
     @SuppressWarnings("null")
     public Booking updateBookingStatus(Long id, Booking.BookingStatus status) {
+        return updateBookingStatus(id, status, null);
+    }
+
+    @SuppressWarnings("null")
+    public Booking updateBookingStatus(Long id, Booking.BookingStatus status, String cancellationReason) {
         if (id == null) {
             throw new IllegalArgumentException("Booking ID cannot be null");
         }
@@ -380,8 +388,8 @@ public class BookingService {
                         String tutorName = savedBooking.getTutorName() != null ? savedBooking.getTutorName() : "a tutor";
                         String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "your subject";
                         notificationService.createNotification(studentUser,
-                                "We found a match!",
-                                "Hey!!! Just a quick reminder about your " + subject + " session with " + tutorName + ".");
+                                "🎯 We found you a match!",
+                                "Say hi to " + tutorName + "! Your " + subject + " session is officially on. Let's go!");
                     }
                 }
             } catch (Exception e) {
@@ -395,8 +403,8 @@ public class BookingService {
                         if (tutor.getUser() != null) {
                             String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "tutoring";
                             notificationService.createNotification(tutor.getUser(),
-                                    "New Booking Confirmed!",
-                                    "A student has been matched with you for a " + subject + " session. Check your bookings!");
+                                    "🤝 New student matched!",
+                                    "You've been paired up for a " + subject + " session. Check your bookings and get ready to teach!");
                         }
                     });
                 }
@@ -437,8 +445,14 @@ public class BookingService {
 
         if (status == Booking.BookingStatus.CANCELLED) {
             String subject = savedBooking.getSubject() != null ? savedBooking.getSubject() : "your session";
+            String trimmedReason = cancellationReason != null ? cancellationReason.trim() : "";
+            String reasonClause = !trimmedReason.isEmpty() ? "\n\nReason: " + trimmedReason : "";
+            String reasonClauseHtml = !trimmedReason.isEmpty()
+                    ? "<p style='margin-top: 12px; color: #444;'><strong>Reason:</strong> "
+                            + trimmedReason.replace("<", "&lt;").replace(">", "&gt;") + "</p>"
+                    : "";
 
-            // Notify student
+            // Notify student (in-app + email)
             try {
                 Student student = savedBooking.getStudent();
                 if (student != null) {
@@ -448,22 +462,44 @@ public class BookingService {
                     }
                     if (studentUser != null) {
                         notificationService.createNotification(studentUser,
-                                "Session Cancelled",
-                                "Your " + subject + " session has been cancelled.");
+                                "😢 Oh no — session cancelled",
+                                "Your " + subject + " session is no longer happening." + reasonClause);
+                    }
+                    if (student.getEmail() != null) {
+                        try {
+                            emailService.sendCancellationEmail(student.getEmail(),
+                                    student.getName() != null ? student.getName() : "Student",
+                                    subject, savedBooking.getBookingDateTime(), trimmedReason, reasonClauseHtml);
+                        } catch (Exception em) {
+                            logger.warn("Failed to email cancellation to student " + student.getEmail() + ": " + em.getMessage());
+                        }
                     }
                 }
             } catch (Exception e) {
                 logger.warn("Failed to send cancellation notification to student for booking " + id + ": " + e.getMessage());
             }
 
-            // Notify tutor
+            // Notify tutor (in-app + email)
             try {
                 if (savedBooking.getTutorName() != null) {
+                    final String reasonClauseFinal = reasonClause;
+                    final String reasonClauseHtmlFinal = reasonClauseHtml;
+                    final LocalDateTime bookingDateTimeFinal = savedBooking.getBookingDateTime();
+                    final String trimmedReasonFinal = trimmedReason;
                     tutorRepository.findByName(savedBooking.getTutorName()).ifPresent(tutor -> {
                         if (tutor.getUser() != null) {
                             notificationService.createNotification(tutor.getUser(),
-                                    "Session Cancelled",
-                                    "A " + subject + " session has been cancelled.");
+                                    "😢 Oh no — session cancelled",
+                                    "A " + subject + " session was cancelled." + reasonClauseFinal);
+                        }
+                        if (tutor.getEmail() != null) {
+                            try {
+                                emailService.sendCancellationEmail(tutor.getEmail(),
+                                        tutor.getName() != null ? tutor.getName() : "Tutor",
+                                        subject, bookingDateTimeFinal, trimmedReasonFinal, reasonClauseHtmlFinal);
+                            } catch (Exception em) {
+                                logger.warn("Failed to email cancellation to tutor " + tutor.getEmail() + ": " + em.getMessage());
+                            }
                         }
                     });
                 }

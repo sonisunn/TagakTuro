@@ -175,7 +175,7 @@ export default function TagakTuroLogin() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
@@ -193,6 +193,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#fff',
+    lineHeight: 28,
+    marginBottom: 0,
   },
   subtitle: {
     fontFamily: 'Poppins',
@@ -200,6 +202,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     opacity: 0.9,
+    marginTop: -4,
+    lineHeight: 22,
   },
   formContainer: {
     backgroundColor: '#fff',
@@ -272,6 +276,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
+    marginTop: 16,
   },
   footerText: {
     fontFamily: 'Poppins',

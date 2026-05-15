@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -17,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { getBookingsByStudentId, updateBooking, updateBookingStatus } from '../../src/api/booking';
+import { checkEvaluated } from '../../src/api/evaluation';
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
 import { useNotifications } from '../../constants/hooks/useNotifications';
@@ -64,6 +66,7 @@ export default function TagakTuroHomepage() {
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; body: string; closeAll: boolean }>({ visible: false, title: '', body: '', closeAll: false });
   const [evaluatedBookingIds, setEvaluatedBookingIds] = useState<Set<string>>(new Set());
+  const [cancelReason, setCancelReason] = useState<string>('');
 
   useFocusEffect(
     useCallback(() => {
@@ -155,6 +158,22 @@ export default function TagakTuroHomepage() {
         previousBookingsRef.current = [...upcoming, ...past];
         setUpcomingClasses(upcoming);
         setPastClasses(past);
+
+        // Hydrate the "evaluated" set from the server for every completed
+        // booking so the Evaluate button reflects authoritative state across
+        // devices, not just whatever this device cached in AsyncStorage.
+        if (past.length > 0) {
+          const results = await Promise.allSettled(
+            past.map(b => checkEvaluated(b.id, 'STUDENT_EVALUATES_TUTOR'))
+          );
+          setEvaluatedBookingIds(prev => {
+            const next = new Set(prev);
+            results.forEach((r, i) => {
+              if (r.status === 'fulfilled' && r.value) next.add(past[i].id);
+            });
+            return next;
+          });
+        }
 
         // Only show notifications on first load
         if (newlyConfirmedBooking !== null && loading) {
@@ -341,13 +360,18 @@ export default function TagakTuroHomepage() {
   };
 
   const handleCancelConfirm = async () => {
+    if (!cancelReason.trim()) {
+      setAlertModal({ visible: true, title: 'Reason required', body: 'Please share a quick reason for cancelling so we can let the other side know.', closeAll: false });
+      return;
+    }
     try {
       setModalLoading(true);
 
-      await updateBookingStatus(selectedClass!.id, 'CANCELLED');
+      await updateBookingStatus(selectedClass!.id, 'CANCELLED', cancelReason);
 
       await fetchBookings();
       setModalVisible(false);
+      setCancelReason('');
       setAlertModal({ visible: true, title: 'Session Cancelled', body: 'Your session has been successfully cancelled.', closeAll: true });
     } catch (error) {
       console.error('Error canceling booking:', error);
@@ -468,7 +492,7 @@ export default function TagakTuroHomepage() {
         {/* Classes List */}
         <View style={styles.classesHeader}>
           <Text style={styles.classesTitle}>Classes</Text>
-          <View style={[styles.tabContainer, { width: screenWidth * 0.46 }]}>
+          <View style={[styles.tabContainer, { width: screenWidth * 0.54 }]}>
             <TouchableOpacity
               style={[styles.tab, activeTab === 'upcoming' && styles.activeTab]}
               onPress={() => setActiveTab('upcoming')}
@@ -555,7 +579,7 @@ export default function TagakTuroHomepage() {
         visible={modalVisible}
         onRequestClose={handleCloseModal}
       >
-        <BlurView intensity={10} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={10} tint="light" style={styles.absolute}>
           <View style={styles.modalContent}>
 
             {/* VIEW 1: Session Details */}
@@ -749,16 +773,29 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 4: Cancel Confirmation */}
             {modalView === 'cancel' && (
-              <View style={{ alignItems: 'center' }}>
-                <Text style={[styles.cancelHeadline, { marginBottom: 20, textAlign: 'center' }]}>
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <Text style={[styles.cancelHeadline, { marginBottom: 12, textAlign: 'center' }]}>
                   Are you sure you want to cancel?
                 </Text>
+                <Text style={[styles.modalLabel, { alignSelf: 'flex-start', marginBottom: 6 }]}>
+                  Reason for cancelling
+                </Text>
+                <TextInput
+                  style={styles.cancelReasonInput}
+                  placeholder="e.g. Conflicting schedule, feeling unwell, etc."
+                  placeholderTextColor="#9bbbe0"
+                  value={cancelReason}
+                  onChangeText={setCancelReason}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={300}
+                />
 
                 <View style={styles.modalButtonContainer}>
                   <TouchableOpacity
-                    style={[styles.modalCancelButton, modalLoading && styles.disabledButton]}
+                    style={[styles.modalCancelButton, (modalLoading || !cancelReason.trim()) && styles.disabledButton]}
                     onPress={handleCancelConfirm}
-                    disabled={modalLoading}
+                    disabled={modalLoading || !cancelReason.trim()}
                   >
                     <Text style={styles.modalBtnTextWhite}>
                       {modalLoading ? 'Cancelling...' : 'Cancel'}
@@ -767,7 +804,7 @@ export default function TagakTuroHomepage() {
 
                   <TouchableOpacity
                     style={[styles.modalReturnButton, modalLoading && styles.disabledButton]}
-                    onPress={() => setModalView('details')}
+                    onPress={() => { setModalView('details'); setCancelReason(''); }}
                     disabled={modalLoading}
                   >
                     <Text style={styles.modalBtnTextBlue}>Return</Text>
@@ -783,7 +820,7 @@ export default function TagakTuroHomepage() {
 
       {/* --- ALERT MODAL --- */}
       <Modal animationType="fade" transparent={true} visible={alertModal.visible} onRequestClose={() => { setAlertModal({ visible: false, title: '', body: '', closeAll: false }); if (alertModal.closeAll) handleCloseModal(); }}>
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>
@@ -907,6 +944,8 @@ const styles = StyleSheet.create({
   profilePicture: {
     width: 48,
     height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   bookCard: {
     backgroundColor: '#2B74B4',
@@ -914,14 +953,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     padding: 20,
     borderRadius: 15,
-    height: 135,
   },
   bookCardTitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
     color: '#fff',
     fontWeight: '600',
-    marginBottom: 2,
+    marginBottom: -4,
+    lineHeight: 22,
   },
   bookCardSubtitle: {
     fontFamily: 'Poppins',
@@ -929,6 +968,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     marginBottom: 15,
+    lineHeight: 30,
   },
   bookButton: {
     backgroundColor: '#fff',
@@ -938,8 +978,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    marginTop: -10,
-    marginRight: -10,
   },
   bookButtonText: {
     fontFamily: 'Poppins',
@@ -973,6 +1011,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 35,
     paddingVertical: 6,
+    paddingHorizontal: 10,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
@@ -992,9 +1031,10 @@ const styles = StyleSheet.create({
   classCard: {
     backgroundColor: '#fff',
     marginHorizontal: 20,
-    marginBottom: 10,
-    height: 115,
-    padding: 15,
+    marginBottom: 12,
+    minHeight: 130,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     borderRadius: 15,
     borderWidth: 1,
     borderColor: '#2B74B4',
@@ -1208,6 +1248,27 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 10,
     marginTop: 10,
+  },
+  modalLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2B74B4',
+  },
+  cancelReasonInput: {
+    width: '100%',
+    minHeight: 80,
+    borderWidth: 1.5,
+    borderColor: '#2B74B4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#2B74B4',
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    textAlignVertical: 'top',
   },
   modalChatButton: {
     backgroundColor: '#2B74B4',

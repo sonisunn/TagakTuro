@@ -12,12 +12,14 @@ function sortByBookingDateDesc(items) {
   });
 }
 
+// Booking status → CSS class. Keep in sync with admin-web's other booking lists:
+// COMPLETED = green, CONFIRMED = blue, PENDING = yellow, CANCELLED/DECLINED = red.
 function statusClass(s) {
-  if (s === 'CONFIRMED') return 'status-green';
-  if (s === 'PENDING') return 'status-orange';
-  if (s === 'CANCELLED') return 'status-red';
   if (s === 'COMPLETED') return 'status-green';
-  return '';
+  if (s === 'CONFIRMED') return 'status-blue';
+  if (s === 'PENDING') return 'status-yellow';
+  if (s === 'CANCELLED' || s === 'DECLINED') return 'status-red';
+  return 'status-gray';
 }
 
 export default function CcedBookingsPage() {

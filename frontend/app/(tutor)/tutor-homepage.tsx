@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
@@ -26,6 +27,7 @@ import {
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
 import { updateBookingStatus, getPendingBookingsForTutor, getBookingsByTutorName, updateBooking, declineBooking } from "../../src/api/booking.js";
+import { checkEvaluated } from "../../src/api/evaluation";
 import axios from 'axios';
 import { API_BASE_URL } from '../../src/api/config';
 import { useNotifications } from '../../constants/hooks/useNotifications';
@@ -61,6 +63,7 @@ export default function TagakTuroHomepage() {
   const [upcomingClasses, setUpcomingClasses] = useState<Booking[]>([]);
   const [pastClasses, setPastClasses] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
+  const [evaluatedBookingIds, setEvaluatedBookingIds] = useState<Set<string>>(new Set());
   const slideAnim = useRef(new Animated.Value(Dimensions.get("window").height)).current;
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const modalHeight = Dimensions.get("window").height * 0.5;
@@ -71,6 +74,7 @@ export default function TagakTuroHomepage() {
   const [modalView, setModalView] = useState<string>('details');
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [alertModal, setAlertModal] = useState<{ visible: boolean; title: string; body: string; closeAll: boolean }>({ visible: false, title: '', body: '', closeAll: false });
+  const [cancelReason, setCancelReason] = useState<string>('');
 
   // --- Date/Time Picker State ---
   const [tempDate, setTempDate] = useState<Date>(new Date());
@@ -210,6 +214,22 @@ export default function TagakTuroHomepage() {
       setUpcomingClasses(upcoming);
       setPastClasses(completed);
 
+      // Hydrate evaluated-booking set from server so the Evaluate button
+      // shows "Evaluated" / disables once a submission exists, even on a
+      // fresh device with no AsyncStorage cache.
+      const completedOnly = completed.filter(b => b.status === 'COMPLETED');
+      if (completedOnly.length > 0) {
+        const results = await Promise.allSettled(
+          completedOnly.map(b => checkEvaluated(b.id, 'TUTOR_EVALUATES_STUDENT'))
+        );
+        setEvaluatedBookingIds(prev => {
+          const next = new Set(prev);
+          results.forEach((r, i) => {
+            if (r.status === 'fulfilled' && r.value) next.add(completedOnly[i].id);
+          });
+          return next;
+        });
+      }
 
     } catch (error) {
       console.error("Failed to fetch bookings:", error);
@@ -445,16 +465,21 @@ export default function TagakTuroHomepage() {
   };
 
   const handleCancelConfirm = async () => {
+    if (!cancelReason.trim()) {
+      setAlertModal({ visible: true, title: 'Reason required', body: 'Please share a quick reason for cancelling so the student knows what happened.', closeAll: false });
+      return;
+    }
     try {
       setModalLoading(true);
 
-      await updateBookingStatus(selectedBookingForModal!.id, 'CANCELLED');
+      await updateBookingStatus(selectedBookingForModal!.id, 'CANCELLED', cancelReason);
 
       if (userId && userName) {
         fetchBookings(userId, userName);
       }
 
       setModalVisible(false);
+      setCancelReason('');
       setAlertModal({ visible: true, title: 'Session Cancelled', body: 'The session has been successfully cancelled.', closeAll: true });
     } catch (error) {
       console.error('Error canceling booking:', error);
@@ -637,9 +662,13 @@ export default function TagakTuroHomepage() {
               </View>
               <View style={styles.newButtonCol}>
                 <TouchableOpacity
-                  style={styles.newViewButton}
+                  style={[
+                    styles.newViewButton,
+                    classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id) && { backgroundColor: '#A8C4E0' },
+                  ]}
+                  disabled={classItem.status === 'COMPLETED' && evaluatedBookingIds.has(classItem.id)}
                   onPress={() => {
-                    if (classItem.status === 'COMPLETED') {
+                    if (classItem.status === 'COMPLETED' && !evaluatedBookingIds.has(classItem.id)) {
                       const sessionDate = classItem.rawDate
                         ? new Date(classItem.rawDate).toLocaleDateString('en-US', {
                             year: 'numeric', month: 'long', day: 'numeric',
@@ -662,7 +691,11 @@ export default function TagakTuroHomepage() {
                     }
                   }}
                 >
-                  <Text style={styles.newViewButtonText}>{classItem.status === 'COMPLETED' ? 'Evaluate' : 'View'}</Text>
+                  <Text style={styles.newViewButtonText}>
+                    {classItem.status === 'COMPLETED'
+                      ? evaluatedBookingIds.has(classItem.id) ? 'Evaluated' : 'Evaluate'
+                      : 'View'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -738,7 +771,7 @@ export default function TagakTuroHomepage() {
         visible={modalVisible}
         onRequestClose={closeBookingDetailsModal}
       >
-        <BlurView intensity={10} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={10} tint="light" style={styles.absolute}>
           <View style={styles.modalContent}>
 
             {/* VIEW 1: Session Details */}
@@ -806,7 +839,11 @@ export default function TagakTuroHomepage() {
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.modalChatButton}
+                        style={[
+                          styles.modalChatButton,
+                          evaluatedBookingIds.has(selectedBookingForModal.id) && { backgroundColor: '#A8C4E0' },
+                        ]}
+                        disabled={evaluatedBookingIds.has(selectedBookingForModal.id)}
                         onPress={() => {
                           closeBookingDetailsModal();
                           router.push({
@@ -822,7 +859,9 @@ export default function TagakTuroHomepage() {
                           });
                         }}
                       >
-                        <Text style={styles.modalBtnTextWhite}>Evaluate Session</Text>
+                        <Text style={styles.modalBtnTextWhite}>
+                          {evaluatedBookingIds.has(selectedBookingForModal.id) ? 'Already Evaluated' : 'Evaluate Session'}
+                        </Text>
                       </TouchableOpacity>
                     </>
                   ) : null}
@@ -919,16 +958,29 @@ export default function TagakTuroHomepage() {
 
             {/* VIEW 4: Cancel Confirmation */}
             {modalView === 'cancel' && (
-              <View style={{ alignItems: 'center' }}>
-                <Text style={[styles.cancelHeadline, { marginBottom: 20, textAlign: 'center' }]}>
+              <View style={{ alignItems: 'center', width: '100%' }}>
+                <Text style={[styles.cancelHeadline, { marginBottom: 12, textAlign: 'center' }]}>
                   Are you sure you want to cancel?
                 </Text>
+                <Text style={[styles.cancelReasonLabel, { alignSelf: 'flex-start', marginBottom: 6 }]}>
+                  Reason for cancelling
+                </Text>
+                <TextInput
+                  style={styles.cancelReasonInput}
+                  placeholder="e.g. Schedule conflict, feeling unwell, etc."
+                  placeholderTextColor="#9bbbe0"
+                  value={cancelReason}
+                  onChangeText={setCancelReason}
+                  multiline
+                  numberOfLines={3}
+                  maxLength={300}
+                />
 
                 <View style={styles.modalButtonContainer}>
                   <TouchableOpacity
-                    style={[styles.modalCancelButton, modalLoading && styles.disabledButton]}
+                    style={[styles.modalCancelButton, (modalLoading || !cancelReason.trim()) && styles.disabledButton]}
                     onPress={handleCancelConfirm}
-                    disabled={modalLoading}
+                    disabled={modalLoading || !cancelReason.trim()}
                   >
                     <Text style={styles.modalBtnTextWhite}>
                       {modalLoading ? 'Cancelling...' : 'Cancel'}
@@ -937,7 +989,7 @@ export default function TagakTuroHomepage() {
 
                   <TouchableOpacity
                     style={[styles.modalReturnButton, modalLoading && styles.disabledButton]}
-                    onPress={() => setModalView('details')}
+                    onPress={() => { setModalView('details'); setCancelReason(''); }}
                     disabled={modalLoading}
                   >
                     <Text style={styles.modalBtnTextBlue}>Return</Text>
@@ -953,7 +1005,7 @@ export default function TagakTuroHomepage() {
 
       {/* --- ALERT MODAL --- */}
       <Modal animationType="fade" transparent={true} visible={alertModal.visible} onRequestClose={() => { setAlertModal({ visible: false, title: '', body: '', closeAll: false }); if (alertModal.closeAll) closeBookingDetailsModal(); }}>
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>
@@ -1027,6 +1079,8 @@ const styles = StyleSheet.create({
   profilePicture: {
     width: 48,
     height: 48,
+    borderRadius: 24,
+    overflow: 'hidden',
   },
   bookCard: {
     backgroundColor: "#2B74B4",
@@ -1421,6 +1475,27 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: 10,
     marginTop: 10,
+  },
+  cancelReasonLabel: {
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#2B74B4',
+  },
+  cancelReasonInput: {
+    width: '100%',
+    minHeight: 80,
+    borderWidth: 1.5,
+    borderColor: '#2B74B4',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontFamily: 'Poppins',
+    fontSize: 13,
+    color: '#2B74B4',
+    backgroundColor: '#fff',
+    marginBottom: 8,
+    textAlignVertical: 'top',
   },
   modalChatButton: {
     backgroundColor: '#2B74B4',

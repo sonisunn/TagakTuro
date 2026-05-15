@@ -401,7 +401,7 @@ export default function BookingPage() {
         visible={showDateModal}
         onRequestClose={() => setShowDateModal(false)}
       >
-        <BlurView intensity={10} style={styles.blurContainer}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={10} style={styles.blurContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Date</Text>
             <DateTimePicker
@@ -421,7 +421,7 @@ export default function BookingPage() {
 
       {/* --- ALERT MODAL --- */}
       <Modal animationType="fade" transparent={true} visible={alertModal.visible} onRequestClose={() => setAlertModal({ visible: false, title: '', body: '' })}>
-        <BlurView intensity={20} tint="light" style={styles.alertOverlay}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.alertOverlay}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>
@@ -439,7 +439,7 @@ export default function BookingPage() {
         visible={showTimeModal}
         onRequestClose={() => setShowTimeModal(false)}
       >
-        <BlurView intensity={10} style={styles.blurContainer}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={10} style={styles.blurContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
               Select {timePickerMode === 'start' ? 'Start' : 'End'} Time

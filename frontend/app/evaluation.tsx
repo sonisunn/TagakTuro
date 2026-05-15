@@ -332,7 +332,7 @@ export default function EvaluationScreen() {
           if (wasSuccess) router.back();
         }}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>
@@ -357,7 +357,7 @@ export default function EvaluationScreen() {
         visible={successData !== null}
         onRequestClose={handleSuccessModalClose}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.overlayCard}>
             <Text style={styles.overlayTitle}>
               {isStudent ? "Successfully evaluated your tutor!" : "Successfully evaluated your student!"}
@@ -385,7 +385,7 @@ export default function EvaluationScreen() {
         visible={alreadyEvaluated && successData === null}
         onRequestClose={() => router.back()}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.overlayCard}>
             <Text style={styles.overlayTitle}>Already Evaluated</Text>
             <Text style={styles.overlayDetail}>

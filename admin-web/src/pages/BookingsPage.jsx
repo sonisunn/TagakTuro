@@ -123,8 +123,10 @@ export default function BookingsPage() {
                     <td>{b.tutorName || 'Unassigned'}</td>
                     <td>{b.student?.name || 'N/A'}</td>
                     <td className={
-                      b.status === 'CONFIRMED' || b.status === 'COMPLETED' ? 'status-green' : 
-                      b.status === 'CANCELLED' ? 'status-red' : ''
+                      b.status === 'COMPLETED' ? 'status-green' :
+                      b.status === 'CONFIRMED' ? 'status-blue' :
+                      b.status === 'PENDING' ? 'status-yellow' :
+                      (b.status === 'CANCELLED' || b.status === 'DECLINED') ? 'status-red' : 'status-gray'
                     }>
                       {b.status}
                     </td>

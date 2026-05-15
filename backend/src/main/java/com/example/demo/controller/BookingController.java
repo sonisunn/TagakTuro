@@ -124,7 +124,8 @@ public class BookingController {
 
         try {
             Booking.BookingStatus status = Booking.BookingStatus.valueOf(statusStr.toUpperCase());
-            Booking updatedBooking = bookingService.updateBookingStatus(id, status);
+            String cancellationReason = request.get("cancellationReason");
+            Booking updatedBooking = bookingService.updateBookingStatus(id, status, cancellationReason);
             
             Map<String, Object> response = new HashMap<>();
             response.put("booking", updatedBooking);

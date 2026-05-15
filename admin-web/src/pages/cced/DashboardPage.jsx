@@ -108,7 +108,12 @@ export default function CcedDashboardPage() {
                     <td>{b.subject}</td>
                     <td>{b.tutorName || 'Unassigned'}</td>
                     <td>{b.student?.name || 'Unknown'}</td>
-                    <td className={b.status === 'CONFIRMED' ? 'status-green' : b.status === 'PENDING' ? 'status-orange' : 'status-red'}>
+                    <td className={
+                      b.status === 'COMPLETED' ? 'status-green' :
+                      b.status === 'CONFIRMED' ? 'status-blue' :
+                      b.status === 'PENDING' ? 'status-yellow' :
+                      (b.status === 'CANCELLED' || b.status === 'DECLINED') ? 'status-red' : 'status-gray'
+                    }>
                       {b.status}
                     </td>
                   </tr>

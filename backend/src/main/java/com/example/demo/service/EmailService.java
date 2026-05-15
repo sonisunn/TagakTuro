@@ -114,6 +114,35 @@ public class EmailService {
         sendEmail(to, subject, htmlContent);
     }
 
+    public void sendCancellationEmail(String to, String name, String sessionSubject,
+                                       java.time.LocalDateTime bookingDateTime, String reason, String reasonHtml) {
+        String emailSubject = "TagakTuro - Session Cancelled";
+        String when = bookingDateTime != null
+                ? bookingDateTime.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy 'at' h:mm a"))
+                : "TBD";
+        String session = sessionSubject != null && !sessionSubject.isBlank() ? sessionSubject : "your session";
+
+        String htmlContent = "<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>" +
+                "  <div style='background-color: #2B74B4; color: white; padding: 20px; text-align: center;'>" +
+                "    <h1 style='margin: 0;'>TagakTuro</h1>" +
+                "    <p style='margin: 5px 0 0; font-size: 14px;'>Session Cancellation Notice</p>" +
+                "  </div>" +
+                "  <div style='padding: 30px; line-height: 1.6; color: #333;'>" +
+                "    <h2 style='color: #dc3545;'>Hello, " + name + "!</h2>" +
+                "    <p>Your <strong>" + session + "</strong> session scheduled for <strong>" + when + "</strong> has been cancelled.</p>" +
+                (reasonHtml != null ? reasonHtml : "") +
+                "    <p style='margin-top: 24px;'>If this wasn't expected, please reach out to the other party or your CCED admin. " +
+                "You can also book a new session anytime from the TagakTuro app.</p>" +
+                "    <p style='margin-top: 30px;'>Best regards,<br><strong>The TagakTuro Team</strong></p>" +
+                "  </div>" +
+                "  <div style='background-color: #f8f9fa; color: #666; padding: 15px; text-align: center; font-size: 12px;'>" +
+                "    &copy; 2026 TagakTuro. All rights reserved." +
+                "  </div>" +
+                "</div>";
+
+        sendEmail(to, emailSubject, htmlContent);
+    }
+
     public void sendCertificateEmail(String to, String name, double hours, double rating) {
         String subject = "TagakTuro - Completion Certificate";
         

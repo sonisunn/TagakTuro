@@ -284,7 +284,7 @@ export default function TutorFeedbackPage() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <BlurView intensity={20} tint="dark" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="dark" style={styles.absolute}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Rate Your Tutor</Text>
             <Text style={styles.modalSubTitle}>How was your session with {activeTutorName}?</Text>
@@ -340,7 +340,7 @@ export default function TutorFeedbackPage() {
         visible={alertModal.visible}
         onRequestClose={() => setAlertModal({ visible: false, title: '', body: '' })}
       >
-        <BlurView intensity={20} tint="light" style={styles.absolute}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.absolute}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>

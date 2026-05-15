@@ -70,7 +70,14 @@ export default function MeetingLobby() {
     }
     router.replace({
       pathname: '/meeting-room',
-      params: { roomId, userId, userName, isTutor },
+      params: {
+        roomId,
+        userId,
+        userName,
+        isTutor,
+        initialMicOn: micOn ? '1' : '0',
+        initialCamOn: camOn ? '1' : '0',
+      },
     });
   };
 

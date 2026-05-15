@@ -8,13 +8,17 @@ import {
   ScrollView,
   TextInput,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
+  Image,
   Platform,
   LayoutChangeEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { RTCView } from 'react-native-webrtc';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import InCallManager from 'react-native-incall-manager';
 import { useWebRTC, MeetingChatMessage } from '../constants/hooks/useWebRTC';
+import { startMeetingForegroundService, stopMeetingForegroundService } from '../src/meetingForegroundService';
 
 type TileLayout = { width: number; height: number; left: number; top: number };
 type ParticipantTile = {
@@ -24,6 +28,7 @@ type ParticipantTile = {
   isMuted: boolean;
   isCameraOff: boolean;
   isLocal: boolean;
+  profilePictureUrl: string | null;
 };
 
 const GAP = 8;
@@ -91,12 +96,36 @@ function formatTime(ts: number) {
 
 export default function MeetingRoom() {
   const router = useRouter();
-  const { roomId, userId, userName } = useLocalSearchParams<{
+  const { roomId, userId, userName, initialMicOn, initialCamOn } = useLocalSearchParams<{
     roomId: string;
     userId: string;
     userName: string;
     isTutor: string;
+    initialMicOn?: string;
+    initialCamOn?: string;
   }>();
+
+  const startMicOn = initialMicOn !== '0';
+  const startCamOn = initialCamOn !== '0';
+
+  const [localPhoto, setLocalPhoto] = useState<string | null>(null);
+
+  // Load the local user's profile picture so we can broadcast it on JOIN and
+  // also render it in our own tile when the camera is off.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('userData');
+        if (!stored || cancelled) return;
+        const parsed = JSON.parse(stored);
+        if (parsed?.profilePictureUrl) setLocalPhoto(parsed.profilePictureUrl);
+      } catch (e) {
+        console.warn('[MeetingRoom] failed to load local photo:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const {
     localStream,
@@ -109,13 +138,53 @@ export default function MeetingRoom() {
     toggleCamera,
     endCall,
     sendChatMessage,
-  } = useWebRTC(roomId, userId, userName, true);
+  } = useWebRTC(roomId, userId, userName, true, startMicOn, startCamOn);
 
   const [tilesBox, setTilesBox] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [lastSeenLen, setLastSeenLen] = useState(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const chatListRef = useRef<FlatList<MeetingChatMessage>>(null);
+
+  // Track keyboard height manually — edge-to-edge layouts make windowSoftInputMode=adjustResize
+  // unreliable, so we lift the chat panel ourselves to keep the input bar visible.
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvt, (e) => {
+      setKeyboardHeight(e.endCoordinates?.height ?? 0);
+    });
+    const hideSub = Keyboard.addListener(hideEvt, () => setKeyboardHeight(0));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  // Route call audio to the loud speaker for the lifetime of the meeting.
+  // Default Android routing sends WebRTC audio to the earpiece, which is barely audible.
+  useEffect(() => {
+    try {
+      InCallManager.start({ media: 'video' });
+      InCallManager.setForceSpeakerphoneOn(true);
+      InCallManager.setSpeakerphoneOn(true);
+    } catch (e) {
+      console.warn('[InCallManager] start failed:', e);
+    }
+    // Promote the app to a foreground service so Android keeps the JS thread,
+    // WebSocket, camera and mic alive when the user switches apps mid-call.
+    startMeetingForegroundService(userName ?? '');
+    return () => {
+      try {
+        InCallManager.setForceSpeakerphoneOn(false);
+        InCallManager.stop();
+      } catch (e) {
+        console.warn('[InCallManager] stop failed:', e);
+      }
+      stopMeetingForegroundService();
+    };
+  }, []);
 
   const handleEndCall = () => {
     endCall();
@@ -130,6 +199,7 @@ export default function MeetingRoom() {
       isMuted: !isMicOn,
       isCameraOff: !isCameraOn,
       isLocal: true,
+      profilePictureUrl: localPhoto,
     };
     const remotes: ParticipantTile[] = remoteParticipants.map(p => ({
       userId: p.userId,
@@ -138,10 +208,11 @@ export default function MeetingRoom() {
       isMuted: p.isMuted,
       isCameraOff: p.isCameraOff,
       isLocal: false,
+      profilePictureUrl: p.profilePictureUrl,
     }));
     // Local first when alone, remotes first otherwise (remote is the focus)
     return remotes.length === 0 ? [local] : [...remotes, local];
-  }, [remoteParticipants, localStream, userId, isMicOn, isCameraOn]);
+  }, [remoteParticipants, localStream, userId, isMicOn, isCameraOn, localPhoto]);
 
   const layouts = useMemo(
     () => computeLayouts(allParticipants.length, tilesBox.w, tilesBox.h),
@@ -198,11 +269,24 @@ export default function MeetingRoom() {
           />
         ) : (
           <View style={styles.tilePlaceholder}>
-            <Ionicons
-              name="person-circle"
-              size={Math.min(96, Math.max(48, Math.min(layout.width, layout.height) * 0.35))}
-              color="#555"
-            />
+            {participant.profilePictureUrl ? (
+              <Image
+                source={{ uri: participant.profilePictureUrl }}
+                style={[
+                  styles.tileAvatar,
+                  {
+                    width: Math.min(140, Math.max(64, Math.min(layout.width, layout.height) * 0.5)),
+                    height: Math.min(140, Math.max(64, Math.min(layout.width, layout.height) * 0.5)),
+                  },
+                ]}
+              />
+            ) : (
+              <Ionicons
+                name="person-circle"
+                size={Math.min(96, Math.max(48, Math.min(layout.width, layout.height) * 0.35))}
+                color="#555"
+              />
+            )}
           </View>
         )}
 
@@ -282,9 +366,11 @@ export default function MeetingRoom() {
 
       {chatOpen && (
         <View style={styles.chatOverlay}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.chatPanel}
+          <View
+            style={[
+              styles.chatPanel,
+              keyboardHeight > 0 && { paddingBottom: keyboardHeight + 12 },
+            ]}
           >
             <View style={styles.chatHeader}>
               <Text style={styles.chatTitle}>In-call messages</Text>
@@ -332,7 +418,7 @@ export default function MeetingRoom() {
                 <Ionicons name="send" size={20} color="#fff" />
               </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       )}
     </View>
@@ -376,6 +462,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#2e2e2e',
+  },
+  tileAvatar: {
+    borderRadius: 999,
+    backgroundColor: '#3a3a3a',
   },
   nameLabel: {
     position: 'absolute',

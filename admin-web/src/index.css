@@ -650,12 +650,21 @@ button,
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ─── Status colours ─────────────────────────────────────────── */
-.status-orange {
+.status-orange,
+.status-yellow {
   color: #f59e0b !important;
 }
 
 .status-red {
   color: #ef4444 !important;
+}
+
+.status-blue {
+  color: #2B74B4 !important;
+}
+
+.status-gray {
+  color: #888 !important;
 }
 
 /* ─── Action Buttons ─────────────────────────────────────────── */

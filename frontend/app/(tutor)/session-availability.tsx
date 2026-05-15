@@ -335,7 +335,7 @@ export default function AvailabilityPage() {
         visible={showModal}
         onRequestClose={() => setShowModal(false)}
       >
-        <BlurView intensity={10} style={styles.blurContainer}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={10} style={styles.blurContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
               Select {pickerMode === 'start' ? 'Start' : 'End'} Time
@@ -364,7 +364,7 @@ export default function AvailabilityPage() {
         visible={alertModal.visible}
         onRequestClose={() => setAlertModal({ visible: false, title: '', body: '' })}
       >
-        <BlurView intensity={20} tint="light" style={styles.blurContainer}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.blurContainer}>
           <View style={styles.alertCard}>
             <Text style={styles.alertTitle}>{alertModal.title}</Text>
             <Text style={styles.alertBody}>{alertModal.body}</Text>

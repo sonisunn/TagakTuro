@@ -32,13 +32,22 @@ public class AdminController {
     @GetMapping("/summary")
     public ResponseEntity<Map<String, Object>> getSummary() {
         Map<String, Object> summary = new HashMap<>();
-        
-        long totalTutors = tutorRepository.count();
+
         long totalStudents = studentRepository.count();
         long totalBookings = bookingRepository.count();
-        
-        // Average rating of all tutors
+
+        // Active tutor = had a booking (any status) in the last 30 days.
+        // Mirrors TutorService.INACTIVITY_THRESHOLD_DAYS so the dashboard count
+        // matches the per-tutor badges on the Tutors page.
+        LocalDateTime activityCutoff = LocalDateTime.now().minusDays(30);
         List<Tutor> tutors = tutorRepository.findAll();
+        long totalActiveTutors = tutors.stream()
+                .filter(t -> bookingRepository.findByTutorName(t.getName()).stream()
+                        .anyMatch(b -> b.getBookingDateTime() != null
+                                && b.getBookingDateTime().isAfter(activityCutoff)))
+                .count();
+
+        // Average rating of all tutors
         double avgRating = tutors.stream()
                 .mapToDouble(t -> t.getRating() != null ? t.getRating() : 0.0)
                 .average()
@@ -55,13 +64,19 @@ public class AdminController {
                 .filter(b -> b.getBookingDateTime() != null && b.getBookingDateTime().isAfter(firstDayOfMonth))
                 .count();
 
-        summary.put("totalTutors", totalTutors);
+        // "totalTutors" is exposed as the count of *active* tutors so the
+        // dashboard card labelled "Total Active Tutors" stops being misleading.
+        // Legacy clients reading totalTutors as "all" still work; they'll just
+        // see the active subset.
+        summary.put("totalTutors", totalActiveTutors);
+        summary.put("totalActiveTutors", totalActiveTutors);
+        summary.put("totalAllTutors", tutors.size());
         summary.put("totalStudents", totalStudents);
         summary.put("totalBookings", totalBookings);
         summary.put("avgRating", avgRating);
         summary.put("certsIssued", certsIssued);
         summary.put("sessionsThisMonth", sessionsThisMonth);
-        
+
         return ResponseEntity.ok(summary);
     }
 }

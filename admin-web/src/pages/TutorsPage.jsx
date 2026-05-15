@@ -87,8 +87,9 @@ export default function TutorsPage() {
                         <span style={{ color: '#999' }}>No ratings</span>
                       )}
                     </td>
-                    {/* The backend Tutor model doesn't store 'active/inactive' status, let's default to active for now */}
-                    <td className="status-green">Active</td>
+                    <td className={t.isActive === false ? 'status-gray' : 'status-green'}>
+                      {t.isActive === false ? 'Inactive' : 'Active'}
+                    </td>
                     <td>
                       <Link to={`/tutors/${t.id}`} className="table-view-link">View</Link>
                     </td>

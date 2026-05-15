@@ -126,12 +126,17 @@ export async function updateBooking(id, bookingData) {
 }
 
 /**
- * Update booking status
+ * Update booking status. Pass an optional cancellationReason for CANCELLED;
+ * the backend surfaces it in the cancellation notification + email body.
  */
-export async function updateBookingStatus(id, status) {
+export async function updateBookingStatus(id, status, cancellationReason) {
   try {
     const client = await axiosWithAuth();
-    const response = await client.patch(`/api/booking/${id}/status`, { status });
+    const payload = { status };
+    if (cancellationReason && cancellationReason.trim()) {
+      payload.cancellationReason = cancellationReason.trim();
+    }
+    const response = await client.patch(`/api/booking/${id}/status`, payload);
     return response.data;
   } catch (error) {
     console.error('Error in updateBookingStatus:', (error.response && error.response.data) || error.message);

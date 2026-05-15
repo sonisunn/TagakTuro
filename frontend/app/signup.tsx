@@ -233,7 +233,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => setProgramPickerVisible(false)}
           >
-            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
               <View style={styles.programPickerContainer}>
                 <Text style={styles.programPickerTitle}>Select College and Program</Text>
                 <ScrollView style={styles.programPickerScroll}>
@@ -348,7 +348,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => setTermsModalVisible(false)}
           >
-            <BlurView intensity={15} style={styles.blurBackground}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={15} style={styles.blurBackground}>
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Terms and Condition</Text>
@@ -469,7 +469,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => setPrivacyModalVisible(false)}
           >
-            <BlurView intensity={80} style={styles.blurBackground}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={80} style={styles.blurBackground}>
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Privacy Policy</Text>
@@ -529,7 +529,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => setNoticeVisible(false)}
           >
-            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
               <View style={styles.noticeContainer}>
                 <Text style={styles.noticeTitle}>Notice</Text>
                 <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
@@ -550,7 +550,7 @@ export default function TagakTuroSignUp() {
             animationType="fade"
             onRequestClose={() => { setSuccessVisible(false); router.replace('/'); }}
           >
-            <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
               <View style={styles.noticeContainer}>
                 <Text style={styles.successTitle}>Successfully registered!</Text>
                 <Text style={styles.successBody}>
@@ -597,7 +597,7 @@ export default function TagakTuroSignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   scrollContent: {
     flexGrow: 1,
@@ -615,12 +615,16 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#fff',
+    lineHeight: 28,
+    marginBottom: 0,
   },
   subtitle: {
     fontFamily: 'Poppins',
     fontSize: 17,
     color: '#fff',
     opacity: 0.9,
+    marginTop: -4,
+    lineHeight: 22,
   },
   formContainer: {
     backgroundColor: '#fff',
@@ -737,11 +741,13 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
+    marginTop: 16,
   },
   footerText: {
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#95CDF2',
+    fontWeight: '600',
     marginBottom: 5,
   },
   link: {

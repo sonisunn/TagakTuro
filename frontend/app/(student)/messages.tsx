@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
@@ -41,6 +41,15 @@ export default function MessagesPage() {
     };
     loadUser();
   }, []);
+
+  // Re-fetch the conversation list whenever the screen regains focus so the
+  // last-message preview reflects any messages sent or received elsewhere
+  // (other tab, push notification, in-call chat, etc.).
+  useFocusEffect(
+    useCallback(() => {
+      if (userId) fetchConversations(userId);
+    }, [userId])
+  );
 
   const fetchConversations = async (id: number) => {
     try {
@@ -99,6 +108,20 @@ export default function MessagesPage() {
     }
   }, [messages]);
 
+  // Keep the conversation list preview in sync while the chat is open: every
+  // time a new message lands in the active conversation, update its
+  // lastMessage entry locally so when the user navigates back the preview
+  // already reflects the latest text without waiting for a re-fetch.
+  useEffect(() => {
+    if (!selectedChat || messages.length === 0) return;
+    const newest = messages[messages.length - 1];
+    setConversations(prev => prev.map(c =>
+      c.id === selectedChat.id
+        ? { ...c, lastMessage: { content: newest.content, createdAt: newest.createdAt, senderId: newest.senderId } }
+        : c
+    ));
+  }, [messages, selectedChat]);
+
   if (selectedChat) {
     const otherUserName = selectedChat.user1Id === userId ? selectedChat.user2Name : selectedChat.user1Name;
 
@@ -129,9 +152,6 @@ export default function MessagesPage() {
               </View>
               <View>
                 <Text style={styles.chatHeaderName}>{otherUserName}</Text>
-                <Text style={[styles.chatHeaderSubtitle, { color: connected ? '#4CAF50' : '#F44336' }]}>
-                  {connected ? 'Connected' : 'Disconnected'}
-                </Text>
               </View>
             </View>
           </View>

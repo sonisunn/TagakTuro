@@ -58,6 +58,9 @@ public class AuthService {
         newUser.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
         newUser.setStudentId(signupRequest.getStudentId());
         newUser.setCourseProgram(signupRequest.getCourseProgram());
+        // Mirror the phone onto User so the profile preview (which reads
+        // /api/user/{id}) sees it without joining through Student/Tutor.
+        newUser.setPhoneNumber(signupRequest.getPhoneNumber());
 
         Set<String> roles = new HashSet<>();
         if (role.equals("STUDENT")) {

@@ -12,11 +12,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @Transactional
 public class TutorService {
+
+    // A tutor is considered "Active" if they have any booking activity within
+    // this many days of now. Otherwise the admin pages show them as Inactive.
+    private static final int INACTIVITY_THRESHOLD_DAYS = 30;
 
     @Autowired
     private TutorRepository tutorRepository;
@@ -65,6 +70,17 @@ public class TutorService {
                 tutor.setRating(avgRating);
             }
         }
+
+        // 4. Active/Inactive status — true if the tutor has any booking dated
+        // within the inactivity threshold. We check ALL of their bookings
+        // (any status) rather than just COMPLETED so a tutor with an upcoming
+        // CONFIRMED session still counts as active.
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(INACTIVITY_THRESHOLD_DAYS);
+        List<Booking> allBookings = bookingRepository.findByTutorName(tutor.getName());
+        boolean active = allBookings.stream()
+                .filter(b -> b.getBookingDateTime() != null)
+                .anyMatch(b -> b.getBookingDateTime().isAfter(cutoff));
+        tutor.setIsActive(active);
     }
 
     // Get tutor by ID

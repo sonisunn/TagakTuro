@@ -12,6 +12,7 @@ public class SignalMessage {
     private Boolean isMicOn;    // MEDIA_STATE
     private Boolean isCameraOn; // MEDIA_STATE
     private String text;        // CHAT — message body
+    private String profilePictureUrl; // JOIN — sender's avatar (data URL or remote URL)
 
     public SignalMessage() {}
 
@@ -47,4 +48,7 @@ public class SignalMessage {
 
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 }

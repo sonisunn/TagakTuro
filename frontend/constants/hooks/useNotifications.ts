@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { API_BASE_URL } from '../../src/api/config';
 import axios from 'axios';
+import { showAlertNotification } from '../../src/meetingForegroundService';
 
 const BASE_WS_URL = API_BASE_URL.replace('http', 'ws') + '/ws-native';
 
@@ -148,10 +149,21 @@ export const useNotifications = (userId: number | null) => {
                                     read: payload.read,
                                     dateSent: payload.dateSent,
                                 };
+                                let isNew = false;
                                 setNotifications(prev => {
                                     if (prev.some(n => n.id === newNotif.id)) return prev;
+                                    isNew = true;
                                     return [newNotif, ...prev];
                                 });
+                                // Surface in the system tray for novel notifications only,
+                                // so duplicate WS frames don't fire a second buzz.
+                                if (isNew) {
+                                    showAlertNotification(
+                                        newNotif.title || 'TagakTuro',
+                                        newNotif.body || '',
+                                        `notif-${newNotif.id}`,
+                                    );
+                                }
                             }
                         } catch (e) {
                             console.error('[Notif] Failed to parse message:', e);

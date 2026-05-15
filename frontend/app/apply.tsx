@@ -354,7 +354,7 @@ export default function ApplyTutorPage() {
                 animationType="fade"
                 onRequestClose={() => setProgramPickerVisible(false)}
               >
-                <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+                <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
                   <View style={styles.programPickerContainer}>
                     <Text style={styles.programPickerTitle}>Select College and Program</Text>
                     <ScrollView style={styles.programPickerScroll}>
@@ -454,7 +454,7 @@ export default function ApplyTutorPage() {
                 animationType="fade"
                 onRequestClose={() => setNoticeVisible(false)}
               >
-                <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+                <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
                   <View style={styles.noticeContainer}>
                     <Text style={styles.noticeTitle}>Notice</Text>
                     <Text style={styles.noticeSubtitle}>Please fix the following issues:</Text>
@@ -567,7 +567,7 @@ export default function ApplyTutorPage() {
             animationType="fade"
             onRequestClose={() => setTermsModalVisible(false)}
           >
-            <BlurView intensity={15} style={styles.blurBackground}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={15} style={styles.blurBackground}>
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Terms and Condition</Text>
@@ -688,7 +688,7 @@ export default function ApplyTutorPage() {
             animationType="fade"
             onRequestClose={() => setPrivacyModalVisible(false)}
           >
-            <BlurView intensity={80} style={styles.blurBackground}>
+            <BlurView experimentalBlurMethod="dimezisBlurView" intensity={80} style={styles.blurBackground}>
               <View style={styles.modalContainer}>
                 <ScrollView style={styles.modalScroll}>
                   <Text style={styles.modalTitle}>Privacy Policy</Text>
@@ -766,7 +766,7 @@ export default function ApplyTutorPage() {
         animationType="fade"
         onRequestClose={() => setSwitchAccountModalVisible(false)}
       >
-        <BlurView intensity={20} style={styles.blurBackground}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} style={styles.blurBackground}>
           <View style={styles.switchModalContainer}>
             <Text style={styles.switchModalTitle}>Email Already in Use</Text>
             <Text style={styles.switchModalBody}>
@@ -805,7 +805,7 @@ export default function ApplyTutorPage() {
         animationType="fade"
         onRequestClose={() => {}}
       >
-        <BlurView intensity={20} tint="light" style={styles.noticeOverlay}>
+        <BlurView experimentalBlurMethod="dimezisBlurView" intensity={20} tint="light" style={styles.noticeOverlay}>
           <View style={styles.successContainer}>
             <Text style={styles.successTitle}>Successfully Registered!</Text>
             <Text style={styles.successBody}>
@@ -851,6 +851,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '600',
     color: '#fff',
+    lineHeight: 28,
+    marginBottom: 0,
   },
   subtitle: {
     fontFamily: 'Poppins',
@@ -858,6 +860,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     opacity: 0.9,
+    marginTop: -4,
+    lineHeight: 22,
   },
   formContainer: {
     backgroundColor: '#fff',
@@ -1097,6 +1101,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
+    marginTop: 16,
   },
   backButton: {
     height: 50,
@@ -1117,7 +1122,8 @@ const styles = StyleSheet.create({
   footerText: {
     fontFamily: 'Poppins',
     fontSize: 12,
-    color: '#95BADA',
+    color: '#95CDF2',
+    fontWeight: '600',
     marginBottom: 5,
   },
   link: {
@@ -1379,7 +1385,7 @@ const styles = StyleSheet.create({
   },
   switchNoButton: {
     flex: 1,
-    backgroundColor: '#C0392B',
+    backgroundColor: '#FF0000',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -1392,7 +1398,7 @@ const styles = StyleSheet.create({
   },
   switchYesButton: {
     flex: 1,
-    backgroundColor: '#27AE60',
+    backgroundColor: '#0FE40F',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
